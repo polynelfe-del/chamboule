@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Ton coach sportif en mode jeu : dos, fessiers, cardio.">
-<meta name="theme-color" content="#EEF1FF" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E1233" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FFF1F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#2A0F28" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Chamboule">
@@ -22,50 +22,56 @@ img{max-width:100%}
 <title>Chamboule Coach</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Pacifico&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap">
 <style>
-/* Layout: one phone-width column under a fairground awning; programs are admission tickets; the game takes the whole screen with one giant tap target. */
+/* Layout: one phone-width column under a candy-pink fairground awning on a polka-dot ground; programs are admission tickets; the game takes the whole screen with one giant tap target. */
 :root{
-  --bg:#EEF1FF; --surface:#FFFFFF; --surface-2:#E2E7FB; --ink:#141A4A; --ink-2:#4B548C; --line:#CDD4F3;
-  --accent:#2D3BD1; --accent-deep:#1B258C; --accent-ink:#FFFFFF;
-  --awning-a:#2D3BD1; --awning-b:#FFFFFF;
-  --ticket:#FFC23D; --ticket-deep:#C78E0E; --ticket-ink:#2B1F00;
-  --prize:#D92A64; --prize-ink:#FFFFFF;
-  --ok:#147A52; --ok-ink:#FFFFFF; --warn:#A56200; --danger:#C41E33;
-  --bulb-off:#D3D9F3;
-  --shadow:0 1px 0 rgba(20,26,74,.05),0 10px 28px -14px rgba(20,26,74,.35);
-  --f-display:'Bungee','Arial Black',Impact,system-ui,sans-serif;
+  --bg:#FFF1F7; --surface:#FFFFFF; --surface-2:#FFE1EE; --ink:#3A1238; --ink-2:#85507A; --line:#F3C4D9; --dot:#FBD5E6;
+  --accent:#C93B7B; --accent-deep:#93245A; --accent-ink:#FFFFFF;
+  --awning-a:#FF8DBA; --awning-b:#FFFFFF;
+  --ticket:#FFD25E; --ticket-deep:#D9A21E; --ticket-ink:#3A2600;
+  --prize:#8455E8; --prize-ink:#FFFFFF;
+  --ok:#1A7D60; --ok-ink:#FFFFFF; --warn:#A35D00; --danger:#B3261E;
+  --bulb-off:#F8D3E3;
+  --face:#FFFFFF; --face-ink:#3A1238; --blush:#FF9EC2;
+  --shadow:0 1px 0 rgba(147,36,90,.06),0 12px 28px -14px rgba(147,36,90,.40);
+  --heart:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.3 3.4 12.9a5.2 5.2 0 0 1 8.6-7.1 5.2 5.2 0 0 1 8.6 7.1z'/%3E%3C/svg%3E");
+  --star:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z'/%3E%3C/svg%3E");
+  --f-display:'Fredoka','Nunito','Segoe UI',system-ui,sans-serif;
+  --f-script:'Pacifico','Brush Script MT',cursive;
   --f-body:'Nunito','Segoe UI',system-ui,-apple-system,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0E1233; --surface:#171D49; --surface-2:#232A5E; --ink:#EEF0FF; --ink-2:#A9B0DC; --line:#313A76;
-    --accent:#8C96FF; --accent-deep:#5560D0; --accent-ink:#0E1233;
-    --awning-a:#3A46D6; --awning-b:#DCE1FF;
-    --ticket:#FFCB4F; --ticket-deep:#B98A1C; --ticket-ink:#2B1F00;
-    --prize:#FF6A99; --prize-ink:#22060F;
-    --ok:#46D69F; --ok-ink:#0E1233; --warn:#FFB957; --danger:#FF6B7A;
-    --bulb-off:#2A3167;
-    --shadow:0 12px 30px -14px rgba(0,0,0,.65);
+    --bg:#2A0F28; --surface:#3A1838; --surface-2:#4B2148; --ink:#FFEAF4; --ink-2:#E3AACB; --line:#6B3366; --dot:#361634;
+    --accent:#FF7EB3; --accent-deep:#C9508A; --accent-ink:#2A0F28;
+    --awning-a:#D9609A; --awning-b:#FFD7E8;
+    --ticket:#FFD978; --ticket-deep:#C9A23A; --ticket-ink:#3A2600;
+    --prize:#BFA0FF; --prize-ink:#2A0F28;
+    --ok:#6FDDBC; --ok-ink:#2A0F28; --warn:#FFBE63; --danger:#FF6A55;
+    --bulb-off:#5A2A56;
+    --face:#FFF3F8; --face-ink:#3A1238; --blush:#FF9EC2;
+    --shadow:0 12px 30px -14px rgba(0,0,0,.6);
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0E1233; --surface:#171D49; --surface-2:#232A5E; --ink:#EEF0FF; --ink-2:#A9B0DC; --line:#313A76;
-  --accent:#8C96FF; --accent-deep:#5560D0; --accent-ink:#0E1233;
-  --awning-a:#3A46D6; --awning-b:#DCE1FF;
-  --ticket:#FFCB4F; --ticket-deep:#B98A1C; --ticket-ink:#2B1F00;
-  --prize:#FF6A99; --prize-ink:#22060F;
-  --ok:#46D69F; --ok-ink:#0E1233; --warn:#FFB957; --danger:#FF6B7A;
-  --bulb-off:#2A3167;
-  --shadow:0 12px 30px -14px rgba(0,0,0,.65);
+  --bg:#2A0F28; --surface:#3A1838; --surface-2:#4B2148; --ink:#FFEAF4; --ink-2:#E3AACB; --line:#6B3366; --dot:#361634;
+  --accent:#FF7EB3; --accent-deep:#C9508A; --accent-ink:#2A0F28;
+  --awning-a:#D9609A; --awning-b:#FFD7E8;
+  --ticket:#FFD978; --ticket-deep:#C9A23A; --ticket-ink:#3A2600;
+  --prize:#BFA0FF; --prize-ink:#2A0F28;
+  --ok:#6FDDBC; --ok-ink:#2A0F28; --warn:#FFBE63; --danger:#FF6A55;
+  --bulb-off:#5A2A56;
+  --face:#FFF3F8; --face-ink:#3A1238; --blush:#FF9EC2;
+  --shadow:0 12px 30px -14px rgba(0,0,0,.6);
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
-h1,h2,h3{font-family:var(--f-display);font-weight:400;line-height:1.05;text-wrap:balance;margin:0;letter-spacing:.01em}
+body{background:var(--bg) radial-gradient(var(--dot) 1.4px,transparent 1.7px) 0 0/22px 22px;color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;line-height:1.1;text-wrap:balance;margin:0;letter-spacing:.005em}
 p{margin:0}
 button{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:10px}
@@ -84,17 +90,18 @@ button{font:inherit;color:inherit}
 .page.plain{padding-block:20px 56px}
 .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .brand{display:flex;flex-direction:column;gap:6px;min-width:0}
-.brand h1{font-size:clamp(30px,9vw,42px);color:var(--accent);line-height:.95}
+.brand h1{font-family:var(--f-script);font-weight:400;font-size:clamp(32px,9.5vw,44px);color:var(--accent);line-height:1.15;position:relative}
+.brand h1 .spark-txt{font-family:var(--f-display);font-size:.55em;color:var(--ticket-deep);margin-left:6px;display:inline-block;animation:twinkle 1.6s infinite}
 .brand p{font-weight:700;color:var(--ink-2)}
-.icon-btn{flex:none;width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+.icon-btn{flex:none;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--ink)}
 .icon-btn:hover{border-color:var(--accent)}
-.card{background:var(--surface);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.card{background:var(--surface);border-radius:24px;padding:16px;box-shadow:var(--shadow)}
 
 /* Player */
 .player{display:flex;flex-direction:column;gap:14px}
 .player-top{display:flex;gap:16px;align-items:center}
 .lvl-token{position:relative;flex:none;width:64px;height:64px;margin:6px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--f-display);font-size:28px;box-shadow:0 0 0 4px var(--surface)}
-.lvl-token b{font-weight:400}
+.lvl-token b{font-weight:700}
 .marq{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--ticket);transform:rotate(var(--a)) translateY(-40px);animation:twinkle 1.2s var(--d) infinite}
 @keyframes twinkle{50%{opacity:.2}}
 .player-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
@@ -104,17 +111,18 @@ button{font:inherit;color:inherit}
 .xp-meta{font-size:14px;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .stats3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .stat{background:var(--surface-2);border-radius:12px;padding:8px 10px;min-width:0}
-.stat b{font-family:var(--f-display);font-weight:400;font-size:20px;display:block;line-height:1.2;font-variant-numeric:tabular-nums}
+.stat b{font-family:var(--f-display);font-weight:700;font-size:20px;display:block;line-height:1.2;font-variant-numeric:tabular-nums}
 .stat span{font-size:13px;color:var(--ink-2);font-weight:700;line-height:1.25;display:block}
 
 /* Week bulbs */
 .week{display:flex;flex-direction:column;gap:12px}
 .week-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .week-head p{font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
-.week-head p b{font-family:var(--f-display);font-weight:400;font-size:20px;color:var(--ink)}
+.week-head p b{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--ink)}
 .bulbs{display:flex;gap:12px;flex-wrap:wrap}
-.bulb{width:30px;height:30px;border-radius:50%;background:var(--bulb-off)}
-.bulb.lit{background:var(--ticket);box-shadow:0 0 0 4px color-mix(in srgb,var(--ticket) 30%,transparent),0 0 18px var(--ticket)}
+.bulb{width:32px;height:32px;background:var(--bulb-off);-webkit-mask:var(--heart) center/contain no-repeat;mask:var(--heart) center/contain no-repeat}
+.bulb.lit{background:var(--accent);animation:beat 1.4s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.14)}30%{transform:scale(1)}45%{transform:scale(1.08)}}
 .week-meta{font-size:14px;color:var(--ink-2);font-weight:600}
 
 /* Notices & alert */
@@ -144,7 +152,7 @@ button{font:inherit;color:inherit}
 
 /* Tickets */
 .programs{display:flex;flex-direction:column;gap:14px}
-.ticket{--t-color:var(--accent);--t-ink:var(--accent-ink);position:relative;background:var(--surface);border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
+.ticket{--t-color:var(--accent);--t-ink:var(--accent-ink);position:relative;background:var(--surface);border-radius:24px;overflow:hidden;box-shadow:var(--shadow)}
 .ticket.boule{--t-color:var(--prize);--t-ink:var(--prize-ink)}
 .ticket.difficile{--t-color:var(--ok);--t-ink:var(--ok-ink)}
 .ticket.locked{--t-color:var(--surface-2);--t-ink:var(--ink-2)}
@@ -200,17 +208,33 @@ button{font:inherit;color:inherit}
 .can svg{display:block;width:100%;height:100%}
 .can-body{fill:var(--prize)}
 .can.c1 .can-body{fill:var(--accent)}
-.can-band{fill:var(--surface)}
+.can-body{rx:4px}
+.can-band{fill:var(--face)}
+.can-heart{fill:var(--accent)}
+.can.c1 .can-heart{fill:var(--prize)}
 .can-rim{fill:var(--ticket)}
 .can.gone{opacity:0}
 .can.down{animation:knock .75s cubic-bezier(.3,.6,.4,1) forwards}
 @keyframes knock{to{transform:translate(var(--kx),var(--ky)) rotate(var(--kr));opacity:0}}
 .can.wobble{animation:wobble .45s ease}
 @keyframes wobble{25%{transform:rotate(-9deg)}70%{transform:rotate(6deg)}}
-.ball{position:absolute;left:50%;bottom:-34px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:var(--ticket);box-shadow:inset -3px -3px 0 var(--ticket-deep);transition:transform .28s cubic-bezier(.2,.7,.3,1),opacity .2s;z-index:3}
+.ball{position:absolute;left:50%;bottom:-34px;width:20px;height:20px;margin-left:-10px;background:var(--accent);-webkit-mask:var(--heart) center/contain no-repeat;mask:var(--heart) center/contain no-repeat;transition:transform .28s cubic-bezier(.2,.7,.3,1),opacity .2s;z-index:3}
 .lanterns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.bulb.sm{width:18px;height:18px}
-.bulb.sm.lit{box-shadow:0 0 0 3px color-mix(in srgb,var(--ticket) 30%,transparent),0 0 12px var(--ticket)}
+.bulb.sm{width:20px;height:20px}
+
+/* Chouquette, la mascotte */
+.buddy{display:flex;gap:10px;align-items:flex-end}
+.mascot{width:64px;height:auto;flex:none;animation:bob 2.6s ease-in-out infinite;transform-origin:50% 100%}
+.buddy.sm .mascot{width:50px}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-3deg)}}
+.m-body{fill:var(--accent)}.m-face{fill:var(--face)}.m-rim{fill:var(--ticket)}.m-bow{fill:var(--prize)}
+.m-eye,.m-mouth{fill:var(--face-ink)}.m-shine{fill:var(--face)}
+.m-line{fill:none;stroke:var(--face-ink);stroke-width:2.2;stroke-linecap:round}
+.m-blush{fill:var(--blush);opacity:.85}
+.bubble{flex:1;min-width:0;background:var(--surface);border-radius:22px 22px 22px 6px;padding:12px 14px;font-weight:700;box-shadow:var(--shadow);text-align:left}
+.bubble b{display:block;font-family:var(--f-display);color:var(--accent);font-size:14px;margin-bottom:2px}
+.buddy.sm .bubble{font-size:15px}
+.flash .mascot{width:46px;display:block;margin:0 auto 4px;animation:none}
 
 /* Défis de la semaine */
 .chal-card{display:flex;flex-direction:column;gap:6px}
@@ -225,17 +249,17 @@ button{font:inherit;color:inherit}
 .chal-bar i{display:block;height:100%;background:var(--ticket);border-radius:inherit}
 .chal.won .chal-bar i{background:var(--ok)}
 .chal-prize{flex:none;display:flex;flex-direction:column;align-items:center;line-height:1.1;font-size:13px;font-weight:900;color:var(--ink-2)}
-.chal-prize b{font-family:var(--f-display);font-weight:400;font-size:20px;color:var(--prize)}
+.chal-prize b{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--prize)}
 .stamp{flex:none;font-family:var(--f-display);color:var(--ok);border:3px solid var(--ok);border-radius:8px;padding:3px 8px;transform:rotate(-12deg);font-size:14px;letter-spacing:.04em}
 .res-meta{text-align:center;font-weight:700;color:var(--ink-2)}
 .row-btns{display:flex;gap:8px;flex-wrap:wrap}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;border:2px solid transparent;padding:10px 18px;font-weight:900;font-size:16px;cursor:pointer;min-height:48px;transition:transform .12s ease,box-shadow .12s ease;text-align:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;border:2px solid transparent;padding:10px 18px;font-weight:900;font-size:16px;cursor:pointer;min-height:48px;transition:transform .12s ease,box-shadow .12s ease;text-align:center}
 .btn:active{transform:translateY(2px)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);box-shadow:0 4px 0 var(--accent-deep)}
 .btn.primary:active{box-shadow:0 2px 0 var(--accent-deep)}
-.btn.play{background:var(--ticket);color:var(--ticket-ink);box-shadow:0 4px 0 var(--ticket-deep);font-family:var(--f-display);font-weight:400;letter-spacing:.04em}
+.btn.play{background:var(--ticket);color:var(--ticket-ink);box-shadow:0 4px 0 var(--ticket-deep);font-family:var(--f-display);font-weight:700;letter-spacing:.04em}
 .btn.play:active{box-shadow:0 2px 0 var(--ticket-deep)}
 .btn.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
 .btn.ghost:hover{border-color:var(--accent)}
@@ -250,7 +274,7 @@ button{font:inherit;color:inherit}
 .badges-head p{font-weight:800;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .badges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 10px;margin-top:12px}
 .badge{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;min-width:0}
-.medal{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-size:15px;background:var(--ticket);color:var(--ticket-ink);box-shadow:inset 0 0 0 3px var(--surface),0 0 0 2px var(--ticket)}
+.medal{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:16px;background:var(--ticket);color:var(--ticket-ink);box-shadow:inset 0 0 0 3px var(--surface),0 0 0 2px var(--ticket)}
 .medal svg{width:24px;height:24px;fill:currentColor}
 .badge.locked .medal{background:transparent;color:var(--ink-2);box-shadow:none;border:2px dashed var(--line)}
 .badge b{font-size:14px;line-height:1.2;font-weight:900}
@@ -331,7 +355,7 @@ button{font:inherit;color:inherit}
 .pips i.skip{background:var(--line)}
 .g-score{text-align:right;line-height:1;min-width:60px}
 .g-score .lbl{display:block;font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
-.g-score b{font-family:var(--f-display);font-weight:400;font-size:24px;font-variant-numeric:tabular-nums}
+.g-score b{font-family:var(--f-display);font-weight:700;font-size:24px;font-variant-numeric:tabular-nums}
 .g-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;overflow-y:auto;padding-bottom:2px}
 .g-title{font-size:clamp(26px,7.6vw,42px);hyphens:auto;overflow-wrap:break-word}
 .g-title.sm{font-size:clamp(21px,6vw,30px)}
@@ -365,7 +389,7 @@ button{font:inherit;color:inherit}
 .breath{position:absolute;inset:20%;border-radius:50%;background:color-mix(in srgb,var(--accent) 20%,transparent);transform:scale(.5)}
 .zone.ready .breath{background:color-mix(in srgb,var(--ticket-ink) 12%,transparent)}
 .count{position:relative;text-align:center;line-height:1;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:center;gap:4px}
-.count b{font-family:var(--f-display);font-weight:400;font-size:clamp(56px,18vw,100px);display:block;line-height:.95}
+.count b{font-family:var(--f-display);font-weight:700;font-size:clamp(56px,18vw,100px);display:block;line-height:.95}
 .count span{font-weight:900;font-size:18px;opacity:.75}
 .count .clock{font-size:clamp(40px,12vw,64px)}
 .zone-hint{font-weight:900;font-size:18px;text-align:center;min-height:1.5em}
@@ -378,10 +402,11 @@ button{font:inherit;color:inherit}
 .pop.good{color:var(--accent)}
 .pop.bad{color:var(--prize)}
 @keyframes rise{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-80px) scale(1)}}
-.spark{position:absolute;left:50%;top:50%;width:11px;height:11px;margin:-5px 0 0 -5px;border-radius:50%;animation:burst .7s ease-out forwards}
+.spark{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;-webkit-mask:var(--heart) center/contain no-repeat;mask:var(--heart) center/contain no-repeat;animation:burst .75s ease-out forwards}
+.spark.st{-webkit-mask-image:var(--star);mask-image:var(--star)}
 @keyframes burst{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
 .flash{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--ticket);color:var(--ticket-ink);font-family:var(--f-display);padding:16px 24px;border-radius:18px;text-align:center;animation:flashIn .4s cubic-bezier(.2,1.5,.4,1);box-shadow:var(--shadow);z-index:2;white-space:nowrap}
-.flash b{display:block;font-size:28px;font-weight:400}
+.flash b{display:block;font-size:28px;font-weight:700}
 .flash span{font-size:18px}
 @keyframes flashIn{from{transform:translate(-50%,-50%) scale(.4);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
 
@@ -406,22 +431,24 @@ button{font:inherit;color:inherit}
 
 /* Result */
 .res-head{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
-.res-title{font-size:clamp(30px,9vw,44px);color:var(--accent)}
+.res-title{font-family:var(--f-script);font-weight:400;font-size:clamp(32px,9.5vw,46px);color:var(--accent);line-height:1.25}
 .stars{display:flex;gap:10px;justify-content:center}
 .stars svg{width:52px;height:52px;fill:var(--surface-2)}
 .stars svg.on{fill:var(--ticket);animation:starPop .55s cubic-bezier(.2,1.6,.4,1) both}
 @keyframes starPop{from{transform:scale(0) rotate(-40deg)}to{transform:scale(1) rotate(0)}}
 .score-big{display:flex;flex-direction:column;align-items:center;line-height:1}
-.score-big b{font-family:var(--f-display);font-weight:400;font-size:clamp(64px,20vw,96px);font-variant-numeric:tabular-nums}
+.score-big b{font-family:var(--f-display);font-weight:700;font-size:clamp(64px,20vw,96px);font-variant-numeric:tabular-nums}
 .levelup{background:var(--ticket);color:var(--ticket-ink);border-radius:16px;padding:12px 16px;text-align:center;font-weight:900;animation:flashIn2 .5s cubic-bezier(.2,1.5,.4,1) both}
-.levelup b{display:block;font-family:var(--f-display);font-weight:400;font-size:22px}
+.levelup b{display:block;font-family:var(--f-display);font-weight:700;font-size:22px}
 @keyframes flashIn2{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 .new-badges{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
 .new-badges .badge{width:104px}
 .ci-msg{font-size:15px;font-weight:700}
 
 #confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:20}
-.conf{position:absolute;top:-20px;width:9px;height:15px;border-radius:2px;animation:fall linear forwards}
+.conf{position:absolute;top:-20px;width:14px;height:14px;-webkit-mask:var(--heart) center/contain no-repeat;mask:var(--heart) center/contain no-repeat;animation:fall linear forwards}
+.conf.st{-webkit-mask-image:var(--star);mask-image:var(--star)}
+.conf.dot{-webkit-mask:none;mask:none;border-radius:50%;width:9px;height:9px}
 @keyframes fall{from{transform:translate(0,0) rotate(0)}to{transform:translate(var(--dx),110vh) rotate(var(--rot))}}
 /* Onglets du bas */
 .page.with-tabs{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
@@ -440,7 +467,7 @@ button{font:inherit;color:inherit}
   .target.hit,.flash,.levelup,.stars svg.on{animation:none}
   .bike.spin .wheel{animation:none}
   .xpbar i{transition:none}
-  .marq,.can.wobble{animation:none}
+  .marq,.can.wobble,.mascot,.bulb.lit,.brand h1 .spark-txt{animation:none}
   .can.down{animation:none;opacity:0}
 }
 </style>
@@ -568,7 +595,7 @@ function illusMini(id) {
   return `<svg class="il il-mini" viewBox="0 0 160 120" aria-hidden="true"><rect class="il-bg" width="160" height="120" rx="14"/><line class="il-floor" x1="8" y1="112" x2="152" y2="112"/>${poseSVG(il.poses[1])}</svg>`;
 }
 
-const LEVELS = ['Ticket d’entrée', 'Premier lancer', 'Main sûre', 'As du chamboule-tout', 'Star de la fête', 'Légende de la foire'];
+const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Légende de la foire'];
 const LINES = {
   intro: ['Ici, la vitesse ne rapporte rien. Le contrôle, si.', 'Lentement. C’est comme ça qu’on gagne à ce jeu.', 'Respire, et laisse le cercle se remplir.', 'Un mouvement propre vaut mieux que trois rapides.'],
   rest: ['Récup. Bois une gorgée d’eau.', 'Relâche les épaules et souffle.', 'Belle série. On reprend dans un instant.', 'Secoue les jambes, détends la nuque.']
@@ -936,7 +963,7 @@ function confetti() {
   const colors = ['var(--ticket)', 'var(--prize)', 'var(--accent)', 'var(--ok)'];
   for (let i = 0; i < 60; i++) {
     const c = document.createElement('i');
-    c.className = 'conf';
+    c.className = 'conf' + (i % 3 === 1 ? ' st' : i % 3 === 2 ? ' dot' : '');
     c.style.left = Math.random() * 100 + '%';
     c.style.background = colors[i % colors.length];
     c.style.setProperty('--dx', (Math.random() * 160 - 80) + 'px');
@@ -1047,11 +1074,13 @@ function homeHTML() {
     main = `
     <header class="top">
       <div class="brand">
-        <h1>Chamboule<br>Coach</h1>
+        <h1>Chamboule<br>Coach<span class="spark-txt" aria-hidden="true">✦</span></h1>
         <p>Dos, fessiers, cardio. Un tap par répétition.</p>
       </div>
       ${gear}
     </header>
+
+    ${buddyHTML(buddyLine(), 'happy')}
 
     ${notices}
     ${backupReminderHTML()}
@@ -1076,7 +1105,7 @@ function homeHTML() {
     <section class="card week" aria-label="Cette semaine">
       <div class="week-head"><h2 class="section-title">Cette semaine</h2><p><b>${wk}</b> / ${goal} jours</p></div>
       <div class="bulbs" aria-hidden="true">${bulbs}</div>
-      <p class="week-meta">${wk >= goal ? 'Objectif atteint. Profite aussi des jours de repos, ils font partie du programme.' : `Chaque jour d’entraînement allume une ampoule, une seule par jour. Encore ${goal - wk} pour l’objectif.`}</p>
+      <p class="week-meta">${wk >= goal ? 'Objectif atteint. Profite aussi des jours de repos, ils font partie du programme.' : `Chaque jour d’entraînement remplit un cœur, un seul par jour. Encore ${goal - wk} pour l’objectif.`}</p>
       <button class="link-row" data-action="tab" data-tab="progress"><span>Défis de la semaine : <b>${chalWon} / 3</b> gagnés</span>${ICON.chev}</button>
     </section>
 
@@ -1146,6 +1175,31 @@ function unlockPanelHTML() {
       <button class="btn ghost" data-action="unlock-cancel">Plus tard</button>
     </div>
   </div>`;
+}
+
+function mascot(mood) {
+  const eyes = mood === 'calm'
+    ? '<path class="m-line" d="M16.5 31q3 2.6 6 0M29.5 31q3 2.6 6 0"/>'
+    : mood === 'wow'
+      ? '<circle class="m-eye" cx="19.5" cy="30" r="3"/><circle class="m-eye" cx="32.5" cy="30" r="3"/><circle class="m-shine" cx="20.6" cy="28.8" r="1"/><circle class="m-shine" cx="33.6" cy="28.8" r="1"/>'
+      : '<ellipse class="m-eye" cx="19.5" cy="30" rx="2.4" ry="2.9"/><ellipse class="m-eye" cx="32.5" cy="30" rx="2.4" ry="2.9"/><circle class="m-shine" cx="20.4" cy="28.9" r=".9"/><circle class="m-shine" cx="33.4" cy="28.9" r=".9"/>';
+  const mouth = mood === 'wow' ? '<ellipse class="m-mouth" cx="26" cy="38" rx="2.6" ry="3.1"/>' : '<path class="m-line" d="M22.6 36.5q3.4 3.6 6.8 0"/>';
+  return '<svg class="mascot" viewBox="0 0 52 62" aria-hidden="true">'
+    + '<rect class="m-body" x="7" y="15" width="38" height="45" rx="10"/><rect class="m-face" x="7" y="25" width="38" height="20"/>'
+    + '<rect class="m-rim" x="9" y="12" width="34" height="6" rx="3"/>'
+    + '<path class="m-bow" d="M26 9 15 3.5q-3 5.5 0 11zM26 9 37 3.5q3 5.5 0 11z"/><circle class="m-bow" cx="26" cy="9" r="3.4"/>'
+    + eyes + '<ellipse class="m-blush" cx="13.5" cy="36" rx="3.2" ry="2"/><ellipse class="m-blush" cx="38.5" cy="36" rx="3.2" ry="2"/>' + mouth + '</svg>';
+}
+function buddyHTML(text, mood, size) {
+  return `<div class="buddy ${size || ''}">${mascot(mood)}<p class="bubble"><b>Chouquette</b>${esc(text)}</p></div>`;
+}
+function buddyLine() {
+  const today = dayKey(new Date()), day = new Date().getDate();
+  const pickDay = arr => arr[day % arr.length];
+  if (!state.history.length) return 'Coucou, moi c’est Chouquette ! Fais tomber mes copines les boîtes… tout doucement.';
+  if (pendingNextDay()) return 'Coucou ! Dis-moi d’abord comment va ton dos ce matin.';
+  if (state.history.some(h => dayKey(h.d) === today)) return pickDay(['Bravo pour aujourd’hui ! Maintenant, repos et chouchoutage.', 'Séance faite, cœur rempli. Tu gères !', 'Ton dos te dit merci. À demain peut-être ?']);
+  return pickDay(['Une petite partie aujourd’hui ? Lentement, c’est comme ça qu’on gagne.', 'Je t’attends sur le stand, mes boîtes sont prêtes à tomber !', 'Même 3 minutes de respiration, ça compte.', 'Un cœur à remplir aujourd’hui ?']);
 }
 
 function lvlToken(n) {
@@ -1268,7 +1322,7 @@ function settingsHTML() {
         <button class="btn ghost" data-action="practice">Rejouer</button>
       </div>
       <div class="set-row">
-        <div><b>Jours d’entraînement par semaine</b><small>Le nombre d’ampoules à allumer. Une seule ampoule par jour.</small></div>
+        <div><b>Jours d’entraînement par semaine</b><small>Le nombre de cœurs à remplir. Un seul cœur par jour.</small></div>
         <div class="stepper"><button data-action="goal-dec" aria-label="Un jour de moins">−</button><output>${s.weeklyGoal}</output><button data-action="goal-inc" aria-label="Un jour de plus">+</button></div>
       </div>
     </section>
@@ -1468,7 +1522,7 @@ function introHTML(st) {
     <div class="cue">${illusFull(ex.id)}<p>${esc(ex.cue)}</p>${ex.tip ? `<p class="tip">${esc(ex.tip)}</p>` : ''}</div>
     ${hfCard}
     ${tempoNote}
-    <p class="coach">« ${esc(G.line)} »</p>
+    ${buddyHTML(G.line, 'happy', 'sm')}
     <div class="g-actions">
       <button class="btn primary big" data-action="go" data-autofocus>C’est parti</button>
       <button class="btn ghost" data-action="skip">Passer cet exercice</button>
@@ -1545,7 +1599,7 @@ function restHTML(st) {
   return `<div class="g-body g-center">
     <p class="eyebrow">Récupération</p>
     <p class="rest-clock" id="rclock">${rem}</p>
-    <p class="coach">« ${esc(G.line)} »</p>
+    ${buddyHTML(G.line, 'calm', 'sm')}
     <p class="next">À suivre : ${esc(ex.name)} · série ${st.set}/${st.sets}${st.side ? ' · ' + esc(sideText(ex, st.side)) : ''}</p>
     <div class="g-actions">
       <button class="btn primary big" data-action="go" data-autofocus>C’est reparti</button>
@@ -1657,7 +1711,7 @@ function tap() {
   const mult = rec.pts / 10;
   if (good) buzz(25); else { SFX.fast(); buzz([15, 40, 15]); }
   launch(good);
-  pop(good ? (G.setPerfect > G.nCans ? 'BONUS' : mult > 1 ? 'PARFAIT ×' + mult : 'PARFAIT') : 'RATÉ, TROP VITE', '+' + rec.pts, good, good ? null : 'Ralentis');
+  pop(good ? (G.setPerfect > G.nCans ? 'BONUS' : mult > 1 ? 'PARFAIT ×' + mult : 'PARFAIT ♥') : 'RATÉ, TROP VITE', '+' + rec.pts, good, good ? null : 'Ralentis');
   if (good && G.combo >= 3) sparks();
   hit(); refreshPlay();
   setText(G.el.live, `${G.count} sur ${targetLabel(ex)}, ${good ? 'parfait' : 'trop vite'}`);
@@ -1672,7 +1726,7 @@ function autoRep(now) {
   buzz(20);
   launch(true);
   if (ex.kind !== 'breath') say(String(G.count));
-  pop(rec.pts > 10 ? 'PARFAIT ×' + rec.pts / 10 : 'PARFAIT', '+' + rec.pts, true);
+  pop(rec.pts > 10 ? 'PARFAIT ×' + rec.pts / 10 : 'PARFAIT ♥', '+' + rec.pts, true);
   hit(); refreshPlay();
   setText(G.el.live, `${G.count} sur ${ex.target}`);
   if (G.count >= ex.target) finishSet();
@@ -1719,7 +1773,7 @@ function sparks() {
   const colors = ['var(--ticket)', 'var(--prize)', 'var(--accent)'];
   for (let i = 0; i < 12; i++) {
     const s = document.createElement('i');
-    s.className = 'spark';
+    s.className = 'spark' + (i % 3 === 0 ? ' st' : '');
     const a = (Math.PI * 2 * i) / 12, r = 90 + Math.random() * 50;
     s.style.setProperty('--dx', Math.cos(a) * r + 'px');
     s.style.setProperty('--dy', Math.sin(a) * r + 'px');
@@ -1730,7 +1784,7 @@ function sparks() {
 }
 
 /* Chamboule-tout : une pyramide de boîtes par série, une boîte par répétition parfaite. */
-const CAN_SVG = '<svg viewBox="0 0 20 26" preserveAspectRatio="none"><rect class="can-body" x="1" y="1.5" width="18" height="23" rx="3"/><rect class="can-band" x="1" y="9" width="18" height="8"/><rect class="can-rim" x="2" y="1" width="16" height="2.5" rx="1.2"/></svg>';
+const CAN_SVG = '<svg viewBox="0 0 20 26" preserveAspectRatio="none"><rect class="can-body" x="1" y="1.5" width="18" height="23" rx="3"/><rect class="can-band" x="1" y="9" width="18" height="8"/><path class="can-heart" d="M10 15.6 7.5 13.2a1.55 1.55 0 0 1 2.5-1.8 1.55 1.55 0 0 1 2.5 1.8z"/><rect class="can-rim" x="2" y="1" width="16" height="2.5" rx="1.2"/></svg>';
 function canRows(n) {
   const rows = []; let left = n, b = Math.ceil((Math.sqrt(8 * n + 1) - 1) / 2);
   while (left > 0) { const k = Math.min(b, left); rows.push(k); left -= k; b = Math.max(1, b - 1); }
@@ -1778,16 +1832,16 @@ function restoreCan(i) { const c = $('#can-' + i); if (c) c.classList.remove('do
 function finishSet() {
   const all = G.nCans > 0 && G.setPerfect >= G.nCans;
   if (all) G.pyramids++;
-  stepDone(all ? 'CHAMBOULÉ !' : 'SÉRIE OK', all ? 30 : 20);
+  stepDone(all ? 'CHAMBOULÉ !' : 'SÉRIE OK', all ? 30 : 20, all);
   if (all) { SFX.chamboule(); setTimeout(() => { if (G) sparks(); }, 300); }
 }
 
-function stepDone(label, pts) {
+function stepDone(label, pts, withMascot) {
   G.score += pts;
   setText(G.el.score, G.score);
   SFX.set(); buzz([30, 50, 60]);
   const fx = G.el.fx;
-  if (fx) { const f = document.createElement('div'); f.className = 'flash'; f.innerHTML = `<b>${esc(label)}</b><span>+${pts}</span>`; fx.appendChild(f); }
+  if (fx) { const f = document.createElement('div'); f.className = 'flash'; f.innerHTML = `${withMascot ? mascot('wow') : ''}<b>${esc(label)}</b><span>+${pts}</span>`; fx.appendChild(f); }
   sparks();
   G.flashUntil = performance.now() + 1150;
 }
@@ -1965,7 +2019,7 @@ function renderResult() {
       <p class="eyebrow">${pain ? 'Séance arrêtée' : (R.reason === 'early' ? 'Séance écourtée' : 'Séance terminée')} · ${esc((PROGRAMS[e.prog] || {}).name || '')}</p>
       <h1 class="res-title">${titles[pain ? 0 : e.stars]}</h1>
       ${starsHTML}
-      ${pain ? '' : `<p class="coach">« ${lines[e.stars]} »</p>`}
+      ${pain ? buddyHTML('Tu as bien fait de t’arrêter. Je garde tes points au chaud.', 'calm') : buddyHTML(lines[e.stars], e.stars === 3 ? 'wow' : 'happy')}
     </div>
     ${pain ? `<section class="notice danger"><b>Tu as eu raison de t’arrêter. Tu gardes tes points.</b><span>Une douleur qui descend dans la jambe ou des fourmillements, c’est le signal pour stopper. Parles-en à ton kiné avant la prochaine séance. Si ça ne passe pas ou si ça s’aggrave, consulte.</span></section>${redFlagsHTML(true)}` : ''}
     <section class="card set-card" aria-label="Ressenti après la séance">
@@ -1997,7 +2051,7 @@ function renderResult() {
     ${lvUp}
     ${(R.challenges || []).map(c => `<div class="notice good"><b>Défi réussi : ${esc(c.name)} · +50 XP</b><span>${esc(c.desc)}</span></div>`).join('')}
     ${badges}
-    ${R.sameDay ? '<div class="notice warn"><b>Deuxième séance aujourd’hui.</b><span>Elle ne rallume pas d’ampoule : ton dos a aussi besoin de jours de récupération.</span></div>' : ''}
+    ${R.sameDay ? '<div class="notice warn"><b>Deuxième séance aujourd’hui.</b><span>Elle ne remplit pas de nouveau cœur : ton dos a aussi besoin de jours de récupération.</span></div>' : ''}
     ${painExNames.length ? `<div class="notice warn"><b>Passé pour douleur, sans perte d’étoile</b><span>${esc(painExNames.join(', '))}. À signaler à ton kiné.</span></div>` : ''}
     <button class="btn primary big" data-action="home">Retour à l’accueil</button>
   </main>`;

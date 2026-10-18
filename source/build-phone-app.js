@@ -23,8 +23,8 @@ const html = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Ton coach sportif en mode jeu : dos, fessiers, cardio.">
-<meta name="theme-color" content="#EEF1FF" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E1233" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FFF1F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#2A0F28" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Chamboule">
@@ -51,7 +51,8 @@ if ('serviceWorker' in navigator) addEventListener('load', () => navigator.servi
 fs.writeFileSync(path.join(OUT, 'index.html'), html);
 
 /* ---------- Icônes (dessinées ici, sans dépendance) ---------- */
-const C = { blue: [0x2d, 0x3b, 0xd1], white: [255, 255, 255], yellow: [0xff, 0xc2, 0x3d], deep: [0xc7, 0x8e, 0x0e], pink: [0xd9, 0x2a, 0x64], light: [0xee, 0xf1, 0xff] };
+// Fond framboise, auvent blanc, cible jaune beurre, boîtes lilas.
+const C = { blue: [0xc9, 0x3b, 0x7b], white: [255, 255, 255], yellow: [0xff, 0xd2, 0x5e], deep: [0xd9, 0xa2, 0x1e], pink: [0x84, 0x55, 0xe8], light: [0xff, 0xf1, 0xf7] };
 const inRoundRect = (x, y, x0, y0, w, h, r) => {
   const cx = Math.min(Math.max(x, x0 + r), x0 + w - r), cy = Math.min(Math.max(y, y0 + r), y0 + h - r);
   return x >= x0 && x <= x0 + w && y >= y0 && y <= y0 + h && (x - cx) ** 2 + (y - cy) ** 2 <= r * r;
@@ -126,8 +127,8 @@ fs.writeFileSync(path.join(OUT, 'manifest.webmanifest'), JSON.stringify({
   scope: './',
   display: 'standalone',
   orientation: 'portrait',
-  background_color: '#EEF1FF',
-  theme_color: '#EEF1FF',
+  background_color: '#FFF1F7',
+  theme_color: '#FFF1F7',
   icons: [
     { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
     { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
