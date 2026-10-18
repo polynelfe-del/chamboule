@@ -1,5 +1,5 @@
 // Généré par build-phone-app.js
-const CACHE = 'chamboule-c8721c39d2';
+const CACHE = 'chamboule-c20cb46d74';
 const FONTS = 'chamboule-fonts';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-512-maskable.png', './apple-touch-icon.png'];
 

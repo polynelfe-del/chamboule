@@ -403,7 +403,17 @@ button{font:inherit;color:inherit}
 #confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:20}
 .conf{position:absolute;top:-20px;width:9px;height:15px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{from{transform:translate(0,0) rotate(0)}to{transform:translate(var(--dx),110vh) rotate(var(--rot))}}
-#toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:14px;font-weight:800;font-size:14px;width:max-content;max-width:calc(100% - 32px);z-index:30;box-shadow:var(--shadow);text-align:center}
+/* Onglets du bas */
+.page.with-tabs{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:color-mix(in srgb,var(--surface) 94%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));padding-block:6px calc(6px + env(safe-area-inset-bottom,0px))}
+.tabbar-in{max-width:600px;margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;padding:6px 4px;border-radius:12px;font-weight:800;font-size:13px;color:var(--ink-2);cursor:pointer;min-height:54px}
+.tab svg{width:24px;height:24px}
+.tab[aria-current="page"]{color:var(--accent);background:var(--surface-2)}
+.link-row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:var(--surface-2);border:0;border-radius:12px;padding:10px 12px;font-weight:700;color:var(--ink);cursor:pointer;min-height:44px;text-align:left}
+.link-row b{font-weight:900;color:var(--prize)}
+.notice .row-btns{margin-top:6px}
+#toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:14px;font-weight:800;font-size:14px;width:max-content;max-width:calc(100% - 32px);z-index:30;box-shadow:var(--shadow);text-align:center}
 
 @media (prefers-reduced-motion: reduce){
   .pop{animation:none;transform:translate(-50%,0)}
@@ -580,6 +590,9 @@ const ICON = {
   back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
   chev: '<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>',
   play: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>',
+  tPlay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg>',
+  tTrophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/></svg>',
+  tBook: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12.5 8h3.5M12.5 12h3.5"/></svg>',
   lock: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
   sound: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
   mute: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>',
@@ -613,19 +626,71 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null }, badges: {}, challenges: {}, history: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, lastExport: null, exportSnooze: null }, badges: {}, challenges: {}, history: [] };
+}
+/* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
+   aucune valeur lue n’arrive telle quelle dans la page. */
+const EX_IDS = new Set(Object.keys(EX));
+const BADGE_IDS = new Set(BADGES.map(b => b.id));
+const CHAL_IDS = new Set(CHALLENGES.map(c => c.id));
+const BACKS = ['ok', 'sensible', 'douleur', 'stop'];
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+function numOr(v, lo, hi, dflt, int) {
+  if (v === null || v === undefined || v === '' || typeof v === 'boolean') return dflt;
+  let n = Number(v);
+  if (!Number.isFinite(n)) return dflt;
+  if (int) n = Math.round(n);
+  return Math.min(hi, Math.max(lo, n));
+}
+function isoOr(v) { if (typeof v !== 'string') return null; const t = Date.parse(v); return Number.isFinite(t) ? new Date(t).toISOString() : null; }
+function cleanDayMap(m, allowed) {
+  const out = {};
+  if (m && typeof m === 'object') for (const [k, v] of Object.entries(m)) if (allowed.has(k) && typeof v === 'string' && DAY_RE.test(v)) out[k] = v;
+  return out;
+}
+function cleanEntry(h) {
+  if (!h || typeof h !== 'object') return null;
+  const d = isoOr(h.d); if (!d) return null;
+  const ids = a => Array.isArray(a) ? [...new Set(a.filter(x => typeof x === 'string' && EX_IDS.has(x)))] : [];
+  const prog = typeof h.prog === 'string' && Object.prototype.hasOwnProperty.call(PROGRAMS, h.prog) && !PROGRAMS[h.prog].practice ? h.prog : 'dos';
+  return {
+    id: typeof h.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(h.id) ? h.id : 's' + Date.parse(d).toString(36),
+    d, prog,
+    score: numOr(h.score, 0, 1e6, 0, true), xp: numOr(h.xp, 0, 1e5, null, true),
+    stars: numOr(h.stars, 0, 3, 0, true), perfect: numOr(h.perfect, 0, 1e4, 0, true), reps: numOr(h.reps, 0, 1e4, 0, true),
+    combo: numOr(h.combo, 0, 1e4, 0, true), veloMin: numOr(h.veloMin, 0, 600, 0, false), pyramids: numOr(h.pyramids, 0, 1000, 0, true),
+    skipped: ids(h.skipped), painEx: ids(h.painEx),
+    stop: h.stop === true, back: BACKS.includes(h.back) ? h.back : null, hf: h.hf === true,
+    painBefore: numOr(h.painBefore, 0, 10, null, true), legBefore: h.legBefore === true,
+    pain: numOr(h.pain, 0, 10, null, true), leg: typeof h.leg === 'boolean' ? h.leg : null,
+    next: numOr(h.next, 0, 10, null, true), nextAt: isoOr(h.nextAt),
+    durS: numOr(h.durS, 0, 86400, 0, true)
+  };
+}
+function cleanSettings(s, d) {
+  s = s && typeof s === 'object' ? s : {};
+  return {
+    sets: numOr(s.sets, 1, 3, d.sets, true), veloMin: numOr(s.veloMin, 3, 45, d.veloMin, true), weeklyGoal: numOr(s.weeklyGoal, 1, 7, d.weeklyGoal, true),
+    sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
+    bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
+    lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze)
+  };
 }
 function normalize(raw) {
   const d = defaultState();
   if (!raw || typeof raw !== 'object') return d;
+  const challenges = {};
+  if (raw.challenges && typeof raw.challenges === 'object') {
+    for (const [k, v] of Object.entries(raw.challenges)) if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(k)) challenges[k] = cleanDayMap(v, CHAL_IDS);
+  }
   return {
     v: 1,
-    xp: Math.max(0, Number(raw.xp) || 0),
-    bestCombo: Number(raw.bestCombo) || 0,
-    settings: { ...d.settings, ...(raw.settings && typeof raw.settings === 'object' ? raw.settings : {}) },
-    badges: raw.badges && typeof raw.badges === 'object' ? { ...raw.badges } : {},
-    challenges: raw.challenges && typeof raw.challenges === 'object' ? JSON.parse(JSON.stringify(raw.challenges)) : {},
-    history: Array.isArray(raw.history) ? raw.history.filter(h => h && h.d).slice(0, 300).map(h => ({ ...h })) : []
+    xp: numOr(raw.xp, 0, 1e7, 0, true),
+    bestCombo: numOr(raw.bestCombo, 0, 1e4, 0, true),
+    settings: cleanSettings(raw.settings, d.settings),
+    badges: cleanDayMap(raw.badges, BADGE_IDS),
+    challenges,
+    history: Array.isArray(raw.history) ? raw.history.slice(0, 300).map(cleanEntry).filter(Boolean) : []
   };
 }
 function lsGet() { try { const t = localStorage.getItem(LS); return t ? JSON.parse(t) : null; } catch { return null; } }
@@ -661,6 +726,10 @@ function persistSoon() { clearTimeout(persistTimer); persistTimer = setTimeout(p
 async function initStore() {
   const local = lsGet();
   if (local) state = normalize(local);
+  if (!window.claude) {
+    // Appli du téléphone : on demande au système de ne pas effacer le stockage en cas de manque de place.
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => p || navigator.storage.persist()).catch(() => {}); } catch {}
+  }
   renderScreen();
   const c = window.claude;
   if (!c || typeof c.use !== 'function') return;
@@ -878,7 +947,7 @@ function legHTML(action, value) {
 }
 
 /* ---------- Écrans ---------- */
-const ui = { screen: 'home', unlockOpen: false, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null };
+const ui = { screen: 'home', unlockOpen: false, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play' };
 
 function renderScreen(opts = {}) {
   if (ui.screen === 'home') app.innerHTML = homeHTML();
@@ -918,18 +987,53 @@ function homeHTML() {
     notices += `<div class="notice good"><b>${run} séances de suite sans douleur.</b><span>Demande à ton kiné si tu peux passer à 2 séries. Le réglage est dans les réglages.</span></div>`;
   }
   const earned = BADGES.filter(b => state.badges[b.id]).length;
-  return `
-  <div class="awning" aria-hidden="true"></div>
-  <main class="page">
+  const gear = `<button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button>`;
+  const wkDone = (state.challenges || {})[weekKey(new Date())] || {};
+  const chalWon = weekChallenges(new Date()).filter(c => wkDone[c.id]).length;
+  let main;
+  if (ui.tab === 'progress') {
+    main = `
+    <header class="top"><div class="brand"><h1>Progrès</h1><p>Défis, badges et régularité.</p></div>${gear}</header>
+    ${challengesHTML()}
+    <section aria-label="Badges">
+      <div class="badges-head"><h2 class="section-title">Badges</h2><p>${earned} / ${BADGES.length}</p></div>
+      <div class="badges">${BADGES.map(badgeHTML).join('')}</div>
+    </section>
+    <section aria-label="Jours d’entraînement par semaine">
+      <h2 class="section-title">Jours d’entraînement par semaine</h2>
+      ${chartHTML()}
+    </section>`;
+  } else if (ui.tab === 'log') {
+    main = `
+    <header class="top"><div class="brand"><h1>Carnet</h1><p>Tes séances et ta douleur, pour toi et ton kiné.</p></div>${gear}</header>
+    <section aria-label="Historique">
+      <h2 class="section-title">Historique</h2>
+      ${historyHTML()}
+    </section>
+    <section class="rules" aria-label="Règles du jeu">
+      <h2 class="section-title">Les règles du jeu</h2>
+      <ul>
+        <li>Le cercle se remplit pendant ta répétition. Tape quand il est jaune, un bip te prévient : la balle part et <b>fait tomber une boîte</b>. Trop tôt, elle rate.</li>
+        <li>Toute la pyramide par terre : bonus <b>Chamboulé</b>. Plus lent, c’est toujours parfait.</li>
+        <li>Allongé ou à quatre pattes, active <b>Mains libres</b> : l’appli rythme et compte pour toi, à voix haute.</li>
+        <li>Douleur qui descend dans la jambe ou fourmillements : <b>on arrête tout de suite</b> avec le bouton Douleur. Tu gardes tes points.</li>
+        <li>Un exercice passé pour douleur ne coûte aucune étoile.</li>
+        <li>Ces programmes sont à faire valider par ton kiné.</li>
+      </ul>
+    </section>
+    <p class="foot">${mode === 'cloud' ? 'Progression sauvegardée sur ton compte, sur tous tes appareils.' : window.claude ? 'Progression sauvegardée dans ce navigateur.' : 'Progression gardée dans ce téléphone. Pense à l’exporter de temps en temps (Réglages).'}</p>`;
+  } else {
+    main = `
     <header class="top">
       <div class="brand">
         <h1>Chamboule<br>Coach</h1>
         <p>Dos, fessiers, cardio. Un tap par répétition.</p>
       </div>
-      <button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button>
+      ${gear}
     </header>
 
     ${notices}
+    ${backupReminderHTML()}
 
     <section class="card player" aria-label="Ta progression">
       <div class="player-top">
@@ -952,47 +1056,27 @@ function homeHTML() {
       <div class="week-head"><h2 class="section-title">Cette semaine</h2><p><b>${wk}</b> / ${goal} jours</p></div>
       <div class="bulbs" aria-hidden="true">${bulbs}</div>
       <p class="week-meta">${wk >= goal ? 'Objectif atteint. Profite aussi des jours de repos, ils font partie du programme.' : `Chaque jour d’entraînement allume une ampoule, une seule par jour. Encore ${goal - wk} pour l’objectif.`}</p>
+      <button class="link-row" data-action="tab" data-tab="progress"><span>Défis de la semaine : <b>${chalWon} / 3</b> gagnés</span>${ICON.chev}</button>
     </section>
-
-    ${challengesHTML()}
 
     <section class="programs" aria-label="Tes programmes">
       <h2 class="section-title">Tes programmes</h2>
       ${PROG_ORDER.map(ticketHTML).join('')}
     </section>
 
-    ${redFlagsHTML(false)}
-
-    <section aria-label="Badges">
-      <div class="badges-head"><h2 class="section-title">Badges</h2><p>${earned} / ${BADGES.length}</p></div>
-      <div class="badges">${BADGES.map(badgeHTML).join('')}</div>
-    </section>
-
-    <section aria-label="Jours d’entraînement par semaine">
-      <h2 class="section-title">Jours d’entraînement par semaine</h2>
-      ${chartHTML()}
-    </section>
-
-    <section aria-label="Historique">
-      <h2 class="section-title">Historique</h2>
-      ${historyHTML()}
-    </section>
-
-    <section class="rules" aria-label="Règles du jeu">
-      <h2 class="section-title">Les règles du jeu</h2>
-      <ul>
-        <li>Le cercle se remplit pendant ta répétition. Tape quand il est jaune, un bip te prévient : la balle part et <b>fait tomber une boîte</b>. Trop tôt, elle rate.</li>
-        <li>Toute la pyramide par terre : bonus <b>Chamboulé</b>. Plus lent, c’est toujours parfait.</li>
-        <li>Allongé ou à quatre pattes, active <b>Mains libres</b> : l’appli rythme et compte pour toi, à voix haute.</li>
-        <li>Douleur qui descend dans la jambe ou fourmillements : <b>on arrête tout de suite</b> avec le bouton Douleur. Tu gardes tes points.</li>
-        <li>Un exercice passé pour douleur ne coûte aucune étoile.</li>
-        <li>Ces programmes sont à faire valider par ton kiné.</li>
-      </ul>
-    </section>
-
-    <p class="foot">${mode === 'cloud' ? 'Progression sauvegardée sur ton compte, sur tous tes appareils.' : 'Progression sauvegardée dans ce navigateur.'}</p>
+    ${redFlagsHTML(false)}`;
+  }
+  return `
+  <div class="awning" aria-hidden="true"></div>
+  <main class="page with-tabs">${main}
   </main>
+  ${tabbarHTML()}
   ${ui.sheet ? exSheetHTML(ui.sheet) : ''}`;
+}
+
+function tabbarHTML() {
+  const t = (id, label, icon) => `<button class="tab" data-action="tab" data-tab="${id}"${ui.tab === id ? ' aria-current="page"' : ''}>${icon}<span>${label}</span></button>`;
+  return `<nav class="tabbar" aria-label="Sections"><div class="tabbar-in">${t('play', 'Jouer', ICON.tPlay)}${t('progress', 'Progrès', ICON.tTrophy)}${t('log', 'Carnet', ICON.tBook)}</div></nav>`;
 }
 
 function ticketHTML(id) {
@@ -1116,9 +1200,9 @@ function historyHTML() {
   const li = items.map(h => {
     const p = PROGRAMS[h.prog] || { name: h.prog };
     const bits = [];
-    if (backCat(h) !== 'stop') bits.push(miniStars(h.stars || 0));
-    bits.push(`+${h.xp ?? h.score ?? 0} XP`);
-    if (h.painBefore != null || h.pain != null) bits.push(`· douleur ${h.painBefore ?? '?'}→${h.pain ?? '?'}${h.next != null ? ' · lendemain ' + h.next : ''}`);
+    if (backCat(h) !== 'stop') bits.push(miniStars(Number(h.stars) || 0));
+    bits.push(`+${esc(h.xp ?? h.score ?? 0)} XP`);
+    if (h.painBefore != null || h.pain != null) bits.push(`· douleur ${esc(h.painBefore ?? '?')}→${esc(h.pain ?? '?')}${h.next != null ? ' · lendemain ' + esc(h.next) : ''}`);
     if (h.veloMin) bits.push(`· vélo ${fmtMin(h.veloMin)} min`);
     return `<li><span class="h-date">${esc(fmtDate(h.d))}</span><div class="h-main"><b>${esc(p.name)}</b><span>${bits.join(' ')}</span></div>${backChip(h)}</li>`;
   }).join('');
@@ -1265,7 +1349,7 @@ function summaryHTML() {
     <pre class="summary" id="sum-text" tabindex="0">${esc(kineSummary())}</pre>
     <div class="btn-col">
       <button class="btn primary big" data-action="sum-copy">Copier le texte</button>
-      ${canSave() ? '<button class="btn ghost" data-action="sum-dl">Télécharger (.txt)</button>' : ''}
+      ${canSave() ? `<button class="btn ghost" data-action="sum-dl">${window.claude ? 'Télécharger (.txt)' : 'Enregistrer en fichier (.txt)'}</button>` : ''}
       ${(!window.claude && navigator.share) ? '<button class="btn ghost" data-action="sum-share">Partager</button>' : ''}
     </div>
   </main>`;
@@ -1929,11 +2013,20 @@ function endPractice() {
   if (next) openPrecheck(next); else goHome();
   toast(perfect >= 3 ? 'Bien lancé ! Tu as compris le principe.' : 'Retiens bien : attends le jaune avant de taper.');
 }
-/* Dans Claude, un fichier passe par la capacité de téléchargement. Dans l’appli du téléphone, par un lien classique. */
+/* Dans Claude, un fichier passe par la capacité de téléchargement.
+   Dans l’appli du téléphone, par le menu de partage (Fichiers, Mail...), sinon par un lien classique. */
 function canSave() { return !!downloadsApi || !window.claude; }
 function saveFile(name, text, type) {
   if (downloadsApi) return downloadsApi.save({ filename: name, data: text });
   if (window.claude) return Promise.reject({ code: 'unavailable' });
+  try {
+    const file = new File([text], name, { type });
+    if (navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+      return navigator.share({ files: [file], title: name }).then(
+        () => ({ status: 'shared' }),
+        e => { throw { code: e && e.name === 'AbortError' ? 'declined' : 'unavailable' }; });
+    }
+  } catch {}
   try {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type }));
@@ -1941,6 +2034,17 @@ function saveFile(name, text, type) {
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     return Promise.resolve({ status: 'saved' });
   } catch { return Promise.reject({ code: 'unavailable' }); }
+}
+function backupDue() {
+  if (window.claude || state.history.length < 3) return false;
+  const s = state.settings, now = Date.now();
+  if (s.exportSnooze && now < Date.parse(s.exportSnooze)) return false;
+  return !s.lastExport || now - Date.parse(s.lastExport) > 30 * 86400000;
+}
+function backupReminderHTML() {
+  if (!backupDue()) return '';
+  return `<div class="notice warn"><b>Pense à sauvegarder ta progression.</b><span>Tes séances ne sont que dans ce téléphone. Exporte un fichier de sauvegarde et range-le dans tes fichiers ou envoie-le-toi par mail.</span>
+    <div class="row-btns"><button class="btn primary" data-action="export">Exporter maintenant</button><button class="btn ghost" data-action="backup-later">Plus tard</button></div></div>`;
 }
 const ACTIONS = {
   settings() { ui.screen = 'settings'; ui.resetArm = false; ui.nextMsg = null; renderScreen(); window.scrollTo(0, 0); },
@@ -1953,9 +2057,17 @@ const ACTIONS = {
   practice() { ui.afterPractice = null; startGame('essai', null); },
   export() {
     saveFile('chamboule-sauvegarde-' + dayKey(new Date()) + '.json', JSON.stringify(body(), null, 1), 'application/json')
-      .then(() => toast('Sauvegarde exportée.'))
+      .then(() => {
+        state.settings.lastExport = new Date().toISOString(); state.settings.exportSnooze = null;
+        persist(); renderScreen({ still: true }); toast('Sauvegarde exportée.');
+      })
       .catch(e => { if (!e || e.code !== 'declined') toast('Export impossible ici.'); });
   },
+  'backup-later'() {
+    state.settings.exportSnooze = new Date(Date.now() + 7 * 86400000).toISOString();
+    persist(); renderScreen({ still: true });
+  },
+  tab(b) { ui.tab = b.dataset.tab; ui.sheet = null; ui.nextMsg = null; renderScreen({ still: true }); window.scrollTo(0, 0); },
   'import-confirm'() {
     if (!ui.importData) return;
     state = ui.importData; ui.importData = null;
@@ -2036,8 +2148,9 @@ const ACTIONS = {
     if (!G) return;
     const ex = G.steps[G.i].ex;
     if (G.phase === 'intro' && ex.kind === 'timer') { G.phase = 'timer'; G.lastMin = null; renderGame(); return; }
-    if (G.hf && ex.kind !== 'breath') say('C’est parti');
     beginPlay();
+    // iOS ne laisse parler l’appli que si la première phrase part d’un toucher : on parle ici, tout de suite.
+    if (G.hf) { if (ex.kind === 'breath') { say('Inspire'); G.cue = 1; } else say('C’est parti'); }
   },
   'hf-game'() { if (!G) return; G.hf = !G.hf; state.settings.handsFree = G.hf; persistSoon(); if (G.hf) say('Mains libres activé'); renderGame(); },
   mute() { if (!G) return; state.settings.sound = !state.settings.sound; persistSoon(); if (!state.settings.sound) hush(); renderGame(); },
