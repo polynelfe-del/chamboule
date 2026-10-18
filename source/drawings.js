@@ -1,0 +1,142 @@
+/* Chamboule Coach : dessins (exercices, icônes, Chouquette, boîtes). Que des chaînes SVG, aucun accès à la page. */
+
+/* ---------- Illustrations (pictogrammes dessinés : départ puis mouvement) ---------- */
+const Q = {
+  head: [110, 68], neck: [[96, 74], [104, 70]], torso: [[60, 81], [96, 74]],
+  armN: [[96, 74], [97, 91], [97, 108]], armF: [[93, 74], [92, 91], [92, 108]],
+  legN: [[60, 81], [60, 107], [37, 107]], legF: [[57, 81], [55, 107], [33, 107]]
+};
+const SUP = { head: [40, 103], neck: [[47, 105], [50, 106]], torso: [[50, 106], [88, 106]],
+  legN: [[88, 106], [104, 86], [118, 107]], legF: [[88, 106], [101, 87], [114, 107]], arm: [[50, 107], [66, 108], [80, 108]] };
+const BIKE = '<g class="il-bike"><path d="M74 108 V68 M66 64 H82 M108 108 L110 54 M104 52 H118 M62 110 H122 M74 96 L92 92"/><circle cx="92" cy="92" r="13"/></g>';
+const BENCH = '<rect class="il-prop" x="12" y="86" width="34" height="26" rx="3"/>';
+const up = (x, y1, y2) => `<path class="il-arrow" d="M${x} ${y1} V${y2} M${x - 5} ${y2 + 5} L${x} ${y2} L${x + 5} ${y2 + 5}"/>`;
+const down = (x, y1, y2) => `<path class="il-arrow" d="M${x} ${y1} V${y2} M${x - 5} ${y2 - 5} L${x} ${y2} L${x + 5} ${y2 - 5}"/>`;
+
+const ILLUS = {
+  transverse: { labels: ['Inspire : ventre gonflé', 'Expire : ventre rentré'], poses: [
+    { h: SUP.head, b: [SUP.neck, SUP.torso], f: [SUP.legF], n: [SUP.legN, SUP.arm], over: '<path class="il-cue" d="M58 99 Q72 84 86 99"/>' + up(72, 82, 70) },
+    { h: SUP.head, b: [SUP.neck, SUP.torso], f: [SUP.legF], n: [SUP.legN, SUP.arm], over: '<path class="il-cue" d="M58 100 Q72 96 86 100"/>' + down(72, 70, 82) }
+  ]},
+  birddog: { labels: ['Départ, dos plat', 'Bras et jambe opposés'], poses: [
+    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN] },
+    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF], n: [Q.legN], a: [[[96, 74], [114, 71], [132, 69]], [[60, 81], [36, 79], [12, 78]]] }
+  ]},
+  pont: { labels: ['Départ, dos au sol', 'Monte sans cambrer'], poses: [
+    { h: SUP.head, b: [SUP.neck, SUP.torso], f: [SUP.legF], n: [SUP.legN, SUP.arm] },
+    { h: SUP.head, b: [SUP.neck], f: [[[86, 91], [104, 84], [114, 107]]], n: [[[108, 83], [118, 107]], SUP.arm], a: [[[50, 106], [86, 91], [108, 83]]], over: up(86, 110, 99) }
+  ]},
+  velo: { labels: ['Buste peu penché', 'Pédale en souplesse'], poses: [
+    { prop: BIKE, h: [88, 16], b: [[[74, 62], [84, 30]], [[84, 30], [86, 24]]], f: [[[83, 31], [95, 42], [106, 52]], [[74, 62], [90, 80], [87, 101]]], n: [[[84, 30], [97, 40], [108, 51]]], a: [[[74, 62], [96, 58], [97, 83]]], over: '<path class="il-crank" d="M97 83 L87 101"/>' },
+    { prop: BIKE, h: [88, 16], b: [[[74, 62], [84, 30]], [[84, 30], [86, 24]]], f: [[[83, 31], [95, 42], [106, 52]], [[74, 62], [96, 58], [97, 83]]], n: [[[84, 30], [97, 40], [108, 51]]], a: [[[74, 62], [90, 80], [87, 101]]], over: '<path class="il-crank" d="M97 83 L87 101"/>' }
+  ]},
+  hipthrust: { labels: ['Hanches basses', 'Pousse, serre les fesses'], poses: [
+    { prop: BENCH, h: [31, 76], b: [[[44, 82], [38, 79]], [[44, 82], [70, 100]]], f: [[[70, 100], [89, 85], [96, 108]]], n: [[[70, 100], [92, 84], [100, 108]], [[44, 82], [30, 82], [18, 82]]] },
+    { prop: BENCH, h: [31, 76], b: [[[44, 82], [38, 79]]], f: [[[78, 80], [99, 81], [100, 108]]], n: [[[102, 80], [104, 108]], [[44, 82], [30, 82], [18, 82]]], a: [[[44, 82], [78, 80], [102, 80]]], over: up(78, 108, 94) }
+  ]},
+  fentes: { labels: ['Debout', 'Recule et descends'], poses: [
+    { h: [80, 12], b: [[[80, 21], [80, 60]]], f: [[[78, 60], [77, 84], [76, 108], [84, 108]]], n: [[[80, 60], [81, 84], [82, 108], [90, 108]], [[80, 27], [91, 42], [84, 56]]] },
+    { h: [78, 31], b: [[[78, 40], [78, 80]]], n: [[[78, 80], [102, 84], [104, 108], [112, 108]], [[78, 46], [89, 60], [82, 74]]], a: [[[78, 80], [66, 104], [44, 106]]], over: down(130, 30, 48) }
+  ]},
+  donkey: { labels: ['Départ, dos plat', 'Talon vers le plafond'], poses: [
+    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN] },
+    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF, Q.legF], n: [Q.armN], a: [[[60, 81], [35, 80], [34, 56]]], over: up(20, 72, 56) }
+  ]},
+  sumo: { labels: ['Vue de face', 'Descends, genoux ouverts'], poses: [
+    { h: [80, 12], b: [[[80, 21], [80, 60]], [[66, 28], [94, 28]], [[72, 60], [88, 60]]], n: [[[72, 60], [62, 84], [54, 108], [46, 110]], [[88, 60], [98, 84], [106, 108], [114, 110]], [[66, 28], [63, 44], [80, 50]], [[94, 28], [97, 44], [80, 50]]] },
+    { h: [80, 32], b: [[[80, 41], [80, 80]], [[66, 48], [94, 48]], [[72, 80], [88, 80]]], n: [[[66, 48], [63, 64], [80, 70]], [[94, 48], [97, 64], [80, 70]]], a: [[[72, 80], [52, 88], [54, 108], [46, 110]], [[88, 80], [108, 88], [106, 108], [114, 110]]], over: down(136, 34, 52) }
+  ]},
+  hydrant: { labels: ['Vue de dos', 'Ouvre le genou sur le côté'], poses: [
+    { h: [80, 55], f: [[[66, 70], [64, 108]], [[94, 70], [96, 108]]], n: [[[71, 82], [71, 106]], [[89, 82], [89, 106]]], over: '<rect class="il-mass" x="66" y="64" width="28" height="22" rx="9"/>' },
+    { h: [80, 55], f: [[[66, 70], [64, 108]], [[94, 70], [96, 108]]], n: [[[71, 82], [71, 106]]], a: [[[89, 82], [118, 90]]], over: '<rect class="il-mass" x="66" y="64" width="28" height="22" rx="9"/><path class="il-arrow" d="M104 62 L122 62 M117 57 L122 62 L117 67"/>' }
+  ]}
+};
+
+const SUP2 = { head: [40, 103], neck: [[47, 105], [50, 106]], torso: [[50, 106], [88, 106]], legN: [[88, 106], [104, 86], [118, 107]], legF: [[88, 106], [101, 87], [114, 107]], arm: [[50, 107], [66, 108], [80, 108]] };
+const CHAIR = '<path class="il-prop" d="M58 74h44v6H58z"/><path class="il-bike" d="M61 80v32M99 80v32"/>';
+Object.assign(ILLUS, {
+  chatvache: { labels: ['Dos rond, on expire', 'Dos creux, on inspire'], poses: [
+    { h: [106, 85], b: [[[96, 74], [101, 80]]], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN], a: [[[60, 81], [78, 63], [96, 74]]], over: '<path class="il-arrow" d="M78 54 V44 M73 49 L78 44 L83 49"/>' },
+    { h: [111, 64], b: [[[96, 73], [104, 68]]], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN], a: [[[60, 80], [78, 84], [96, 73]]], over: '<path class="il-arrow" d="M78 62 V72 M73 67 L78 72 L83 67"/>' }
+  ]},
+  rotation: { labels: ['Assis, dos long', 'Tourne doucement'], poses: [
+    { prop: CHAIR, h: [80, 20], b: [[[80, 29], [80, 70]], [[64, 38], [96, 38]], [[70, 72], [90, 72]]], n: [[[70, 72], [68, 86], [68, 110]], [[90, 72], [92, 86], [92, 110]], [[64, 38], [72, 50], [92, 46]], [[96, 38], [88, 50], [68, 46]]] },
+    { prop: CHAIR, h: [84, 20], b: [[[80, 29], [80, 70]], [[70, 72], [90, 72]]], n: [[[70, 72], [68, 86], [68, 110]], [[90, 72], [92, 86], [92, 110]]], a: [[[70, 39], [94, 37]], [[70, 39], [76, 50], [92, 45]], [[94, 37], [89, 50], [74, 46]]], over: '<path class="il-arrow" d="M62 10 Q80 0 98 10 M93 5 L98 10 L92 13"/>' }
+  ]},
+  thorax: { labels: ['Coudes rapprochés', 'Ouvre les coudes'], poses: [
+    { h: [80, 16], b: [[[80, 25], [80, 64]], [[66, 32], [94, 32]], [[72, 64], [88, 64]]], n: [[[72, 64], [70, 110]], [[88, 64], [90, 110]], [[66, 32], [72, 22], [78, 14]], [[94, 32], [88, 22], [82, 14]]] },
+    { h: [80, 16], b: [[[80, 25], [80, 64]], [[66, 32], [94, 32]], [[72, 64], [88, 64]]], n: [[[72, 64], [70, 110]], [[88, 64], [90, 110]]], a: [[[66, 32], [50, 22], [73, 12]], [[94, 32], [110, 22], [87, 12]]], over: '<path class="il-arrow" d="M44 34 L34 34 M39 29 L34 34 L39 39 M116 34 L126 34 M121 29 L126 34 L121 39"/>' }
+  ]},
+  gainage: { labels: ['Ventre relâché', 'Nombril rentré, tiens'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm], over: '<path class="il-cue" d="M58 100 Q72 89 86 100"/>' },
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm], over: '<path class="il-cue" d="M58 101 Q72 97 86 101"/>' + '<path class="il-arrow" d="M72 72 V84 M67 79 L72 84 L77 79"/><text class="il-t" x="104" y="62" text-anchor="middle">8 s</text>' }
+  ]},
+  planche: { labels: ['Sur les avant-bras et genoux', 'Dos droit, tiens'], poses: [
+    { h: [112, 85], b: [[[56, 82], [100, 90]], [[100, 90], [106, 87]]], n: [[[100, 90], [100, 107], [120, 107]], [[56, 82], [56, 107], [34, 100]]] },
+    { h: [112, 85], b: [[[100, 90], [106, 87]]], n: [[[100, 90], [100, 107], [120, 107]], [[50, 105], [30, 96]]], a: [[[100, 90], [75, 97.5], [50, 105]]], over: '<text class="il-t" x="76" y="74" text-anchor="middle">12 s</text>' }
+  ]},
+  marche: { labels: ['Pas souple', 'Bras relâchés'], poses: [
+    { h: [81, 12], b: [[[80, 21], [80, 60]]], f: [[[80, 60], [72, 84], [62, 106], [69, 108]], [[80, 28], [72, 44], [70, 58]]], n: [[[80, 28], [88, 43], [94, 56]]], a: [[[80, 60], [90, 84], [96, 108], [104, 108]]] },
+    { h: [81, 12], b: [[[80, 21], [80, 60]]], f: [[[80, 60], [90, 84], [96, 106], [103, 108]], [[80, 28], [88, 43], [94, 56]]], n: [[[80, 28], [72, 44], [70, 58]]], a: [[[80, 60], [72, 84], [62, 108], [70, 108]]] }
+  ]}
+});
+function poseSVG(p) {
+  const pl = list => (list || []).map(pts => `<polyline points="${pts.map(q => q.join(',')).join(' ')}"/>`).join('');
+  return `${p.prop || ''}<g class="il-far">${pl(p.f)}</g><g class="il-body">${pl(p.b)}${pl(p.n)}</g><g class="il-move">${pl(p.a)}</g><circle class="il-head" cx="${p.h[0]}" cy="${p.h[1]}" r="8"/>${p.over || ''}`;
+}
+function illusFull(id, cls) {
+  const il = ILLUS[id]; if (!il) return '';
+  const panel = (p, i) => `<g transform="translate(${i * 180},0)"><rect class="il-bg" width="160" height="120" rx="12"/><line class="il-floor" x1="8" y1="112" x2="152" y2="112"/>${poseSVG(p)}</g>`;
+  return `<figure class="il-fig ${cls || ''}"><svg class="il" viewBox="0 0 340 120" aria-hidden="true">${panel(il.poses[0], 0)}<path class="il-next" d="M164 60 h12 m-5 -5 l5 5 l-5 5"/>${panel(il.poses[1], 1)}</svg><figcaption class="il-caps"><span>1. ${esc(il.labels[0])}</span><span>2. ${esc(il.labels[1])}</span></figcaption></figure>`;
+}
+function illusMini(id) {
+  const il = ILLUS[id]; if (!il) return '';
+  return `<svg class="il il-mini" viewBox="0 0 160 120" aria-hidden="true"><rect class="il-bg" width="160" height="120" rx="14"/><line class="il-floor" x1="8" y1="112" x2="152" y2="112"/>${poseSVG(il.poses[1])}</svg>`;
+}
+
+const ICON = {
+  gear: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  close: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+  chev: '<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>',
+  play: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>',
+  tPlay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg>',
+  tTrophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/></svg>',
+  tBook: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12.5 8h3.5M12.5 12h3.5"/></svg>',
+  lock: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  sound: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  mute: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>',
+  star: (cls, style) => `<svg class="${cls || ''}" ${style ? `style="${style}"` : ''} viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z"/></svg>`,
+  bike: running => `<svg class="bike${running ? ' spin' : ''}" viewBox="0 0 64 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="wheel"><circle cx="13" cy="28" r="10"/><path d="M13 18v20M3 28h20"/></g><g class="wheel"><circle cx="51" cy="28" r="10"/><path d="M51 18v20M41 28h20"/></g><path d="M13 28l11-14h15l12 14M24 14l9 14h4M37 7h7M39 14l-2-7M23 10h7"/></svg>`
+};
+
+/* Garde-robe : chaque tenue ajoute des calques au dessin de Chouquette. */
+const BOW = '<path class="m-bow" d="M26 9 15 3.5q-3 5.5 0 11zM26 9 37 3.5q3 5.5 0 11z"/><circle class="m-bow" cx="26" cy="9" r="3.4"/>';
+const OUTFIT_SVG = {
+  noeud: { top: BOW },
+  'noeud-or': { top: BOW.replace(/m-bow/g, 'm-gold') },
+  bandeau: { under: '<rect class="m-sweat" x="7" y="19" width="38" height="5"/><path class="m-sweat-h" d="M26 23.2 24.4 21.6a1 1 0 0 1 1.6-1.2 1 1 0 0 1 1.6 1.2z"/>' },
+  lunettes: { top: BOW, face: '<g class="m-shades"><rect x="12.5" y="25.5" width="13" height="8.5" rx="4"/><rect x="26.5" y="25.5" width="13" height="8.5" rx="4"/><path d="M25.5 28.5h1"/></g><path class="m-glint" d="M15 28.6l3-1.2M29 28.6l3-1.2"/>' },
+  fleur: { top: '<g class="m-flower"><circle cx="38" cy="6.4" r="3.3"/><circle cx="43.4" cy="9.8" r="3.3"/><circle cx="41.4" cy="15.4" r="3.3"/><circle cx="34.6" cy="15.4" r="3.3"/><circle cx="32.6" cy="9.8" r="3.3"/></g><circle class="m-gold" cx="38" cy="11" r="2.6"/>' },
+  'coeur-lunettes': { top: BOW, face: '<path class="m-hglass" d="M19.5 35.2 14.4 30.2a3.1 3.1 0 0 1 5.1-3.7 3.1 3.1 0 0 1 5.1 3.7zM32.5 35.2 27.4 30.2a3.1 3.1 0 0 1 5.1-3.7 3.1 3.1 0 0 1 5.1 3.7z"/><path class="m-line" d="M24.6 29.5h2.8"/>' },
+  chapeau: { top: '<path class="m-hat" d="M26 1.5 35.5 13.5h-19z"/><path class="m-hat-s" d="M23.2 5.6h5.6M20.4 9.6h11.2"/><circle class="m-gold" cx="26" cy="2.4" r="2.2"/>' },
+  couronne: { top: '<path class="m-gold" d="M13.5 14.5V5.5l6.2 4.8L26 2.5l6.3 7.8 6.2-4.8v9z"/><circle class="m-jewel" cx="26" cy="9.5" r="1.6"/><circle class="m-jewel" cx="18" cy="11" r="1.2"/><circle class="m-jewel" cx="34" cy="11" r="1.2"/>' }
+};
+/* Dessin de Chouquette ; la tenue est passée explicitement. */
+function mascotSVG(mood, outfit) {
+  const o = OUTFIT_SVG[outfit] || OUTFIT_SVG.noeud;
+  const eyes = mood === 'calm'
+    ? '<path class="m-line" d="M16.5 31q3 2.6 6 0M29.5 31q3 2.6 6 0"/>'
+    : mood === 'wow'
+      ? '<circle class="m-eye" cx="19.5" cy="30" r="3"/><circle class="m-eye" cx="32.5" cy="30" r="3"/><circle class="m-shine" cx="20.6" cy="28.8" r="1"/><circle class="m-shine" cx="33.6" cy="28.8" r="1"/>'
+      : '<ellipse class="m-eye" cx="19.5" cy="30" rx="2.4" ry="2.9"/><ellipse class="m-eye" cx="32.5" cy="30" rx="2.4" ry="2.9"/><circle class="m-shine" cx="20.4" cy="28.9" r=".9"/><circle class="m-shine" cx="33.4" cy="28.9" r=".9"/>';
+  const mouth = mood === 'wow' ? '<ellipse class="m-mouth" cx="26" cy="38" rx="2.6" ry="3.1"/>' : '<path class="m-line" d="M22.6 36.5q3.4 3.6 6.8 0"/>';
+  return '<svg class="mascot" viewBox="0 0 52 62" aria-hidden="true">'
+    + '<rect class="m-body" x="7" y="15" width="38" height="45" rx="10"/><rect class="m-face" x="7" y="25" width="38" height="20"/>'
+    + '<rect class="m-rim" x="9" y="12" width="34" height="6" rx="3"/>' + (o.under || '')
+    + eyes + '<ellipse class="m-blush" cx="13.5" cy="36" rx="3.2" ry="2"/><ellipse class="m-blush" cx="38.5" cy="36" rx="3.2" ry="2"/>' + mouth
+    + (o.face || '') + (o.top || '') + '</svg>';
+}
+
+/* Chamboule-tout : une pyramide de boîtes par série, une boîte par répétition parfaite. */
+const CAN_SVG = '<svg viewBox="0 0 20 26" preserveAspectRatio="none"><rect class="can-body" x="1" y="1.5" width="18" height="23" rx="3"/><rect class="can-band" x="1" y="9" width="18" height="8"/><path class="can-heart" d="M10 15.6 7.5 13.2a1.55 1.55 0 0 1 2.5-1.8 1.55 1.55 0 0 1 2.5 1.8z"/><rect class="can-rim" x="2" y="1" width="16" height="2.5" rx="1.2"/></svg>';

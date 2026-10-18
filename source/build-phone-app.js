@@ -1,12 +1,12 @@
-// Construit l'appli installable sur téléphone (PWA) à partir de source/chamboule-coach.html.
-// Usage, depuis la racine du dépôt : node source/build-phone-app.js
+// Construit l'appli installable sur téléphone (PWA) à partir de build/chamboule-coach.html.
+// Appelé par source/build.js, qui lance d'abord les tests et assemble la page.
 // Les fichiers publiés (index.html, sw.js, icônes...) sont écrits à la racine du dépôt.
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
 
-const SRC = path.join(__dirname, 'chamboule-coach.html');
+const SRC = path.join(__dirname, '..', 'build', 'chamboule-coach.html');
 const OUT = path.resolve(__dirname, '..');
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -137,7 +137,11 @@ fs.writeFileSync(path.join(OUT, 'manifest.webmanifest'), JSON.stringify({
 }, null, 2));
 
 /* ---------- Service worker : fonctionne hors ligne, se met à jour tout seul ---------- */
-const version = crypto.createHash('sha1').update(html).digest('hex').slice(0, 10);
+// Le numéro de version change dès qu'un fichier publié ou ce script change : l'appli du téléphone se met à jour.
+const hash = crypto.createHash('sha1').update(html);
+for (const f of ['manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'apple-touch-icon.png']) hash.update(fs.readFileSync(path.join(OUT, f)));
+hash.update(fs.readFileSync(__filename));
+const version = hash.digest('hex').slice(0, 10);
 fs.writeFileSync(path.join(OUT, 'sw.js'), `// Généré par build-phone-app.js
 const CACHE = 'chamboule-${version}';
 const FONTS = 'chamboule-fonts';

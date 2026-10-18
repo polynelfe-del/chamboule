@@ -509,6 +509,9 @@ button{font:inherit;color:inherit}
 (() => {
 'use strict';
 
+/* Chamboule Coach : données et logique du jeu.
+   Aucun accès à la page ni au stockage ici : tout est testable dans tests/logic.test.js. */
+
 /* ---------- Exercices ---------- */
 const EX = {
   transverse: { id: 'transverse', name: 'Respiration du transverse', kind: 'breath', target: 5, tempo: 8,
@@ -577,6 +580,313 @@ const PROGRAMS = {
       tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
 };
 const PROG_ORDER = ['dos', 'milieu', 'difficile', 'boule'];
+
+const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Cœur de la fête', 'Grande roue', 'Feu d’artifice', 'Légende de la foire'];
+const LINES = {
+  intro: ['Ici, la vitesse ne rapporte rien. Le contrôle, si.', 'Lentement. C’est comme ça qu’on gagne à ce jeu.', 'Respire, et laisse le cercle se remplir.', 'Un mouvement propre vaut mieux que trois rapides.'],
+  rest: ['Récup. Bois une gorgée d’eau.', 'Relâche les épaules et souffle.', 'Belle série. On reprend dans un instant.', 'Secoue les jambes, détends la nuque.']
+};
+const BADGES = [
+  { id: 'premier', name: 'Premier ticket', desc: 'Finir une première séance', glyph: '1', test: s => s.history.length >= 1 },
+  { id: 'combo10', name: 'Tout en contrôle', desc: '10 reps parfaites d’affilée', glyph: 'x10', test: s => s.bestCombo >= 10 },
+  { id: 'etoiles', name: 'Trois étoiles', desc: 'Une séance à 3 étoiles', glyph: '★', test: s => s.history.some(h => h.stars === 3) },
+  { id: 'semaine', name: 'Semaine pleine', desc: '3 jours d’entraînement dans la même semaine', glyph: '3J', test: s => [...daysByWeek(s.history).values()].some(d => d.size >= 3) },
+  { id: 'suivi5', name: 'Carnet à jour', desc: '5 suivis du lendemain remplis', glyph: '5', test: s => s.history.filter(h => h.next != null).length >= 5 },
+  { id: 'velo60', name: 'Roue libre', desc: '60 min de vélo au total', glyph: "60'", test: s => s.history.reduce((a, h) => a + (h.veloMin || 0), 0) >= 60 },
+  { id: 's10', name: 'Habitué de la foire', desc: '10 séances terminées', glyph: '10', test: s => s.history.length >= 10 },
+  { id: 's30', name: 'Pilier de la fête', desc: '30 séances terminées', glyph: '30', test: s => s.history.length >= 30 },
+  { id: 'chamboule', name: 'Boule qui chamboule', desc: 'Première séance du programme fessiers', glyph: 'BQC', test: s => s.history.some(h => h.prog === 'boule') }
+];
+
+/* Défis de la semaine : trois tirés au sort chaque lundi. Aucun ne pousse au volume ni à forcer. */
+const CHALLENGES = [
+  { id: 'stars3', name: 'Trois étoiles', desc: 'Réussir une séance à 3 étoiles', goal: 1, prog: w => w.filter(h => h.stars === 3).length },
+  { id: 'combo8', name: 'Combo de 8', desc: 'Enchaîner 8 répétitions parfaites', goal: 8, prog: w => Math.max(0, ...w.map(h => h.combo || 0)) },
+  { id: 'next2', name: 'Carnet du lendemain', desc: 'Remplir 2 suivis du lendemain', goal: 2, prog: w => w.filter(h => h.next != null).length },
+  { id: 'days2', name: 'Fidèle au poste', desc: 'T’entraîner 2 jours différents', goal: 2, prog: w => new Set(w.map(h => dayKey(h.d))).size },
+  { id: 'clean', name: 'Lent et propre', desc: '90 % de reps parfaites sur une séance', goal: 1, prog: w => w.filter(h => h.reps >= 8 && h.perfect / h.reps >= 0.9).length },
+  { id: 'velo15', name: 'Roue libre', desc: '15 min de vélo dans la semaine', goal: 15, prog: w => Math.floor(w.reduce((a, h) => a + (h.veloMin || 0), 0)) },
+  { id: 'hf1', name: 'Mains libres', desc: 'Faire une séance en mode mains libres', goal: 1, prog: w => w.filter(h => h.hf).length },
+  { id: 'feel2', name: 'À l’écoute', desc: 'Noter ton ressenti après 2 séances', goal: 2, prog: w => w.filter(h => h.pain != null).length },
+  { id: 'pyr', name: 'Tout chambouler', desc: 'Faire tomber une pyramide entière', goal: 1, prog: w => w.filter(h => (h.pyramids || 0) > 0).length },
+  { id: 'pyr3', name: 'Démolition douce', desc: 'Faire tomber 3 pyramides dans la semaine', goal: 3, prog: w => w.reduce((a, h) => a + (h.pyramids || 0), 0) },
+  { id: 'stars2x', name: 'Doublé', desc: '2 séances à 2 étoiles ou plus', goal: 2, prog: w => w.filter(h => h.stars >= 2).length },
+  { id: 'combo12', name: 'Combo de 12', desc: 'Enchaîner 12 répétitions parfaites', goal: 12, prog: w => Math.max(0, ...w.map(h => h.combo || 0)) },
+  { id: 'days3', name: 'Trois cœurs', desc: 'Remplir 3 cœurs cette semaine', goal: 3, prog: w => new Set(w.map(h => dayKey(h.d))).size },
+  { id: 'douceur', name: 'Douceur', desc: 'Faire une séance Jour difficile ou Dos du milieu', goal: 1, prog: w => w.filter(h => h.prog === 'difficile' || h.prog === 'milieu').length },
+  { id: 'save1', name: 'Prudence', desc: 'Exporter ta sauvegarde cette semaine', goal: 1, prog: (w, s) => (s.settings.lastExport && weekKey(new Date(s.settings.lastExport)) === weekKey(new Date()) ? 1 : 0) }
+];
+/* Tenues de Chouquette : gagnées avec les niveaux et les badges, jamais avec le volume d'entraînement. */
+const OUTFITS = [
+  { id: 'noeud', name: 'Nœud lilas', unlock: 'Offert', test: () => true },
+  { id: 'noeud-or', name: 'Nœud doré', unlock: 'Niveau 2', test: s => levelInfo(s.xp).n >= 2 },
+  { id: 'bandeau', name: 'Bandeau de sport', unlock: 'Badge Tout en contrôle', test: s => !!s.badges.combo10 },
+  { id: 'lunettes', name: 'Lunettes de star', unlock: 'Niveau 3', test: s => levelInfo(s.xp).n >= 3 },
+  { id: 'fleur', name: 'Fleur', unlock: 'Badge Carnet à jour', test: s => !!s.badges.suivi5 },
+  { id: 'coeur-lunettes', name: 'Lunettes cœur', unlock: 'Badge Trois étoiles', test: s => !!s.badges.etoiles },
+  { id: 'chapeau', name: 'Chapeau de fête', unlock: 'Badge Semaine pleine', test: s => !!s.badges.semaine },
+  { id: 'couronne', name: 'Couronne', unlock: 'Niveau 5', test: s => levelInfo(s.xp).n >= 5 }
+];
+function weekChallenges(d) {
+  let h = 7;
+  for (const ch of weekKey(d)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const pool = CHALLENGES.slice(), out = [];
+  for (let i = 0; i < 3; i++) { h = (Math.imul(h, 1103515245) + 12345) >>> 0; out.push(pool.splice(h % pool.length, 1)[0]); }
+  return out;
+}
+
+/* ---------- Utilitaires ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const pad = n => String(n).padStart(2, '0');
+
+function startOfWeek(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+function weekKey(d) { const s = startOfWeek(d); return s.getFullYear() + '-' + (s.getMonth() + 1) + '-' + s.getDate(); }
+function dayKey(d) { const x = new Date(d); return x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate()); }
+function daysByWeek(hist) {
+  const m = new Map();
+  hist.forEach(h => { const k = weekKey(new Date(h.d)); if (!m.has(k)) m.set(k, new Set()); m.get(k).add(dayKey(h.d)); });
+  return m;
+}
+function fmtDate(iso) { try { return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }); } catch { return ''; } }
+function fmtDateLong(iso) { try { return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); } catch { return ''; } }
+function fmtClock(sec) { sec = Math.max(0, Math.round(sec)); return pad(Math.floor(sec / 60)) + ':' + pad(sec % 60); }
+function fmtMin(v) { return Number(v || 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 }); }
+function exName(id) { return (EX[id] || {}).name || id; }
+
+/* ---------- État & sauvegarde ---------- */
+const LS = 'chamboule-coach.v1';
+function defaultState() {
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
+}
+/* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
+   aucune valeur lue n’arrive telle quelle dans la page. */
+const EX_IDS = new Set(Object.keys(EX));
+const BADGE_IDS = new Set(BADGES.map(b => b.id));
+const CHAL_IDS = new Set(CHALLENGES.map(c => c.id));
+const BACKS = ['ok', 'sensible', 'douleur', 'stop'];
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+function numOr(v, lo, hi, dflt, int) {
+  if (v === null || v === undefined || v === '' || typeof v === 'boolean') return dflt;
+  let n = Number(v);
+  if (!Number.isFinite(n)) return dflt;
+  if (int) n = Math.round(n);
+  return Math.min(hi, Math.max(lo, n));
+}
+function isoOr(v) { if (typeof v !== 'string') return null; const t = Date.parse(v); return Number.isFinite(t) ? new Date(t).toISOString() : null; }
+function cleanDayMap(m, allowed) {
+  const out = {};
+  if (m && typeof m === 'object') for (const [k, v] of Object.entries(m)) if (allowed.has(k) && typeof v === 'string' && DAY_RE.test(v)) out[k] = v;
+  return out;
+}
+function cleanEntry(h) {
+  if (!h || typeof h !== 'object') return null;
+  const d = isoOr(h.d); if (!d) return null;
+  const ids = a => Array.isArray(a) ? [...new Set(a.filter(x => typeof x === 'string' && EX_IDS.has(x)))] : [];
+  const prog = typeof h.prog === 'string' && Object.prototype.hasOwnProperty.call(PROGRAMS, h.prog) && !PROGRAMS[h.prog].practice ? h.prog : 'dos';
+  return {
+    id: typeof h.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(h.id) ? h.id : 's' + Date.parse(d).toString(36),
+    d, prog,
+    score: numOr(h.score, 0, 1e6, 0, true), xp: numOr(h.xp, 0, 1e5, null, true),
+    stars: numOr(h.stars, 0, 3, 0, true), perfect: numOr(h.perfect, 0, 1e4, 0, true), reps: numOr(h.reps, 0, 1e4, 0, true),
+    combo: numOr(h.combo, 0, 1e4, 0, true), veloMin: numOr(h.veloMin, 0, 600, 0, false), walkMin: numOr(h.walkMin, 0, 600, 0, false), pyramids: numOr(h.pyramids, 0, 1000, 0, true),
+    skipped: ids(h.skipped), painEx: ids(h.painEx),
+    stop: h.stop === true, back: BACKS.includes(h.back) ? h.back : null, hf: h.hf === true,
+    painBefore: numOr(h.painBefore, 0, 10, null, true), legBefore: h.legBefore === true,
+    pain: numOr(h.pain, 0, 10, null, true), leg: typeof h.leg === 'boolean' ? h.leg : null,
+    next: numOr(h.next, 0, 10, null, true), nextAt: isoOr(h.nextAt),
+    durS: numOr(h.durS, 0, 86400, 0, true)
+  };
+}
+function cleanSettings(s, d) {
+  s = s && typeof s === 'object' ? s : {};
+  return {
+    sets: numOr(s.sets, 1, 3, d.sets, true), veloMin: numOr(s.veloMin, 3, 45, d.veloMin, true), weeklyGoal: numOr(s.weeklyGoal, 1, 7, d.weeklyGoal, true),
+    sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
+    bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
+    lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
+    outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud'
+  };
+}
+function normalize(raw) {
+  const d = defaultState();
+  if (!raw || typeof raw !== 'object') return d;
+  const challenges = {};
+  if (raw.challenges && typeof raw.challenges === 'object') {
+    for (const [k, v] of Object.entries(raw.challenges)) if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(k)) challenges[k] = cleanDayMap(v, CHAL_IDS);
+  }
+  return {
+    v: 1,
+    xp: numOr(raw.xp, 0, 1e7, 0, true),
+    bestCombo: numOr(raw.bestCombo, 0, 1e4, 0, true),
+    settings: cleanSettings(raw.settings, d.settings),
+    badges: cleanDayMap(raw.badges, BADGE_IDS),
+    challenges,
+    history: Array.isArray(raw.history) ? raw.history.slice(0, 300).map(cleanEntry).filter(Boolean) : []
+  };
+}
+
+/* ---------- Calculs ----------
+   Fonctions pures : elles reçoivent l’état (s) et la date (now) au lieu de les lire elles-mêmes.
+   Elles sont couvertes par les tests de tests/logic.test.js. */
+function threshold(n) { return 150 * n * (n - 1); }
+function levelInfo(xp) {
+  let n = 1; while (xp >= threshold(n + 1)) n++;
+  const base = threshold(n), next = threshold(n + 1);
+  return { n, name: LEVELS[Math.min(n - 1, LEVELS.length - 1)], base, next, into: xp - base, span: next - base, pct: Math.round(((xp - base) / (next - base)) * 100) };
+}
+function weekDays(s, d) { return (daysByWeek(s.history).get(weekKey(d)) || new Set()).size; }
+function weekStreak(s, now = new Date()) {
+  const m = daysByWeek(s.history), goal = s.settings.weeklyGoal;
+  const size = d => (m.get(weekKey(d)) || new Set()).size;
+  const w = startOfWeek(now); let n = 0;
+  if (size(w) >= goal) n++;
+  w.setDate(w.getDate() - 7);
+  while (size(w) >= goal) { n++; w.setDate(w.getDate() - 7); }
+  return n;
+}
+/* Catégorie du dos après la séance, à partir de la douleur notée de 0 à 10 (après et le lendemain). */
+function backCat(h) {
+  if (h.stop || h.back === 'stop') return 'stop';
+  if (h.pain == null) return h.back || null;
+  if (h.leg) return 'douleur';
+  const before = h.painBefore ?? h.pain;
+  const rank = v => (v >= 7 || v - before >= 3) ? 2 : (v - before >= 1 && v > 2) ? 1 : 0;
+  const worst = Math.max(rank(h.pain), h.next != null ? rank(h.next) : 0);
+  return ['ok', 'sensible', 'douleur'][worst];
+}
+function painFreeRun(s) {
+  let n = 0;
+  for (const h of s.history) {
+    if (h.prog !== 'dos') continue;
+    const okNext = h.next == null || h.next <= (h.painBefore ?? h.pain ?? 0) + 1;
+    if (backCat(h) === 'ok' && okNext && !(h.painEx && h.painEx.length)) n++; else break;
+  }
+  return n;
+}
+function pendingNextDay(s, now = new Date()) {
+  const today = dayKey(now);
+  const h = s.history.find(x => dayKey(x.d) !== today);
+  if (!h || h.next != null) return null;
+  if (now.getTime() - new Date(h.d).getTime() > 3 * 86400000) return null;
+  return h;
+}
+function weekEntries(s, now = new Date()) { const k = weekKey(now); return s.history.filter(h => weekKey(new Date(h.d)) === k); }
+function chalProgress(s, c, now = new Date()) { return Math.min(c.goal, c.prog(weekEntries(s, now), s)); }
+/* Donne les défis réussis cette semaine (+50 XP chacun, une seule fois) et oublie les semaines de plus d’un mois. */
+function evalChallenges(s, now = new Date()) {
+  const k = weekKey(now);
+  s.challenges = s.challenges || {};
+  const done = s.challenges[k] || (s.challenges[k] = {});
+  const fresh = [];
+  weekChallenges(now).forEach(c => { if (!done[c.id] && chalProgress(s, c, now) >= c.goal) { done[c.id] = dayKey(now); s.xp += 50; fresh.push(c); } });
+  const keep = new Set(); const w = startOfWeek(now);
+  for (let i = 0; i < 4; i++) { keep.add(weekKey(w)); w.setDate(w.getDate() - 7); }
+  Object.keys(s.challenges).forEach(x => { if (!keep.has(x)) delete s.challenges[x]; });
+  return fresh;
+}
+function evalBadges(s, now = new Date()) {
+  const fresh = [];
+  BADGES.forEach(b => { if (!s.badges[b.id] && b.test(s)) { s.badges[b.id] = dayKey(now); fresh.push(b); } });
+  return fresh;
+}
+function unlockedOutfits(s) { return OUTFITS.filter(o => o.test(s)).map(o => o.id); }
+function setsFor(s, prog, ex) { return prog.id === 'dos' ? s.settings.sets : (ex.sets || 1); }
+function sideText(ex, side) { return ex.sideLabel === 'jambe' ? 'jambe ' + (side === 'droit' ? 'droite' : 'gauche') : 'côté ' + side; }
+function timerMin(s, ex) { return ex.id === 'velo' ? s.settings.veloMin : (ex.minutes || 10); }
+function presc(s, ex, sets) {
+  if (ex.prescText) return ex.prescText;
+  if (ex.kind === 'timer') return ex.id === 'velo' ? s.settings.veloMin + ' min, résistance légère' : timerMin(s, ex) + ' min, à ton rythme';
+  if (ex.kind === 'hold') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' maintiens de ' + ex.hold + ' s';
+  const side = ex.sides ? ' par ' + (ex.sideLabel || 'côté') : '';
+  if (ex.kind === 'breath') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' respirations lentes';
+  if (ex.free) return 'Activation, environ ' + ex.target + side;
+  const reps = ex.max ? ex.target + ' à ' + ex.max : String(ex.target);
+  return sets > 1 ? sets + ' × ' + reps + side : reps + ' répétitions' + side;
+}
+function estMin(s, p) {
+  let t = 0;
+  p.exercises.forEach(ex => {
+    if (ex.kind === 'timer') { t += timerMin(s, ex) * 60; return; }
+    const sets = setsFor(s, p, ex);
+    t += sets * (ex.max || ex.target) * (ex.kind === 'hold' ? ex.hold + 4 : ex.tempo) * (ex.sides ? 2 : 1) + (sets - 1) * p.rest + 30;
+  });
+  return Math.max(2, Math.round(t / 60));
+}
+/* Déroulé d’une séance : une étape par série et par côté ; un chrono compte pour une seule étape. */
+function buildSteps(s, prog) {
+  const steps = [];
+  prog.exercises.forEach((ex, ei) => {
+    if (ex.kind === 'timer') { steps.push({ ex, ei, set: 1, sets: 1, side: null }); return; }
+    const sets = setsFor(s, prog, ex);
+    for (let n = 1; n <= sets; n++) (ex.sides ? ['droit', 'gauche'] : [null]).forEach(side => steps.push({ ex, ei, set: n, sets, side }));
+  });
+  return steps;
+}
+/* XP d’une séance : la qualité compte, pas le volume. Un exercice passé pour douleur ne pénalise pas. */
+function computeXP(prog, r) {
+  const considered = prog.exercises.map(e => e.id).filter(id => !r.painEx.includes(id));
+  const done = considered.filter(id => !r.skipped.includes(id)).length;
+  const completion = considered.length ? done / considered.length : 0;
+  const quality = r.reps ? r.perfect / r.reps : 1;
+  return Math.round(prog.xpBase * completion * (0.6 + 0.4 * quality)) + 30;
+}
+function computeStars(reason, r) {
+  if (reason === 'pain') return 0;
+  const quality = r.reps ? r.perfect / r.reps : 1;
+  const realSkips = r.skipped.filter(id => !r.painEx.includes(id));
+  return quality >= 0.8 && !realSkips.length ? 3 : quality >= 0.5 ? 2 : 1;
+}
+/* Pyramide de boîtes : rangées du bas vers le haut, n boîtes au total. */
+function canRows(n) {
+  const rows = []; let left = n, b = Math.ceil((Math.sqrt(8 * n + 1) - 1) / 2);
+  while (left > 0) { const k = Math.min(b, left); rows.push(k); left -= k; b = Math.max(1, b - 1); }
+  return rows;
+}
+function backupDue(s, now, inClaude) {
+  if (inClaude || s.history.length < 3) return false;
+  const st = s.settings;
+  if (st.exportSnooze && now < Date.parse(st.exportSnooze)) return false;
+  return !st.lastExport || now - Date.parse(st.lastExport) > 30 * 86400000;
+}
+/* Résumé texte des 30 derniers jours, pour le kiné. Ne contient que ce qui a été noté dans l’appli. */
+function kineSummary(s, now = new Date()) {
+  const from = new Date(now); from.setDate(from.getDate() - 30); from.setHours(0, 0, 0, 0);
+  const list = s.history.filter(h => new Date(h.d) >= from).slice().reverse();
+  const days = new Set(list.map(h => dayKey(h.d))).size;
+  const st = s.settings;
+  const L = [];
+  L.push('Suivi Chamboule Coach');
+  L.push(`Période : du ${from.toLocaleDateString('fr-FR')} au ${now.toLocaleDateString('fr-FR')}`);
+  L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
+  L.push(`Réglages actuels : ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, vélo ${st.veloMin} min`);
+  L.push(`Programme Boule qui chamboule : ${st.bouleUnlocked ? 'débloqué' + (st.bouleUnlockedAt ? ' le ' + new Date(st.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);
+  L.push('');
+  L.push('Douleur de dos notée de 0 à 10 : avant la séance → juste après → le lendemain.');
+  L.push('');
+  if (!list.length) L.push('Aucune séance sur la période.');
+  const painCount = {};
+  list.forEach(h => {
+    const p = PROGRAMS[h.prog] || { name: h.prog };
+    L.push(`${fmtDateLong(h.d)} · ${p.name}${h.hf ? ' (mains libres)' : ''}`);
+    L.push(`  Douleur : ${h.painBefore ?? '?'} → ${h.pain ?? '?'} → ${h.next ?? '?'}`);
+    if (h.legBefore) L.push('  Symptômes dans la jambe AVANT la séance');
+    if (h.leg) L.push('  Symptômes dans la jambe APRÈS la séance');
+    if (backCat(h) === 'stop') L.push('  Séance arrêtée : douleur dans la jambe ou fourmillements');
+    if (h.painEx && h.painEx.length) { L.push('  Passé pour douleur : ' + h.painEx.map(exName).join(', ')); h.painEx.forEach(id => { painCount[id] = (painCount[id] || 0) + 1; }); }
+    const other = (h.skipped || []).filter(id => !(h.painEx || []).includes(id));
+    if (other.length) L.push('  Non fait : ' + other.map(exName).join(', '));
+    if (h.veloMin) L.push(`  Vélo : ${fmtMin(h.veloMin)} min`);
+    if (h.walkMin) L.push(`  Marche : ${fmtMin(h.walkMin)} min`);
+  });
+  L.push('');
+  const pc = Object.entries(painCount);
+  L.push('Exercices passés pour douleur sur la période : ' + (pc.length ? pc.map(([id, n]) => `${exName(id)} (${n})`).join(', ') : 'aucun'));
+  return L.join('\n');
+}
+
+/* Chamboule Coach : dessins (exercices, icônes, Chouquette, boîtes). Que des chaînes SVG, aucun accès à la page. */
 
 /* ---------- Illustrations (pictogrammes dessinés : départ puis mouvement) ---------- */
 const Q = {
@@ -672,60 +982,6 @@ function illusMini(id) {
   return `<svg class="il il-mini" viewBox="0 0 160 120" aria-hidden="true"><rect class="il-bg" width="160" height="120" rx="14"/><line class="il-floor" x1="8" y1="112" x2="152" y2="112"/>${poseSVG(il.poses[1])}</svg>`;
 }
 
-const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Cœur de la fête', 'Grande roue', 'Feu d’artifice', 'Légende de la foire'];
-const LINES = {
-  intro: ['Ici, la vitesse ne rapporte rien. Le contrôle, si.', 'Lentement. C’est comme ça qu’on gagne à ce jeu.', 'Respire, et laisse le cercle se remplir.', 'Un mouvement propre vaut mieux que trois rapides.'],
-  rest: ['Récup. Bois une gorgée d’eau.', 'Relâche les épaules et souffle.', 'Belle série. On reprend dans un instant.', 'Secoue les jambes, détends la nuque.']
-};
-const BADGES = [
-  { id: 'premier', name: 'Premier ticket', desc: 'Finir une première séance', glyph: '1', test: s => s.history.length >= 1 },
-  { id: 'combo10', name: 'Tout en contrôle', desc: '10 reps parfaites d’affilée', glyph: 'x10', test: s => s.bestCombo >= 10 },
-  { id: 'etoiles', name: 'Trois étoiles', desc: 'Une séance à 3 étoiles', glyph: '★', test: s => s.history.some(h => h.stars === 3) },
-  { id: 'semaine', name: 'Semaine pleine', desc: '3 jours d’entraînement dans la même semaine', glyph: '3J', test: s => [...daysByWeek(s.history).values()].some(d => d.size >= 3) },
-  { id: 'suivi5', name: 'Carnet à jour', desc: '5 suivis du lendemain remplis', glyph: '5', test: s => s.history.filter(h => h.next != null).length >= 5 },
-  { id: 'velo60', name: 'Roue libre', desc: '60 min de vélo au total', glyph: "60'", test: s => s.history.reduce((a, h) => a + (h.veloMin || 0), 0) >= 60 },
-  { id: 's10', name: 'Habitué de la foire', desc: '10 séances terminées', glyph: '10', test: s => s.history.length >= 10 },
-  { id: 's30', name: 'Pilier de la fête', desc: '30 séances terminées', glyph: '30', test: s => s.history.length >= 30 },
-  { id: 'chamboule', name: 'Boule qui chamboule', desc: 'Première séance du programme fessiers', glyph: 'BQC', test: s => s.history.some(h => h.prog === 'boule') }
-];
-
-/* Défis de la semaine : trois tirés au sort chaque lundi. Aucun ne pousse au volume ni à forcer. */
-const CHALLENGES = [
-  { id: 'stars3', name: 'Trois étoiles', desc: 'Réussir une séance à 3 étoiles', goal: 1, prog: w => w.filter(h => h.stars === 3).length },
-  { id: 'combo8', name: 'Combo de 8', desc: 'Enchaîner 8 répétitions parfaites', goal: 8, prog: w => Math.max(0, ...w.map(h => h.combo || 0)) },
-  { id: 'next2', name: 'Carnet du lendemain', desc: 'Remplir 2 suivis du lendemain', goal: 2, prog: w => w.filter(h => h.next != null).length },
-  { id: 'days2', name: 'Fidèle au poste', desc: 'T’entraîner 2 jours différents', goal: 2, prog: w => new Set(w.map(h => dayKey(h.d))).size },
-  { id: 'clean', name: 'Lent et propre', desc: '90 % de reps parfaites sur une séance', goal: 1, prog: w => w.filter(h => h.reps >= 8 && h.perfect / h.reps >= 0.9).length },
-  { id: 'velo15', name: 'Roue libre', desc: '15 min de vélo dans la semaine', goal: 15, prog: w => Math.floor(w.reduce((a, h) => a + (h.veloMin || 0), 0)) },
-  { id: 'hf1', name: 'Mains libres', desc: 'Faire une séance en mode mains libres', goal: 1, prog: w => w.filter(h => h.hf).length },
-  { id: 'feel2', name: 'À l’écoute', desc: 'Noter ton ressenti après 2 séances', goal: 2, prog: w => w.filter(h => h.pain != null).length },
-  { id: 'pyr', name: 'Tout chambouler', desc: 'Faire tomber une pyramide entière', goal: 1, prog: w => w.filter(h => (h.pyramids || 0) > 0).length },
-  { id: 'pyr3', name: 'Démolition douce', desc: 'Faire tomber 3 pyramides dans la semaine', goal: 3, prog: w => w.reduce((a, h) => a + (h.pyramids || 0), 0) },
-  { id: 'stars2x', name: 'Doublé', desc: '2 séances à 2 étoiles ou plus', goal: 2, prog: w => w.filter(h => h.stars >= 2).length },
-  { id: 'combo12', name: 'Combo de 12', desc: 'Enchaîner 12 répétitions parfaites', goal: 12, prog: w => Math.max(0, ...w.map(h => h.combo || 0)) },
-  { id: 'days3', name: 'Trois cœurs', desc: 'Remplir 3 cœurs cette semaine', goal: 3, prog: w => new Set(w.map(h => dayKey(h.d))).size },
-  { id: 'douceur', name: 'Douceur', desc: 'Faire une séance Jour difficile ou Dos du milieu', goal: 1, prog: w => w.filter(h => h.prog === 'difficile' || h.prog === 'milieu').length },
-  { id: 'save1', name: 'Prudence', desc: 'Exporter ta sauvegarde cette semaine', goal: 1, prog: (w, s) => (s.settings.lastExport && weekKey(new Date(s.settings.lastExport)) === weekKey(new Date()) ? 1 : 0) }
-];
-/* Tenues de Chouquette : gagnées avec les niveaux et les badges, jamais avec le volume d'entraînement. */
-const OUTFITS = [
-  { id: 'noeud', name: 'Nœud lilas', unlock: 'Offert', test: () => true },
-  { id: 'noeud-or', name: 'Nœud doré', unlock: 'Niveau 2', test: s => levelInfo(s.xp).n >= 2 },
-  { id: 'bandeau', name: 'Bandeau de sport', unlock: 'Badge Tout en contrôle', test: s => !!s.badges.combo10 },
-  { id: 'lunettes', name: 'Lunettes de star', unlock: 'Niveau 3', test: s => levelInfo(s.xp).n >= 3 },
-  { id: 'fleur', name: 'Fleur', unlock: 'Badge Carnet à jour', test: s => !!s.badges.suivi5 },
-  { id: 'coeur-lunettes', name: 'Lunettes cœur', unlock: 'Badge Trois étoiles', test: s => !!s.badges.etoiles },
-  { id: 'chapeau', name: 'Chapeau de fête', unlock: 'Badge Semaine pleine', test: s => !!s.badges.semaine },
-  { id: 'couronne', name: 'Couronne', unlock: 'Niveau 5', test: s => levelInfo(s.xp).n >= 5 }
-];
-function weekChallenges(d) {
-  let h = 7;
-  for (const ch of weekKey(d)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  const pool = CHALLENGES.slice(), out = [];
-  for (let i = 0; i < 3; i++) { h = (Math.imul(h, 1103515245) + 12345) >>> 0; out.push(pool.splice(h % pool.length, 1)[0]); }
-  return out;
-}
-
 const ICON = {
   gear: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   close: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
@@ -742,100 +998,44 @@ const ICON = {
   bike: running => `<svg class="bike${running ? ' spin' : ''}" viewBox="0 0 64 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="wheel"><circle cx="13" cy="28" r="10"/><path d="M13 18v20M3 28h20"/></g><g class="wheel"><circle cx="51" cy="28" r="10"/><path d="M51 18v20M41 28h20"/></g><path d="M13 28l11-14h15l12 14M24 14l9 14h4M37 7h7M39 14l-2-7M23 10h7"/></svg>`
 };
 
+/* Garde-robe : chaque tenue ajoute des calques au dessin de Chouquette. */
+const BOW = '<path class="m-bow" d="M26 9 15 3.5q-3 5.5 0 11zM26 9 37 3.5q3 5.5 0 11z"/><circle class="m-bow" cx="26" cy="9" r="3.4"/>';
+const OUTFIT_SVG = {
+  noeud: { top: BOW },
+  'noeud-or': { top: BOW.replace(/m-bow/g, 'm-gold') },
+  bandeau: { under: '<rect class="m-sweat" x="7" y="19" width="38" height="5"/><path class="m-sweat-h" d="M26 23.2 24.4 21.6a1 1 0 0 1 1.6-1.2 1 1 0 0 1 1.6 1.2z"/>' },
+  lunettes: { top: BOW, face: '<g class="m-shades"><rect x="12.5" y="25.5" width="13" height="8.5" rx="4"/><rect x="26.5" y="25.5" width="13" height="8.5" rx="4"/><path d="M25.5 28.5h1"/></g><path class="m-glint" d="M15 28.6l3-1.2M29 28.6l3-1.2"/>' },
+  fleur: { top: '<g class="m-flower"><circle cx="38" cy="6.4" r="3.3"/><circle cx="43.4" cy="9.8" r="3.3"/><circle cx="41.4" cy="15.4" r="3.3"/><circle cx="34.6" cy="15.4" r="3.3"/><circle cx="32.6" cy="9.8" r="3.3"/></g><circle class="m-gold" cx="38" cy="11" r="2.6"/>' },
+  'coeur-lunettes': { top: BOW, face: '<path class="m-hglass" d="M19.5 35.2 14.4 30.2a3.1 3.1 0 0 1 5.1-3.7 3.1 3.1 0 0 1 5.1 3.7zM32.5 35.2 27.4 30.2a3.1 3.1 0 0 1 5.1-3.7 3.1 3.1 0 0 1 5.1 3.7z"/><path class="m-line" d="M24.6 29.5h2.8"/>' },
+  chapeau: { top: '<path class="m-hat" d="M26 1.5 35.5 13.5h-19z"/><path class="m-hat-s" d="M23.2 5.6h5.6M20.4 9.6h11.2"/><circle class="m-gold" cx="26" cy="2.4" r="2.2"/>' },
+  couronne: { top: '<path class="m-gold" d="M13.5 14.5V5.5l6.2 4.8L26 2.5l6.3 7.8 6.2-4.8v9z"/><circle class="m-jewel" cx="26" cy="9.5" r="1.6"/><circle class="m-jewel" cx="18" cy="11" r="1.2"/><circle class="m-jewel" cx="34" cy="11" r="1.2"/>' }
+};
+/* Dessin de Chouquette ; la tenue est passée explicitement. */
+function mascotSVG(mood, outfit) {
+  const o = OUTFIT_SVG[outfit] || OUTFIT_SVG.noeud;
+  const eyes = mood === 'calm'
+    ? '<path class="m-line" d="M16.5 31q3 2.6 6 0M29.5 31q3 2.6 6 0"/>'
+    : mood === 'wow'
+      ? '<circle class="m-eye" cx="19.5" cy="30" r="3"/><circle class="m-eye" cx="32.5" cy="30" r="3"/><circle class="m-shine" cx="20.6" cy="28.8" r="1"/><circle class="m-shine" cx="33.6" cy="28.8" r="1"/>'
+      : '<ellipse class="m-eye" cx="19.5" cy="30" rx="2.4" ry="2.9"/><ellipse class="m-eye" cx="32.5" cy="30" rx="2.4" ry="2.9"/><circle class="m-shine" cx="20.4" cy="28.9" r=".9"/><circle class="m-shine" cx="33.4" cy="28.9" r=".9"/>';
+  const mouth = mood === 'wow' ? '<ellipse class="m-mouth" cx="26" cy="38" rx="2.6" ry="3.1"/>' : '<path class="m-line" d="M22.6 36.5q3.4 3.6 6.8 0"/>';
+  return '<svg class="mascot" viewBox="0 0 52 62" aria-hidden="true">'
+    + '<rect class="m-body" x="7" y="15" width="38" height="45" rx="10"/><rect class="m-face" x="7" y="25" width="38" height="20"/>'
+    + '<rect class="m-rim" x="9" y="12" width="34" height="6" rx="3"/>' + (o.under || '')
+    + eyes + '<ellipse class="m-blush" cx="13.5" cy="36" rx="3.2" ry="2"/><ellipse class="m-blush" cx="38.5" cy="36" rx="3.2" ry="2"/>' + mouth
+    + (o.face || '') + (o.top || '') + '</svg>';
+}
+
+/* Chamboule-tout : une pyramide de boîtes par série, une boîte par répétition parfaite. */
+const CAN_SVG = '<svg viewBox="0 0 20 26" preserveAspectRatio="none"><rect class="can-body" x="1" y="1.5" width="18" height="23" rx="3"/><rect class="can-band" x="1" y="9" width="18" height="8"/><path class="can-heart" d="M10 15.6 7.5 13.2a1.55 1.55 0 0 1 2.5-1.8 1.55 1.55 0 0 1 2.5 1.8z"/><rect class="can-rim" x="2" y="1" width="16" height="2.5" rx="1.2"/></svg>';
+
+/* Chamboule Coach : écrans, jeu et sauvegarde (tout ce qui touche à la page). */
+
 /* ---------- Utilitaires ---------- */
 const $ = (s, r = document) => r.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-const pad = n => String(n).padStart(2, '0');
 const reduceMotion = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
 const app = $('#app');
 
-function startOfWeek(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
-function weekKey(d) { const s = startOfWeek(d); return s.getFullYear() + '-' + (s.getMonth() + 1) + '-' + s.getDate(); }
-function dayKey(d) { const x = new Date(d); return x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate()); }
-function daysByWeek(hist) {
-  const m = new Map();
-  hist.forEach(h => { const k = weekKey(new Date(h.d)); if (!m.has(k)) m.set(k, new Set()); m.get(k).add(dayKey(h.d)); });
-  return m;
-}
-function fmtDate(iso) { try { return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }); } catch { return ''; } }
-function fmtDateLong(iso) { try { return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); } catch { return ''; } }
-function fmtClock(sec) { sec = Math.max(0, Math.round(sec)); return pad(Math.floor(sec / 60)) + ':' + pad(sec % 60); }
-function fmtMin(v) { return Number(v || 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 }); }
-function exName(id) { return (EX[id] || {}).name || id; }
-
-/* ---------- État & sauvegarde ---------- */
-const LS = 'chamboule-coach.v1';
-function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
-}
-/* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
-   aucune valeur lue n’arrive telle quelle dans la page. */
-const EX_IDS = new Set(Object.keys(EX));
-const BADGE_IDS = new Set(BADGES.map(b => b.id));
-const CHAL_IDS = new Set(CHALLENGES.map(c => c.id));
-const BACKS = ['ok', 'sensible', 'douleur', 'stop'];
-const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
-function numOr(v, lo, hi, dflt, int) {
-  if (v === null || v === undefined || v === '' || typeof v === 'boolean') return dflt;
-  let n = Number(v);
-  if (!Number.isFinite(n)) return dflt;
-  if (int) n = Math.round(n);
-  return Math.min(hi, Math.max(lo, n));
-}
-function isoOr(v) { if (typeof v !== 'string') return null; const t = Date.parse(v); return Number.isFinite(t) ? new Date(t).toISOString() : null; }
-function cleanDayMap(m, allowed) {
-  const out = {};
-  if (m && typeof m === 'object') for (const [k, v] of Object.entries(m)) if (allowed.has(k) && typeof v === 'string' && DAY_RE.test(v)) out[k] = v;
-  return out;
-}
-function cleanEntry(h) {
-  if (!h || typeof h !== 'object') return null;
-  const d = isoOr(h.d); if (!d) return null;
-  const ids = a => Array.isArray(a) ? [...new Set(a.filter(x => typeof x === 'string' && EX_IDS.has(x)))] : [];
-  const prog = typeof h.prog === 'string' && Object.prototype.hasOwnProperty.call(PROGRAMS, h.prog) && !PROGRAMS[h.prog].practice ? h.prog : 'dos';
-  return {
-    id: typeof h.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(h.id) ? h.id : 's' + Date.parse(d).toString(36),
-    d, prog,
-    score: numOr(h.score, 0, 1e6, 0, true), xp: numOr(h.xp, 0, 1e5, null, true),
-    stars: numOr(h.stars, 0, 3, 0, true), perfect: numOr(h.perfect, 0, 1e4, 0, true), reps: numOr(h.reps, 0, 1e4, 0, true),
-    combo: numOr(h.combo, 0, 1e4, 0, true), veloMin: numOr(h.veloMin, 0, 600, 0, false), walkMin: numOr(h.walkMin, 0, 600, 0, false), pyramids: numOr(h.pyramids, 0, 1000, 0, true),
-    skipped: ids(h.skipped), painEx: ids(h.painEx),
-    stop: h.stop === true, back: BACKS.includes(h.back) ? h.back : null, hf: h.hf === true,
-    painBefore: numOr(h.painBefore, 0, 10, null, true), legBefore: h.legBefore === true,
-    pain: numOr(h.pain, 0, 10, null, true), leg: typeof h.leg === 'boolean' ? h.leg : null,
-    next: numOr(h.next, 0, 10, null, true), nextAt: isoOr(h.nextAt),
-    durS: numOr(h.durS, 0, 86400, 0, true)
-  };
-}
-function cleanSettings(s, d) {
-  s = s && typeof s === 'object' ? s : {};
-  return {
-    sets: numOr(s.sets, 1, 3, d.sets, true), veloMin: numOr(s.veloMin, 3, 45, d.veloMin, true), weeklyGoal: numOr(s.weeklyGoal, 1, 7, d.weeklyGoal, true),
-    sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
-    bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
-    lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
-    outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud'
-  };
-}
-function normalize(raw) {
-  const d = defaultState();
-  if (!raw || typeof raw !== 'object') return d;
-  const challenges = {};
-  if (raw.challenges && typeof raw.challenges === 'object') {
-    for (const [k, v] of Object.entries(raw.challenges)) if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(k)) challenges[k] = cleanDayMap(v, CHAL_IDS);
-  }
-  return {
-    v: 1,
-    xp: numOr(raw.xp, 0, 1e7, 0, true),
-    bestCombo: numOr(raw.bestCombo, 0, 1e4, 0, true),
-    settings: cleanSettings(raw.settings, d.settings),
-    badges: cleanDayMap(raw.badges, BADGE_IDS),
-    challenges,
-    history: Array.isArray(raw.history) ? raw.history.slice(0, 300).map(cleanEntry).filter(Boolean) : []
-  };
-}
 function lsGet() { try { const t = localStorage.getItem(LS); return t ? JSON.parse(t) : null; } catch { return null; } }
 function lsSet(obj) { try { localStorage.setItem(LS, JSON.stringify(obj)); } catch {} }
 
@@ -896,90 +1096,6 @@ async function initStore() {
     }
     renderScreen({ fromSync: true });
   }, () => { cloudRef = null; mode = 'local'; renderScreen({ fromSync: true }); });
-}
-
-/* ---------- Calculs ---------- */
-function threshold(n) { return 150 * n * (n - 1); }
-function levelInfo(xp) {
-  let n = 1; while (xp >= threshold(n + 1)) n++;
-  const base = threshold(n), next = threshold(n + 1);
-  return { n, name: LEVELS[Math.min(n - 1, LEVELS.length - 1)], base, next, into: xp - base, span: next - base, pct: Math.round(((xp - base) / (next - base)) * 100) };
-}
-function weekDays(d) { return (daysByWeek(state.history).get(weekKey(d)) || new Set()).size; }
-function weekStreak() {
-  const m = daysByWeek(state.history), goal = state.settings.weeklyGoal;
-  const size = s => (m.get(weekKey(s)) || new Set()).size;
-  const s = startOfWeek(new Date()); let n = 0;
-  if (size(s) >= goal) n++;
-  s.setDate(s.getDate() - 7);
-  while (size(s) >= goal) { n++; s.setDate(s.getDate() - 7); }
-  return n;
-}
-/* Catégorie du dos après la séance, à partir de la douleur notée de 0 à 10. */
-function backCat(h) {
-  if (h.stop || h.back === 'stop') return 'stop';
-  if (h.pain == null) return h.back || null;
-  if (h.leg) return 'douleur';
-  const before = h.painBefore ?? h.pain;
-  const rank = v => (v >= 7 || v - before >= 3) ? 2 : (v - before >= 1 && v > 2) ? 1 : 0;
-  const worst = Math.max(rank(h.pain), h.next != null ? rank(h.next) : 0);
-  return ['ok', 'sensible', 'douleur'][worst];
-}
-function painFreeRun() {
-  let n = 0;
-  for (const h of state.history) {
-    if (h.prog !== 'dos') continue;
-    const okNext = h.next == null || h.next <= (h.painBefore ?? h.pain ?? 0) + 1;
-    if (backCat(h) === 'ok' && okNext && !(h.painEx && h.painEx.length)) n++; else break;
-  }
-  return n;
-}
-function pendingNextDay() {
-  const today = dayKey(new Date());
-  const h = state.history.find(x => dayKey(x.d) !== today);
-  if (!h || h.next != null) return null;
-  if (Date.now() - new Date(h.d).getTime() > 3 * 86400000) return null;
-  return h;
-}
-function weekEntries() { const k = weekKey(new Date()); return state.history.filter(h => weekKey(new Date(h.d)) === k); }
-function chalProgress(c) { return Math.min(c.goal, c.prog(weekEntries(), state)); }
-function evalChallenges() {
-  const now = new Date(), k = weekKey(now);
-  state.challenges = state.challenges || {};
-  const done = state.challenges[k] || (state.challenges[k] = {});
-  const fresh = [];
-  weekChallenges(now).forEach(c => { if (!done[c.id] && chalProgress(c) >= c.goal) { done[c.id] = dayKey(now); state.xp += 50; fresh.push(c); } });
-  const keep = new Set(); const s = startOfWeek(now);
-  for (let i = 0; i < 4; i++) { keep.add(weekKey(s)); s.setDate(s.getDate() - 7); }
-  Object.keys(state.challenges).forEach(x => { if (!keep.has(x)) delete state.challenges[x]; });
-  return fresh;
-}
-function evalBadges() {
-  const fresh = [];
-  BADGES.forEach(b => { if (!state.badges[b.id] && b.test(state)) { state.badges[b.id] = dayKey(new Date()); fresh.push(b); } });
-  return fresh;
-}
-function setsFor(prog, ex) { return prog.id === 'dos' ? state.settings.sets : (ex.sets || 1); }
-function sideText(ex, side) { return ex.sideLabel === 'jambe' ? 'jambe ' + (side === 'droit' ? 'droite' : 'gauche') : 'côté ' + side; }
-function presc(ex, sets) {
-  if (ex.prescText) return ex.prescText;
-  if (ex.kind === 'timer') return ex.id === 'velo' ? state.settings.veloMin + ' min, résistance légère' : timerMin(ex) + ' min, à ton rythme';
-  if (ex.kind === 'hold') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' maintiens de ' + ex.hold + ' s';
-  const side = ex.sides ? ' par ' + (ex.sideLabel || 'côté') : '';
-  if (ex.kind === 'breath') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' respirations lentes';
-  if (ex.free) return 'Activation, environ ' + ex.target + side;
-  const reps = ex.max ? ex.target + ' à ' + ex.max : String(ex.target);
-  return sets > 1 ? sets + ' × ' + reps + side : reps + ' répétitions' + side;
-}
-function timerMin(ex) { return ex.id === 'velo' ? state.settings.veloMin : (ex.minutes || 10); }
-function estMin(p) {
-  let s = 0;
-  p.exercises.forEach(ex => {
-    if (ex.kind === 'timer') { s += timerMin(ex) * 60; return; }
-    const sets = setsFor(p, ex);
-    s += sets * (ex.max || ex.target) * (ex.kind === 'hold' ? ex.hold + 4 : ex.tempo) * (ex.sides ? 2 : 1) + (sets - 1) * p.rest + 30;
-  });
-  return Math.max(2, Math.round(s / 60));
 }
 
 /* ---------- Son, voix, vibrations ---------- */
@@ -1110,13 +1226,13 @@ function renderScreen(opts = {}) {
 function homeHTML() {
   const lv = levelInfo(state.xp);
   const goal = state.settings.weeklyGoal;
-  const wk = weekDays(new Date());
-  const streak = weekStreak();
+  const wk = weekDays(state, new Date());
+  const streak = weekStreak(state);
   const bulbs = Array.from({ length: Math.max(goal, wk) }, (_, i) => `<span class="bulb${i < wk ? ' lit' : ''}"></span>`).join('');
   const last = state.history[0];
   const lastCat = last ? backCat(last) : null;
-  const run = painFreeRun();
-  const pend = pendingNextDay();
+  const run = painFreeRun(state);
+  const pend = pendingNextDay(state);
   let notices = '';
   if (ui.nextMsg) notices += `<div class="notice warn"><b>${esc(ui.nextMsg.title)}</b><span>${esc(ui.nextMsg.text)}</span></div>`;
   if (pend) {
@@ -1240,9 +1356,9 @@ function tabbarHTML() {
 function ticketHTML(id) {
   const p = PROGRAMS[id];
   const locked = id === 'boule' && !state.settings.bouleUnlocked;
-  const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(ex, setsFor(p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
+  const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(state, ex, setsFor(state, p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
   let foot;
-  if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
+  if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
   else if (!ui.unlockOpen) foot = `<div class="t-row"><span class="est">À débloquer avec ton kiné</span><button class="btn ghost" data-action="unlock-open">${ICON.lock} Débloquer</button></div>`;
   else foot = unlockPanelHTML();
   return `
@@ -1267,7 +1383,7 @@ function exSheetHTML(key) {
   return `<div class="sheet-wrap" data-action="ex-close-bg"><div class="ex-sheet" role="dialog" aria-modal="true" aria-labelledby="ex-t">
     <div class="ex-sheet-top"><div><p class="eyebrow">${esc(p.name)}</p><h2 id="ex-t">${esc(ex.name)}</h2></div><button class="icon-btn" data-action="ex-close" aria-label="Fermer">${ICON.close}</button></div>
     ${illusFull(ex.id)}
-    <p class="presc">${esc(presc(ex, setsFor(p, ex)))}</p>
+    <p class="presc">${esc(presc(state, ex, setsFor(state, p, ex)))}</p>
     <p>${esc(ex.cue)}</p>
     ${ex.tip ? `<p class="tip">${esc(ex.tip)}</p>` : ''}
     <p class="tip">En lilas : ce qui bouge. Le côté pâle est le côté opposé.</p>
@@ -1285,19 +1401,8 @@ function unlockPanelHTML() {
   </div>`;
 }
 
-/* Garde-robe : chaque tenue ajoute des calques au dessin de Chouquette. */
-const BOW = '<path class="m-bow" d="M26 9 15 3.5q-3 5.5 0 11zM26 9 37 3.5q3 5.5 0 11z"/><circle class="m-bow" cx="26" cy="9" r="3.4"/>';
-const OUTFIT_SVG = {
-  noeud: { top: BOW },
-  'noeud-or': { top: BOW.replace(/m-bow/g, 'm-gold') },
-  bandeau: { under: '<rect class="m-sweat" x="7" y="19" width="38" height="5"/><path class="m-sweat-h" d="M26 23.2 24.4 21.6a1 1 0 0 1 1.6-1.2 1 1 0 0 1 1.6 1.2z"/>' },
-  lunettes: { top: BOW, face: '<g class="m-shades"><rect x="12.5" y="25.5" width="13" height="8.5" rx="4"/><rect x="26.5" y="25.5" width="13" height="8.5" rx="4"/><path d="M25.5 28.5h1"/></g><path class="m-glint" d="M15 28.6l3-1.2M29 28.6l3-1.2"/>' },
-  fleur: { top: '<g class="m-flower"><circle cx="38" cy="6.4" r="3.3"/><circle cx="43.4" cy="9.8" r="3.3"/><circle cx="41.4" cy="15.4" r="3.3"/><circle cx="34.6" cy="15.4" r="3.3"/><circle cx="32.6" cy="9.8" r="3.3"/></g><circle class="m-gold" cx="38" cy="11" r="2.6"/>' },
-  'coeur-lunettes': { top: BOW, face: '<path class="m-hglass" d="M19.5 35.2 14.4 30.2a3.1 3.1 0 0 1 5.1-3.7 3.1 3.1 0 0 1 5.1 3.7zM32.5 35.2 27.4 30.2a3.1 3.1 0 0 1 5.1-3.7 3.1 3.1 0 0 1 5.1 3.7z"/><path class="m-line" d="M24.6 29.5h2.8"/>' },
-  chapeau: { top: '<path class="m-hat" d="M26 1.5 35.5 13.5h-19z"/><path class="m-hat-s" d="M23.2 5.6h5.6M20.4 9.6h11.2"/><circle class="m-gold" cx="26" cy="2.4" r="2.2"/>' },
-  couronne: { top: '<path class="m-gold" d="M13.5 14.5V5.5l6.2 4.8L26 2.5l6.3 7.8 6.2-4.8v9z"/><circle class="m-jewel" cx="26" cy="9.5" r="1.6"/><circle class="m-jewel" cx="18" cy="11" r="1.2"/><circle class="m-jewel" cx="34" cy="11" r="1.2"/>' }
-};
-function unlockedOutfits(s) { return OUTFITS.filter(o => o.test(s)).map(o => o.id); }
+/* Chouquette porte la tenue choisie, sauf si on en demande une autre (garde-robe). */
+function mascot(mood, outfit) { return mascotSVG(mood, outfit || state.settings.outfit); }
 function wardrobeHTML() {
   const cur = state.settings.outfit || 'noeud';
   const items = OUTFITS.map(o => {
@@ -1309,20 +1414,6 @@ function wardrobeHTML() {
     <div class="outfits">${items}</div>
   </section>`;
 }
-function mascot(mood, outfit) {
-  const o = OUTFIT_SVG[outfit || state.settings.outfit] || OUTFIT_SVG.noeud;
-  const eyes = mood === 'calm'
-    ? '<path class="m-line" d="M16.5 31q3 2.6 6 0M29.5 31q3 2.6 6 0"/>'
-    : mood === 'wow'
-      ? '<circle class="m-eye" cx="19.5" cy="30" r="3"/><circle class="m-eye" cx="32.5" cy="30" r="3"/><circle class="m-shine" cx="20.6" cy="28.8" r="1"/><circle class="m-shine" cx="33.6" cy="28.8" r="1"/>'
-      : '<ellipse class="m-eye" cx="19.5" cy="30" rx="2.4" ry="2.9"/><ellipse class="m-eye" cx="32.5" cy="30" rx="2.4" ry="2.9"/><circle class="m-shine" cx="20.4" cy="28.9" r=".9"/><circle class="m-shine" cx="33.4" cy="28.9" r=".9"/>';
-  const mouth = mood === 'wow' ? '<ellipse class="m-mouth" cx="26" cy="38" rx="2.6" ry="3.1"/>' : '<path class="m-line" d="M22.6 36.5q3.4 3.6 6.8 0"/>';
-  return '<svg class="mascot" viewBox="0 0 52 62" aria-hidden="true">'
-    + '<rect class="m-body" x="7" y="15" width="38" height="45" rx="10"/><rect class="m-face" x="7" y="25" width="38" height="20"/>'
-    + '<rect class="m-rim" x="9" y="12" width="34" height="6" rx="3"/>' + (o.under || '')
-    + eyes + '<ellipse class="m-blush" cx="13.5" cy="36" rx="3.2" ry="2"/><ellipse class="m-blush" cx="38.5" cy="36" rx="3.2" ry="2"/>' + mouth
-    + (o.face || '') + (o.top || '') + '</svg>';
-}
 function buddyHTML(text, mood, size) {
   return `<div class="buddy ${size || ''}">${mascot(mood)}<p class="bubble"><b>Chouquette</b>${esc(text)}</p></div>`;
 }
@@ -1330,7 +1421,7 @@ function buddyLine() {
   const today = dayKey(new Date()), day = new Date().getDate();
   const pickDay = arr => arr[day % arr.length];
   if (!state.history.length) return 'Coucou, moi c’est Chouquette ! Fais tomber mes copines les boîtes… tout doucement.';
-  if (pendingNextDay()) return 'Coucou ! Dis-moi d’abord comment va ton dos ce matin.';
+  if (pendingNextDay(state)) return 'Coucou ! Dis-moi d’abord comment va ton dos ce matin.';
   if (state.history.some(h => dayKey(h.d) === today)) return pickDay(['Bravo pour aujourd’hui ! Maintenant, repos et chouchoutage.', 'Séance faite, cœur rempli. Tu gères !', 'Ton dos te dit merci. À demain peut-être ?']);
   return pickDay(['Une petite partie aujourd’hui ? Lentement, c’est comme ça qu’on gagne.', 'Je t’attends sur le stand, mes boîtes sont prêtes à tomber !', 'Même 3 minutes de respiration, ça compte.', 'Un cœur à remplir aujourd’hui ?']);
 }
@@ -1343,7 +1434,7 @@ function lvlToken(n) {
 function challengesHTML() {
   const done = (state.challenges || {})[weekKey(new Date())] || {};
   const items = weekChallenges(new Date()).map(c => {
-    const p = chalProgress(c), won = !!done[c.id];
+    const p = chalProgress(state, c), won = !!done[c.id];
     return `<li class="chal${won ? ' won' : ''}">
       <div class="chal-txt"><b>${esc(c.name)}</b><span>${esc(c.desc)}</span>
         <div class="chal-bar" role="progressbar" aria-label="${esc(c.name)}" aria-valuemin="0" aria-valuemax="${c.goal}" aria-valuenow="${p}"><i style="width:${Math.round((p / c.goal) * 100)}%"></i></div>
@@ -1515,40 +1606,6 @@ function precheckHTML() {
 }
 
 /* ---------- Résumé kiné ---------- */
-function kineSummary() {
-  const now = new Date(), from = new Date(now); from.setDate(from.getDate() - 30); from.setHours(0, 0, 0, 0);
-  const list = state.history.filter(h => new Date(h.d) >= from).slice().reverse();
-  const days = new Set(list.map(h => dayKey(h.d))).size;
-  const s = state.settings;
-  const L = [];
-  L.push('Suivi Chamboule Coach');
-  L.push(`Période : du ${from.toLocaleDateString('fr-FR')} au ${now.toLocaleDateString('fr-FR')}`);
-  L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
-  L.push(`Réglages actuels : ${s.sets} série${s.sets > 1 ? 's' : ''} par exercice au sol, vélo ${s.veloMin} min`);
-  L.push(`Programme Boule qui chamboule : ${s.bouleUnlocked ? 'débloqué' + (s.bouleUnlockedAt ? ' le ' + new Date(s.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);
-  L.push('');
-  L.push('Douleur de dos notée de 0 à 10 : avant la séance → juste après → le lendemain.');
-  L.push('');
-  if (!list.length) L.push('Aucune séance sur la période.');
-  const painCount = {};
-  list.forEach(h => {
-    const p = PROGRAMS[h.prog] || { name: h.prog };
-    L.push(`${fmtDateLong(h.d)} · ${p.name}${h.hf ? ' (mains libres)' : ''}`);
-    L.push(`  Douleur : ${h.painBefore ?? '?'} → ${h.pain ?? '?'} → ${h.next ?? '?'}`);
-    if (h.legBefore) L.push('  Symptômes dans la jambe AVANT la séance');
-    if (h.leg) L.push('  Symptômes dans la jambe APRÈS la séance');
-    if (backCat(h) === 'stop') L.push('  Séance arrêtée : douleur dans la jambe ou fourmillements');
-    if (h.painEx && h.painEx.length) { L.push('  Passé pour douleur : ' + h.painEx.map(exName).join(', ')); h.painEx.forEach(id => { painCount[id] = (painCount[id] || 0) + 1; }); }
-    const other = (h.skipped || []).filter(id => !(h.painEx || []).includes(id));
-    if (other.length) L.push('  Non fait : ' + other.map(exName).join(', '));
-    if (h.veloMin) L.push(`  Vélo : ${fmtMin(h.veloMin)} min`);
-    if (h.walkMin) L.push(`  Marche : ${fmtMin(h.walkMin)} min`);
-  });
-  L.push('');
-  const pc = Object.entries(painCount);
-  L.push('Exercices passés pour douleur sur la période : ' + (pc.length ? pc.map(([id, n]) => `${exName(id)} (${n})`).join(', ') : 'aucun'));
-  return L.join('\n');
-}
 function summaryHTML() {
   return `<main class="page plain">
     <header class="sub-top">
@@ -1556,7 +1613,7 @@ function summaryHTML() {
       <h1>Résumé pour mon kiné</h1>
     </header>
     <p class="muted">Les 30 derniers jours, avec uniquement ce que tu as noté dans l’appli. À montrer en séance ou à envoyer.</p>
-    <pre class="summary" id="sum-text" tabindex="0">${esc(kineSummary())}</pre>
+    <pre class="summary" id="sum-text" tabindex="0">${esc(kineSummary(state))}</pre>
     <div class="btn-col">
       <button class="btn primary big" data-action="sum-copy">Copier le texte</button>
       ${canSave() ? `<button class="btn ghost" data-action="sum-dl">${window.claude ? 'Télécharger (.txt)' : 'Enregistrer en fichier (.txt)'}</button>` : ''}
@@ -1574,12 +1631,7 @@ function stopLoop() { cancelAnimationFrame(rafId); clearInterval(tickIv); }
 function startGame(progId, pre) {
   audio();
   const prog = PROGRAMS[progId];
-  const steps = [];
-  prog.exercises.forEach((ex, ei) => {
-    if (ex.kind === 'timer') { steps.push({ ex, ei, set: 1, sets: 1, side: null }); return; }
-    const sets = setsFor(prog, ex);
-    for (let s = 1; s <= sets; s++) (ex.sides ? ['droit', 'gauche'] : [null]).forEach(side => steps.push({ ex, ei, set: s, sets, side }));
-  });
+  const steps = buildSteps(state, prog);
   G = {
     prog, steps, i: 0, phase: 'intro', line: pick(LINES.intro), hf: prog.practice ? false : !!state.settings.handsFree,
     setPerfect: 0, nCans: 0, pyramids: 0, canGeo: null, litL: -1,
@@ -1654,7 +1706,7 @@ function introHTML(st) {
     <div class="g-head">
       <p class="eyebrow">${G.prog.practice ? 'Premier lancer · rien n’est enregistré' : `Exercice ${st.ei + 1} / ${n}`}</p>
       <h2 class="g-title">${esc(ex.name)}</h2>
-      <p class="presc">${esc(presc(ex, st.sets))}</p>
+      <p class="presc">${esc(presc(state, ex, st.sets))}</p>
     </div>
     <div class="cue">${illusFull(ex.id)}<p>${esc(ex.cue)}</p>${ex.tip ? `<p class="tip">${esc(ex.tip)}</p>` : ''}</div>
     ${hfCard}
@@ -1707,9 +1759,9 @@ function timerHTML(st) {
   return `<div class="g-body">
     <div class="g-head">
       <h2 class="g-title sm">${esc(ex.name)}</h2>
-      <p class="g-meta">${ex.id === 'velo' ? state.settings.veloMin + ' min · résistance légère · buste peu penché' : timerMin(ex) + ' min · à ton rythme'}</p>
+      <p class="g-meta">${ex.id === 'velo' ? state.settings.veloMin + ' min · résistance légère · buste peu penché' : timerMin(state, ex) + ' min · à ton rythme'}</p>
     </div>
-    <div class="lanterns" aria-hidden="true">${Array.from({ length: Math.min(timerMin(ex), 20) }, () => '<span class="bulb sm"></span>').join('')}</div>
+    <div class="lanterns" aria-hidden="true">${Array.from({ length: Math.min(timerMin(state, ex), 20) }, () => '<span class="bulb sm"></span>').join('')}</div>
     <div class="zone" data-tap role="button" tabindex="0" aria-label="Démarrer ou mettre en pause le chrono" data-autofocus>
       <div class="target">
         <div class="disc"></div>
@@ -1961,13 +2013,6 @@ function sparks() {
   }
 }
 
-/* Chamboule-tout : une pyramide de boîtes par série, une boîte par répétition parfaite. */
-const CAN_SVG = '<svg viewBox="0 0 20 26" preserveAspectRatio="none"><rect class="can-body" x="1" y="1.5" width="18" height="23" rx="3"/><rect class="can-band" x="1" y="9" width="18" height="8"/><path class="can-heart" d="M10 15.6 7.5 13.2a1.55 1.55 0 0 1 2.5-1.8 1.55 1.55 0 0 1 2.5 1.8z"/><rect class="can-rim" x="2" y="1" width="16" height="2.5" rx="1.2"/></svg>';
-function canRows(n) {
-  const rows = []; let left = n, b = Math.ceil((Math.sqrt(8 * n + 1) - 1) / 2);
-  while (left > 0) { const k = Math.min(b, left); rows.push(k); left -= k; b = Math.max(1, b - 1); }
-  return rows;
-}
 function standHTML(n, knocked) {
   if (!n) { G.canGeo = null; return ''; }
   const rows = canRows(n);
@@ -2120,15 +2165,6 @@ function closeOverlay() {
   renderGame();
 }
 
-function computeXP(prog, reason) {
-  const ids = prog.exercises.map(e => e.id);
-  const considered = ids.filter(id => !G.painEx.includes(id));
-  const done = considered.filter(id => !G.skipped.includes(id)).length;
-  const completion = considered.length ? done / considered.length : 0;
-  const quality = G.reps ? G.perfect / G.reps : 1;
-  return Math.round(prog.xpBase * completion * (0.6 + 0.4 * quality)) + 30;
-}
-
 function finish(reason) {
   stopLoop();
   wakeLock(false);
@@ -2148,10 +2184,8 @@ function finish(reason) {
     toast('Séance vide : rien n’a été enregistré.');
     return;
   }
-  const quality = G.reps ? G.perfect / G.reps : 1;
-  const realSkips = G.skipped.filter(id => !G.painEx.includes(id));
-  const stars = reason === 'pain' ? 0 : (quality >= 0.8 && !realSkips.length ? 3 : quality >= 0.5 ? 2 : 1);
-  const xp = computeXP(G.prog, reason);
+  const stars = computeStars(reason, G);
+  const xp = computeXP(G.prog, G);
   const sameDay = state.history.some(h => dayKey(h.d) === dayKey(new Date()));
   const entry = {
     id: 's' + Date.now().toString(36), d: new Date().toISOString(), prog: G.prog.id,
@@ -2167,8 +2201,8 @@ function finish(reason) {
   state.bestCombo = Math.max(state.bestCombo, G.bestCombo);
   state.history.unshift(entry);
   if (state.history.length > 300) state.history.length = 300;
-  const fresh = evalBadges();
-  const chal = evalChallenges();
+  const fresh = evalBadges(state);
+  const chal = evalChallenges(state);
   persist();
   const newOutfits = OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id));
   R = { entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
@@ -2258,9 +2292,9 @@ function applyCheckin() {
   });
   const outfitsBefore = unlockedOutfits(state);
   if (first) state.xp += 20;
-  const fresh = evalBadges();
+  const fresh = evalBadges(state);
   if (fresh.length) R.badges = R.badges.concat(fresh);
-  const ch = evalChallenges();
+  const ch = evalChallenges(state);
   if (ch.length) R.challenges = (R.challenges || []).concat(ch);
   R.outfits = (R.outfits || []).concat(OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id)));
   R.after = levelInfo(state.xp);
@@ -2302,14 +2336,8 @@ function saveFile(name, text, type) {
     return Promise.resolve({ status: 'saved' });
   } catch { return Promise.reject({ code: 'unavailable' }); }
 }
-function backupDue() {
-  if (window.claude || state.history.length < 3) return false;
-  const s = state.settings, now = Date.now();
-  if (s.exportSnooze && now < Date.parse(s.exportSnooze)) return false;
-  return !s.lastExport || now - Date.parse(s.lastExport) > 30 * 86400000;
-}
 function backupReminderHTML() {
-  if (!backupDue()) return '';
+  if (!backupDue(state, Date.now(), !!window.claude)) return '';
   return `<div class="notice warn"><b>Pense à sauvegarder ta progression.</b><span>Tes séances ne sont que dans ce téléphone. Exporte un fichier de sauvegarde et range-le dans tes fichiers ou envoie-le-toi par mail.</span>
     <div class="row-btns"><button class="btn primary" data-action="export">Exporter maintenant</button><button class="btn ghost" data-action="backup-later">Plus tard</button></div></div>`;
 }
@@ -2346,7 +2374,7 @@ const ACTIONS = {
   },
   'import-cancel'() { ui.importData = null; renderScreen(); },
   'sum-share'() {
-    try { navigator.share({ title: 'Suivi dos', text: kineSummary() }).catch(() => {}); } catch {}
+    try { navigator.share({ title: 'Suivi dos', text: kineSummary(state) }).catch(() => {}); } catch {}
   },
   'pre-pain'(b) { ui.pre.pain = Number(b.dataset.v); ui.pre.step = 'ask'; renderScreen(); },
   'pre-leg'(b) { ui.pre.leg = b.dataset.v === '1'; ui.pre.step = 'ask'; renderScreen(); },
@@ -2369,8 +2397,8 @@ const ACTIONS = {
     const base = h.painBefore ?? h.pain ?? 0;
     ui.nextMsg = (v >= 7 || v >= base + 3) ? { title: `Plus douloureux qu’avant la séance (${base} → ${v}).`, text: 'Prends un jour de repos ou fais Jour difficile, et parles-en à ton kiné.' } : null;
     h.back = backCat(h);
-    evalBadges();
-    const ch = evalChallenges();
+    evalBadges(state);
+    const ch = evalChallenges(state);
     persist(); renderScreen({ still: true });
     const newOutfit = OUTFITS.find(o => o.test(state) && !outfitsBefore.includes(o.id));
     if (newOutfit) { setTimeout(() => toast(`Nouvelle tenue pour Chouquette : ${newOutfit.name} ! Va voir dans Progrès.`), 4300); }
@@ -2379,7 +2407,7 @@ const ACTIONS = {
   summary() { ui.summaryBack = ui.screen; ui.screen = 'summary'; renderScreen(); window.scrollTo(0, 0); },
   'summary-back'() { ui.screen = ui.summaryBack === 'settings' ? 'settings' : 'home'; renderScreen(); window.scrollTo(0, 0); },
   'sum-copy'() {
-    const text = kineSummary();
+    const text = kineSummary(state);
     const fallback = () => {
       const el = $('#sum-text'); if (!el) return;
       try { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } catch {}
@@ -2391,7 +2419,7 @@ const ACTIONS = {
     } catch { fallback(); }
   },
   'sum-dl'() {
-    saveFile('suivi-dos-' + dayKey(new Date()) + '.txt', kineSummary(), 'text/plain')
+    saveFile('suivi-dos-' + dayKey(new Date()) + '.txt', kineSummary(state), 'text/plain')
       .then(() => toast('Résumé téléchargé.'))
       .catch(e => { if (!e || e.code !== 'declined') toast('Téléchargement impossible ici. Utilise Copier le texte.'); });
   },
@@ -2421,7 +2449,7 @@ const ACTIONS = {
   go() {
     if (!G) return;
     const ex = G.steps[G.i].ex;
-    if (G.phase === 'intro' && ex.kind === 'timer') { G.phase = 'timer'; G.lastMin = null; G.timer = { running: false, acc: 0, since: 0, dur: timerMin(ex) * 60000, credited: false }; renderGame(); return; }
+    if (G.phase === 'intro' && ex.kind === 'timer') { G.phase = 'timer'; G.lastMin = null; G.timer = { running: false, acc: 0, since: 0, dur: timerMin(state, ex) * 60000, credited: false }; renderGame(); return; }
     beginPlay();
     // iOS ne laisse parler l’appli que si la première phrase part d’un toucher : on parle ici, tout de suite.
     if (G.hf) { if (ex.kind === 'breath') { say('Inspire'); G.cue = 1; } else say('C’est parti'); }

@@ -38,12 +38,23 @@ OPTION B : L'APPLI DE CE DOSSIER SUR GITHUB PAGES (gratuit, marche hors ligne)
    Réglages > Sauvegarde dans un fichier > Importer.
 
 4. LES MISES À JOUR
-   Le code de travail est dans source/chamboule-coach.html.
+   Le code est rangé dans source/ :
+       styles.css      l'apparence (couleurs, polices, mise en page)
+       logic.js        les règles du jeu : exercices, programmes, points, étoiles, défis, tenues
+       drawings.js     les dessins : exercices, icônes, Chouquette, boîtes
+       app.js          les écrans, la séance de jeu et la sauvegarde
+       page-head.html / page-body.html   le début de la page
+   Les tests automatiques sont dans tests/logic.test.js.
+
    Après une modification, depuis la racine du dépôt :
-       node source/build-phone-app.js
+       node source/build.js
+   Le script lance d'abord tous les tests : si un seul échoue, rien n'est construit.
+   Il assemble ensuite la page (build/chamboule-coach.html, pour la version Claude)
+   et l'appli du téléphone (index.html, sw.js, icônes, à la racine).
+   Puis :
        git add -A && git commit -m "..." && git push
    GitHub Pages republie en 1 à 2 minutes. L'appli du téléphone se met à jour toute seule
-   à la prochaine ouverture avec du réseau (jusqu'à 10 minutes de délai).
+   à la prochaine ouverture avec du réseau.
 
 BON À SAVOIR (option B)
 - Tes séances et ta douleur notée restent dans le téléphone. Personne d'autre ne les voit.

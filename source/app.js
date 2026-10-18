@@ -1,820 +1,10 @@
-<title>Chamboule Coach</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Pacifico&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap">
-<style>
-/* Layout: one phone-width column under a candy-pink fairground awning on a polka-dot ground; programs are admission tickets; the game takes the whole screen with one giant tap target. */
-:root{
-  --bg:#FFF1F7; --surface:#FFFFFF; --surface-2:#FFE1EE; --ink:#3A1238; --ink-2:#85507A; --line:#F3C4D9; --dot:#FBD5E6;
-  --accent:#C93B7B; --accent-deep:#93245A; --accent-ink:#FFFFFF;
-  --awning-a:#FF8DBA; --awning-b:#FFFFFF;
-  --ticket:#FFD25E; --ticket-deep:#D9A21E; --ticket-ink:#3A2600;
-  --prize:#8455E8; --prize-ink:#FFFFFF;
-  --ok:#1A7D60; --ok-ink:#FFFFFF; --warn:#A35D00; --danger:#B3261E;
-  --bulb-off:#F8D3E3;
-  --face:#FFFFFF; --face-ink:#3A1238; --blush:#FF9EC2;
-  --shadow:0 1px 0 rgba(147,36,90,.06),0 12px 28px -14px rgba(147,36,90,.40);
-  --heart:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.3 3.4 12.9a5.2 5.2 0 0 1 8.6-7.1 5.2 5.2 0 0 1 8.6 7.1z'/%3E%3C/svg%3E");
-  --heart-o:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 20 4.3 12.5a4.6 4.6 0 0 1 7.7-6.3 4.6 4.6 0 0 1 7.7 6.3z' fill='none' stroke='black' stroke-width='2.6' stroke-linejoin='round'/%3E%3C/svg%3E");
-  --star:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z'/%3E%3C/svg%3E");
-  --f-display:'Fredoka','Nunito','Segoe UI',system-ui,sans-serif;
-  --f-script:'Pacifico','Brush Script MT',cursive;
-  --f-body:'Nunito','Segoe UI',system-ui,-apple-system,sans-serif;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#2A0F28; --surface:#3A1838; --surface-2:#4B2148; --ink:#FFEAF4; --ink-2:#E3AACB; --line:#6B3366; --dot:#361634;
-    --accent:#FF7EB3; --accent-deep:#C9508A; --accent-ink:#2A0F28;
-    --awning-a:#D9609A; --awning-b:#FFD7E8;
-    --ticket:#FFD978; --ticket-deep:#C9A23A; --ticket-ink:#3A2600;
-    --prize:#BFA0FF; --prize-ink:#2A0F28;
-    --ok:#6FDDBC; --ok-ink:#2A0F28; --warn:#FFBE63; --danger:#FF6A55;
-    --bulb-off:#5A2A56;
-    --face:#FFF3F8; --face-ink:#3A1238; --blush:#FF9EC2;
-    --shadow:0 12px 30px -14px rgba(0,0,0,.6);
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#2A0F28; --surface:#3A1838; --surface-2:#4B2148; --ink:#FFEAF4; --ink-2:#E3AACB; --line:#6B3366; --dot:#361634;
-  --accent:#FF7EB3; --accent-deep:#C9508A; --accent-ink:#2A0F28;
-  --awning-a:#D9609A; --awning-b:#FFD7E8;
-  --ticket:#FFD978; --ticket-deep:#C9A23A; --ticket-ink:#3A2600;
-  --prize:#BFA0FF; --prize-ink:#2A0F28;
-  --ok:#6FDDBC; --ok-ink:#2A0F28; --warn:#FFBE63; --danger:#FF6A55;
-  --bulb-off:#5A2A56;
-  --face:#FFF3F8; --face-ink:#3A1238; --blush:#FF9EC2;
-  --shadow:0 12px 30px -14px rgba(0,0,0,.6);
-  color-scheme:dark;
-}
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-html,body{height:100%}
-body{background:var(--bg) radial-gradient(var(--dot) 1.4px,transparent 1.7px) 0 0/22px 22px;color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
-h1,h2,h3{font-family:var(--f-display);font-weight:700;line-height:1.1;text-wrap:balance;margin:0;letter-spacing:.005em}
-p{margin:0}
-button{font:inherit;color:inherit}
-:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:10px}
-.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.eyebrow{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
-.section-title{font-size:18px;color:var(--ink)}
-.muted{color:var(--ink-2)}
-
-/* Awning */
-.awning{height:40px;background:repeating-linear-gradient(90deg,var(--awning-a) 0 32px,var(--awning-b) 32px 64px);position:relative}
-.awning::after{content:"";position:absolute;left:0;right:0;top:100%;height:16px;
-  background:radial-gradient(circle at 16px 0,var(--awning-a) 15.5px,transparent 16px) 0 0/64px 16px repeat-x,
-             radial-gradient(circle at 48px 0,var(--awning-b) 15.5px,transparent 16px) 0 0/64px 16px repeat-x}
-
-.page{max-width:600px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:30px 56px;display:flex;flex-direction:column;gap:22px}
-.page.plain{padding-block:20px 56px}
-.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.brand{display:flex;flex-direction:column;gap:6px;min-width:0}
-.brand h1{font-family:var(--f-script);font-weight:400;font-size:clamp(32px,9.5vw,44px);color:var(--accent);line-height:1.15;position:relative}
-.brand h1 .spark-txt{font-family:var(--f-display);font-size:.55em;color:var(--ticket-deep);margin-left:6px;display:inline-block;animation:twinkle 1.6s infinite}
-.brand p{font-weight:700;color:var(--ink-2)}
-.icon-btn{flex:none;width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:var(--ink)}
-.icon-btn:hover{border-color:var(--accent)}
-.card{background:var(--surface);border-radius:24px;padding:16px;box-shadow:var(--shadow)}
-
-/* Player */
-.player{display:flex;flex-direction:column;gap:14px}
-.player-top{display:flex;gap:16px;align-items:center}
-.lvl-token{position:relative;flex:none;width:64px;height:64px;margin:6px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--f-display);font-size:28px;box-shadow:0 0 0 4px var(--surface)}
-.lvl-token b{font-weight:700}
-.marq{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--ticket);transform:rotate(var(--a)) translateY(-40px);animation:twinkle 1.2s var(--d) infinite}
-@keyframes twinkle{50%{opacity:.2}}
-.player-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
-.lvl-name{font-family:var(--f-display);font-size:20px;line-height:1.1}
-.xpbar{height:12px;border-radius:99px;background:var(--surface-2);overflow:hidden}
-.xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ticket),var(--prize));border-radius:inherit;transition:width 1s cubic-bezier(.2,.8,.2,1)}
-.xp-meta{font-size:14px;color:var(--ink-2);font-variant-numeric:tabular-nums}
-.stats3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.stat{background:var(--surface-2);border-radius:12px;padding:8px 10px;min-width:0}
-.stat b{font-family:var(--f-display);font-weight:700;font-size:20px;display:block;line-height:1.2;font-variant-numeric:tabular-nums}
-.stat span{font-size:13px;color:var(--ink-2);font-weight:700;line-height:1.25;display:block}
-
-/* Week bulbs */
-.week{display:flex;flex-direction:column;gap:12px}
-.week-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.week-head p{font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
-.week-head p b{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--ink)}
-.bulbs{display:flex;gap:12px;flex-wrap:wrap}
-/* Cœur vide = contour rose, cœur plein = rempli : l'état se lit à la forme, pas seulement à la teinte. */
-.bulb{width:32px;height:32px;background:var(--accent);-webkit-mask:var(--heart-o) center/contain no-repeat;mask:var(--heart-o) center/contain no-repeat}
-.bulb.lit{-webkit-mask-image:var(--heart);mask-image:var(--heart);animation:beat 1.4s ease-in-out infinite}
-@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.14)}30%{transform:scale(1)}45%{transform:scale(1.08)}}
-.week-meta{font-size:14px;color:var(--ink-2);font-weight:600}
-
-/* Notices & alert */
-.notice{background:var(--surface-2);border-radius:14px;padding:12px 14px;font-size:15px;display:flex;flex-direction:column;gap:4px}
-.notice b{font-weight:900}
-.notice.warn b{color:var(--warn)}
-.notice.good b{color:var(--ok)}
-.notice.danger b{color:var(--danger)}
-.alert{border:2px solid var(--danger);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
-.alert h2{color:var(--danger);font-size:18px}
-.alert p{font-size:15px}
-.alert p b{font-weight:900}
-.alert.compact{padding:12px 14px;gap:6px}
-.alert.compact h2{font-size:15px}
-.alert.compact p{font-size:14px}
-
-/* Check-in scales */
-.scale{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
-.scale button{min-height:46px;border-radius:12px;border:2px solid var(--line);background:transparent;font-weight:900;font-size:17px;cursor:pointer;font-variant-numeric:tabular-nums}
-.scale button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.scale-legend{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink-2);font-weight:700}
-.seg2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.seg2 button{min-height:50px;border-radius:14px;border:2px solid var(--line);background:transparent;font-weight:900;cursor:pointer}
-.seg2 button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.seg2 button[data-v="1"][aria-pressed="true"]{background:var(--danger);border-color:var(--danger);color:var(--surface)}
-.next-card{display:flex;flex-direction:column;gap:12px;border:2px solid var(--ticket)}
-
-/* Tickets */
-.programs{display:flex;flex-direction:column;gap:14px}
-.ticket{--t-color:var(--accent);--t-ink:var(--accent-ink);position:relative;background:var(--surface);border-radius:24px;overflow:hidden;box-shadow:var(--shadow)}
-.ticket.boule{--t-color:var(--prize);--t-ink:var(--prize-ink)}
-.ticket.difficile{--t-color:var(--ok);--t-ink:var(--ok-ink)}
-.ticket.milieu{--t-color:var(--ticket);--t-ink:var(--ticket-ink)}
-.ticket.locked{--t-color:var(--surface-2);--t-ink:var(--ink-2)}
-.ticket-head{background:var(--t-color);color:var(--t-ink);padding:16px 18px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
-.ticket-head h3{font-size:22px}
-.ticket-head p{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.92}
-.ticket-head .lockchip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800}
-.perf{position:relative;height:0;border-top:2px dashed var(--line);margin:0 16px}
-.perf::before,.perf::after{content:"";position:absolute;top:-11px;width:22px;height:22px;border-radius:50%;background:var(--bg)}
-.perf::before{left:-27px}.perf::after{right:-27px}
-.ticket-body{padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px}
-.ticket-body > p{font-size:15px;color:var(--ink-2)}
-.ex-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-.ex-list li{border-bottom:1px solid var(--line)}
-.ex-list li:last-child{border-bottom:0}
-.ex-row{display:flex;gap:12px;align-items:center;width:100%;background:none;border:0;padding:8px 0;text-align:left;cursor:pointer;color:inherit;border-radius:12px}
-.ex-row:hover .ex-txt b{color:var(--accent)}
-.ex-txt{flex:1;min-width:0;display:flex;flex-direction:column}
-.ex-txt b{font-weight:800}
-.ex-txt span{color:var(--ink-2);font-size:14px;font-weight:600}
-.chev{color:var(--ink-2);flex:none}
-.ticket.locked .ex-list{opacity:.6}
-.t-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.est{font-size:14px;color:var(--ink-2);font-weight:800}
-.unlock{border:2px dashed var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px;font-size:15px}
-.check{display:flex;gap:10px;align-items:flex-start;font-weight:700;cursor:pointer}
-.check input{width:22px;height:22px;margin:1px 0 0;accent-color:var(--accent);flex:none}
-
-/* Illustrations */
-.il{display:block;width:100%;height:auto}
-.il polyline{fill:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round}
-.il-far polyline{stroke:var(--ink-2);opacity:.45}
-.il-body polyline{stroke:var(--ink)}
-.il-move polyline{stroke:var(--prize)}
-.il-head,.il-mass{fill:var(--ink)}
-.il-bg{fill:var(--surface-2)}
-.il-floor{stroke:var(--line);stroke-width:3;stroke-linecap:round}
-.il-cue,.il-arrow{fill:none;stroke:var(--prize);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.il-next{fill:none;stroke:var(--ink-2);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.il-prop{fill:var(--surface);stroke:var(--ink-2);stroke-width:2.5}
-.il-bike{fill:none;stroke:var(--ink-2);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
-.il-bike circle{fill:var(--surface)}
-.il-crank{stroke:var(--ink-2);stroke-width:3;stroke-linecap:round}
-.il-mini{width:64px;flex:none;border-radius:10px}
-.il-t{fill:var(--prize);font:800 12px var(--f-body)}
-.il-fig{margin:0;display:flex;flex-direction:column;gap:6px}
-.il-caps{display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:center;font-size:14px;font-weight:800;color:var(--ink-2);line-height:1.25}
-
-/* Chamboule-tout : une boîte tombe à chaque répétition parfaite */
-.stand{position:relative;width:100%;max-width:340px;height:116px;margin:0 auto;flex:none}
-.stand-back{position:absolute;left:0;right:0;top:0;bottom:6px;border-radius:14px 14px 6px 6px;background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--awning-a) 13%,transparent) 0 20px,transparent 20px 40px)}
-.plank{position:absolute;left:8%;right:8%;bottom:0;height:10px;border-radius:4px;background:var(--ticket-deep)}
-.can{position:absolute;transform-origin:50% 100%}
-.can svg{display:block;width:100%;height:100%}
-.can-body{fill:var(--prize)}
-.can.c1 .can-body{fill:var(--accent)}
-.can-body{rx:4px}
-.can-band{fill:var(--face)}
-.can-heart{fill:var(--accent)}
-.can.c1 .can-heart{fill:var(--prize)}
-.can-rim{fill:var(--ticket)}
-.can.gone{opacity:0}
-.can.down{animation:knock .75s cubic-bezier(.3,.6,.4,1) forwards}
-@keyframes knock{to{transform:translate(var(--kx),var(--ky)) rotate(var(--kr));opacity:0}}
-.can.wobble{animation:wobble .45s ease}
-@keyframes wobble{25%{transform:rotate(-9deg)}70%{transform:rotate(6deg)}}
-.ball{position:absolute;left:50%;bottom:-34px;width:20px;height:20px;margin-left:-10px;background:var(--accent);-webkit-mask:var(--heart) center/contain no-repeat;mask:var(--heart) center/contain no-repeat;transition:transform .28s cubic-bezier(.2,.7,.3,1),opacity .2s;z-index:3}
-.lanterns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.bulb.sm{width:20px;height:20px}
-
-/* Chouquette, la mascotte */
-.buddy{display:flex;gap:10px;align-items:flex-end}
-.mascot{width:64px;height:auto;flex:none;animation:bob 2.6s ease-in-out infinite;transform-origin:50% 100%}
-.buddy.sm .mascot{width:50px}
-@keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-3deg)}}
-.m-body{fill:var(--accent)}.m-face{fill:var(--face)}.m-rim{fill:var(--ticket)}.m-bow{fill:var(--prize)}
-.m-eye,.m-mouth{fill:var(--face-ink)}.m-shine{fill:var(--face)}
-.m-line{fill:none;stroke:var(--face-ink);stroke-width:2.2;stroke-linecap:round}
-.m-blush{fill:var(--blush);opacity:.85}
-.bubble{flex:1;min-width:0;background:var(--surface);border-radius:22px 22px 22px 6px;padding:12px 14px;font-weight:700;box-shadow:var(--shadow);text-align:left}
-.bubble b{display:block;font-family:var(--f-display);color:var(--accent);font-size:14px;margin-bottom:2px}
-.buddy.sm .bubble{font-size:15px}
-.flash .mascot{width:46px;display:block;margin:0 auto 4px;animation:none}
-.m-gold{fill:var(--ticket)}.m-jewel{fill:var(--prize)}.m-hat{fill:var(--prize)}
-.m-hat-s{fill:none;stroke:var(--ticket);stroke-width:2.2;stroke-linecap:round}
-.m-shades rect{fill:var(--face-ink)}.m-shades path{fill:none;stroke:var(--face-ink);stroke-width:2}
-.m-glint{fill:none;stroke:var(--face);stroke-width:1.2;stroke-linecap:round}
-.m-hglass{fill:var(--accent-deep)}.m-sweat{fill:var(--prize)}.m-sweat-h{fill:var(--face)}.m-flower circle{fill:var(--face)}
-.wardrobe{display:flex;flex-direction:column;gap:12px}
-.outfits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.outfit{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:18px;border:2px solid var(--line);background:var(--surface);cursor:pointer;min-width:0;text-align:center}
-.outfit .mascot{width:44px;animation:none}
-.outfit b{font-size:13px;font-weight:900;line-height:1.15}
-.outfit span{font-size:12px;color:var(--ink-2);font-weight:700;line-height:1.2;display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap}
-.outfit span svg{width:11px;height:11px;flex:none}
-.outfit.on{border-color:var(--accent);background:var(--surface-2)}
-.outfit.on span{color:var(--accent)}
-.outfit.locked{cursor:default}
-.outfit.locked .mascot{filter:grayscale(1);opacity:.45}
-.new-outfit{flex-direction:row;align-items:center;gap:12px}
-.new-outfit .mascot{width:48px;animation:none}
-.stand-buddy{position:absolute;left:4px;bottom:8px;width:38px;z-index:2}
-.stand-buddy .mascot{width:38px;animation:none}
-.stand-buddy.hop{animation:hop .5s cubic-bezier(.3,1.6,.5,1)}
-@keyframes hop{35%{transform:translateY(-16px) rotate(-8deg)}70%{transform:translateY(0) rotate(4deg)}}
-.stand-buddy.shake{animation:shakeit .4s ease}
-@keyframes shakeit{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
-
-/* Défis de la semaine */
-.chal-card{display:flex;flex-direction:column;gap:6px}
-.chal-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-.chal{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}
-.chal:last-child{border-bottom:0}
-.chal-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.chal-txt b{font-weight:900}
-.chal-txt span{font-size:14px;color:var(--ink-2);font-weight:600}
-.chal-txt small{font-size:13px;color:var(--ink-2);font-weight:800;font-variant-numeric:tabular-nums}
-.chal-bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:4px}
-.chal-bar i{display:block;height:100%;background:var(--ticket);border-radius:inherit}
-.chal.won .chal-bar i{background:var(--ok)}
-.chal-prize{flex:none;display:flex;flex-direction:column;align-items:center;line-height:1.1;font-size:13px;font-weight:900;color:var(--ink-2)}
-.chal-prize b{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--prize)}
-.stamp{flex:none;font-family:var(--f-display);color:var(--ok);border:3px solid var(--ok);border-radius:8px;padding:3px 8px;transform:rotate(-12deg);font-size:14px;letter-spacing:.04em}
-.res-meta{text-align:center;font-weight:700;color:var(--ink-2)}
-.row-btns{display:flex;gap:8px;flex-wrap:wrap}
-
-/* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;border:2px solid transparent;padding:10px 18px;font-weight:900;font-size:16px;cursor:pointer;min-height:48px;transition:transform .12s ease,box-shadow .12s ease;text-align:center}
-.btn:active{transform:translateY(2px)}
-.btn.primary{background:var(--accent);color:var(--accent-ink);box-shadow:0 4px 0 var(--accent-deep)}
-.btn.primary:active{box-shadow:0 2px 0 var(--accent-deep)}
-.btn.play{background:var(--ticket);color:var(--ticket-ink);box-shadow:0 4px 0 var(--ticket-deep);font-family:var(--f-display);font-weight:700;letter-spacing:.04em}
-.btn.play:active{box-shadow:0 2px 0 var(--ticket-deep)}
-.btn.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
-.btn.ghost:hover{border-color:var(--accent)}
-.btn.danger-outline{background:transparent;border-color:var(--danger);color:var(--danger)}
-.btn.big{min-height:58px;font-size:18px;width:100%}
-.btn.sm{min-height:46px;padding:8px 10px;font-size:15px}
-.btn[disabled]{opacity:.4;cursor:not-allowed;box-shadow:none;transform:none}
-.btn-col{display:flex;flex-direction:column;gap:8px}
-
-/* Badges */
-.badges-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.badges-head p{font-weight:800;color:var(--ink-2);font-variant-numeric:tabular-nums}
-.badges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 10px;margin-top:12px}
-.badge{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;min-width:0}
-.medal{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:16px;background:var(--ticket);color:var(--ticket-ink);box-shadow:inset 0 0 0 3px var(--surface),0 0 0 2px var(--ticket)}
-.medal svg{width:24px;height:24px;fill:currentColor}
-.badge.locked .medal{background:transparent;color:var(--ink-2);box-shadow:none;border:2px dashed var(--line)}
-.badge b{font-size:14px;line-height:1.2;font-weight:900}
-.badge span{font-size:13px;color:var(--ink-2);line-height:1.3}
-.badge.locked b{color:var(--ink-2)}
-
-/* Chart */
-.chart-wrap{position:relative;margin-top:10px}
-.chart-wrap svg{display:block;width:100%;height:auto;overflow:visible}
-.c-grid{stroke:var(--line);stroke-width:1}
-.c-goal{stroke:var(--ink-2);stroke-width:1.5;stroke-dasharray:4 4}
-.c-bar{fill:var(--accent)}
-.c-bar.now{fill:var(--ticket)}
-.c-txt{fill:var(--ink-2);font-family:var(--f-body);font-size:11px;font-weight:700}
-.c-hit{fill:transparent}
-.c-hit:focus{outline:none}
-.c-hit:focus-visible{stroke:var(--accent);stroke-width:2}
-.chart-tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:13px;font-weight:800;padding:6px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,calc(-100% - 8px));z-index:2}
-
-/* History */
-.hist{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column}
-.hist li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
-.h-date{font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);width:66px;line-height:1.2}
-.h-main b{display:block;font-weight:800}
-.h-main span{font-size:14px;color:var(--ink-2);display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
-.mini-stars{display:inline-flex;gap:1px}
-.mini-stars svg{width:14px;height:14px;fill:var(--line)}
-.mini-stars svg.on{fill:var(--ticket-deep)}
-.chip{font-size:13px;font-weight:900;padding:3px 9px;border-radius:99px;white-space:nowrap;border:1.5px solid currentColor}
-.chip.ok{color:var(--ok)}.chip.warn{color:var(--warn)}.chip.danger{color:var(--danger)}.chip.muted{color:var(--ink-2)}
-.empty{padding:18px;border:2px dashed var(--line);border-radius:14px;color:var(--ink-2);font-weight:700;text-align:center;margin-top:8px}
-.link-btn{background:none;border:0;color:var(--accent);font-weight:900;cursor:pointer;padding:10px 0;min-height:44px}
-.hist-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
-
-/* Rules */
-.rules{border:2px dashed var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
-.rules ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
-.rules li::marker{color:var(--prize)}
-.foot{font-size:14px;color:var(--ink-2);text-align:center;font-weight:600}
-
-/* Settings & sub pages */
-.set-card{display:flex;flex-direction:column;gap:14px}
-.set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.set-row > div:first-child{min-width:0;flex:1 1 180px}
-.set-row b{font-weight:900;display:block}
-.set-row small{color:var(--ink-2);font-size:14px;font-weight:600;display:block;line-height:1.35}
-.seg{display:inline-flex;border:2px solid var(--line);border-radius:12px;overflow:hidden}
-.seg button{border:0;background:transparent;padding:8px 14px;font-weight:900;cursor:pointer;min-width:48px;min-height:44px}
-.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
-.stepper{display:inline-flex;align-items:center;gap:6px}
-.stepper button{width:44px;height:44px;border-radius:12px;border:2px solid var(--line);background:transparent;font-size:22px;font-weight:900;cursor:pointer;line-height:1}
-.stepper output{min-width:76px;text-align:center;font-family:var(--f-display);font-size:18px;font-variant-numeric:tabular-nums}
-.toggle{width:58px;height:34px;border-radius:99px;background:var(--surface-2);border:0;position:relative;cursor:pointer;flex:none}
-.toggle::after{content:"";position:absolute;top:5px;left:5px;width:24px;height:24px;border-radius:50%;background:var(--ink-2);transition:transform .2s}
-.toggle[aria-checked="true"]{background:var(--accent)}
-.toggle[aria-checked="true"]::after{transform:translateX(24px);background:var(--accent-ink)}
-.sub-top{display:flex;align-items:center;gap:12px}
-.sub-top h1{font-size:clamp(22px,7vw,28px)}
-.summary{white-space:pre-wrap;background:var(--surface);border-radius:16px;padding:16px;font:600 14px/1.55 var(--f-body);max-height:58vh;overflow:auto;margin:0;user-select:text;-webkit-user-select:text;box-shadow:var(--shadow)}
-
-/* Exercise sheet */
-.sheet-wrap{position:fixed;inset:0;z-index:10;background:color-mix(in srgb,var(--bg) 70%,transparent);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);display:flex;align-items:flex-end;justify-content:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
-.ex-sheet{width:100%;max-width:560px;max-height:100%;overflow-y:auto;background:var(--surface);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
-.ex-sheet-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.ex-sheet-top h2{font-size:22px}
-.ex-sheet p{font-size:16px;font-weight:600}
-.ex-sheet .tip{color:var(--ink-2);font-size:15px}
-
-/* Game */
-.game{position:fixed;inset:0;z-index:5;background:var(--bg);display:flex;flex-direction:column;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(env(safe-area-inset-top,0px) + 10px) calc(env(safe-area-inset-bottom,0px) + 14px);overflow:hidden}
-.g-wrap{width:100%;max-width:560px;margin:0 auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:12px}
-.g-top{display:flex;align-items:center;gap:10px}
-.g-top .icon-btn{width:40px;height:40px}
-.pips{flex:1;display:flex;gap:6px;min-width:0}
-.pips i{flex:1;height:8px;border-radius:99px;background:var(--surface-2)}
-.pips i.done{background:var(--accent)}
-.pips i.now{background:var(--ticket)}
-.pips i.skip{background:var(--line)}
-.g-score{text-align:right;line-height:1;min-width:60px}
-.g-score .lbl{display:block;font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
-.g-score b{font-family:var(--f-display);font-weight:700;font-size:24px;font-variant-numeric:tabular-nums}
-.g-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;overflow-y:auto;padding-bottom:2px}
-.g-title{font-size:clamp(26px,7.6vw,42px);hyphens:auto;overflow-wrap:break-word}
-.g-title.sm{font-size:clamp(21px,6vw,30px)}
-.g-meta{color:var(--ink-2);font-weight:800}
-.g-meta .hf-chip{display:inline-block;background:var(--ok);color:var(--ok-ink);border-radius:99px;padding:1px 8px;font-size:13px;margin-left:4px;vertical-align:1px}
-.g-head{display:flex;flex-direction:column;gap:4px}
-.presc{font-family:var(--f-display);font-size:18px;color:var(--prize)}
-.cue{background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow)}
-.cue p{font-size:17px;font-weight:600}
-.cue .tip{color:var(--ink-2);font-size:15px;font-weight:600}
-.hf-card{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--surface);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow)}
-.hf-card b{display:block;font-weight:900}
-.hf-card small{color:var(--ink-2);font-weight:600;font-size:14px;line-height:1.35;display:block}
-.tempo-note{display:flex;gap:12px;align-items:flex-start;font-size:15px;color:var(--ink-2);font-weight:600}
-.tempo-note .dial{flex:none;width:34px;height:34px;border-radius:50%;border:4px solid var(--ticket);border-right-color:var(--surface-2);border-bottom-color:var(--surface-2);transform:rotate(45deg)}
-.coach{font-weight:700;font-style:italic;color:var(--accent)}
-.g-actions{display:flex;flex-direction:column;gap:8px;margin-top:auto}
-.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-
-.zone{flex:1;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;border-radius:24px;position:relative}
-.zone:focus-visible{outline-offset:-3px}
-.target{position:relative;width:min(64vw,32vh,300px);max-width:100%;aspect-ratio:1;display:grid;place-items:center}
-.disc{position:absolute;inset:13%;border-radius:50%;background:var(--surface);box-shadow:var(--shadow);transition:background .25s ease}
-.ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
-.ring-bg{fill:none;stroke:var(--surface-2);stroke-width:12}
-.ring-fg{fill:none;stroke:var(--accent);stroke-width:12;stroke-linecap:round;transition:stroke .2s}
-.zone.ready .ring-fg{stroke:var(--ticket)}
-.zone.ready .disc{background:var(--ticket)}
-.zone.ready .count{color:var(--ticket-ink)}
-.zone.paused .disc{background:var(--surface-2)}
-.breath{position:absolute;inset:20%;border-radius:50%;background:color-mix(in srgb,var(--accent) 20%,transparent);transform:scale(.5)}
-.zone.ready .breath{background:color-mix(in srgb,var(--ticket-ink) 12%,transparent)}
-.count{position:relative;text-align:center;line-height:1;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:center;gap:4px}
-.count b{font-family:var(--f-display);font-weight:700;font-size:clamp(56px,18vw,100px);display:block;line-height:.95}
-.count span{font-weight:900;font-size:18px;opacity:.75}
-.count .clock{font-size:clamp(40px,12vw,64px)}
-.zone-hint{font-weight:900;font-size:18px;text-align:center;min-height:1.5em}
-.combo{font-family:var(--f-display);color:var(--prize);font-size:18px}
-.target.hit{animation:squash .28s ease-out}
-@keyframes squash{0%{transform:scale(1)}35%{transform:scale(.9)}70%{transform:scale(1.04)}100%{transform:scale(1)}}
-.fx{position:absolute;inset:0;pointer-events:none}
-.pop{position:absolute;left:50%;top:34%;font-family:var(--f-display);font-size:24px;white-space:nowrap;animation:rise .9s ease-out forwards;text-align:center;line-height:1.1;text-shadow:0 2px 0 var(--bg)}
-.pop small{display:block;font-size:15px}
-.pop.good{color:var(--accent)}
-.pop.bad{color:var(--prize)}
-@keyframes rise{0%{opacity:0;transform:translate(-50%,10px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-80px) scale(1)}}
-.spark{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;-webkit-mask:var(--heart) center/contain no-repeat;mask:var(--heart) center/contain no-repeat;animation:burst .75s ease-out forwards}
-.spark.st{-webkit-mask-image:var(--star);mask-image:var(--star)}
-@keyframes burst{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
-.flash{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--ticket);color:var(--ticket-ink);font-family:var(--f-display);padding:16px 24px;border-radius:18px;text-align:center;animation:flashIn .4s cubic-bezier(.2,1.5,.4,1);box-shadow:var(--shadow);z-index:2;white-space:nowrap}
-.flash b{display:block;font-size:28px;font-weight:700}
-.flash span{font-size:18px}
-@keyframes flashIn{from{transform:translate(-50%,-50%) scale(.4);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
-
-.bike{width:64px;height:40px;color:currentColor}
-.bike .wheel{transform-box:fill-box;transform-origin:center}
-.bike.spin .wheel{animation:spin .9s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-.g-center{justify-content:center;align-items:center;text-align:center}
-.rest-clock{font-family:var(--f-display);font-size:clamp(96px,30vw,160px);line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
-.next{font-weight:800;color:var(--ink-2)}
-.g-center .g-actions{width:100%;margin-top:18px}
-
-.overlay{position:absolute;inset:0;background:color-mix(in srgb,var(--bg) 72%,transparent);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);display:flex;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:4}
-.sheet{width:100%;max-width:520px;max-height:100%;overflow-y:auto;background:var(--surface);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow)}
-.sheet h2{font-size:22px;margin-bottom:4px}
-.choice{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:14px 16px;border-radius:14px;border:2px solid var(--line);background:var(--surface);cursor:pointer;width:100%}
-.choice b{font-weight:900}
-.choice span{font-size:14px;color:var(--ink-2);font-weight:600}
-.choice.danger{border-color:var(--danger)}.choice.danger b{color:var(--danger)}
-.choice.warn{border-color:var(--warn)}.choice.warn b{color:var(--warn)}
-
-/* Result */
-.res-head{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
-.res-title{font-family:var(--f-script);font-weight:400;font-size:clamp(32px,9.5vw,46px);color:var(--accent);line-height:1.25}
-.stars{display:flex;gap:10px;justify-content:center}
-.stars svg{width:52px;height:52px;fill:var(--surface-2)}
-.stars svg.on{fill:var(--ticket);animation:starPop .55s cubic-bezier(.2,1.6,.4,1) both}
-@keyframes starPop{from{transform:scale(0) rotate(-40deg)}to{transform:scale(1) rotate(0)}}
-.score-big{display:flex;flex-direction:column;align-items:center;line-height:1}
-.score-big b{font-family:var(--f-display);font-weight:700;font-size:clamp(64px,20vw,96px);font-variant-numeric:tabular-nums}
-.levelup{background:var(--ticket);color:var(--ticket-ink);border-radius:16px;padding:12px 16px;text-align:center;font-weight:900;animation:flashIn2 .5s cubic-bezier(.2,1.5,.4,1) both}
-.levelup b{display:block;font-family:var(--f-display);font-weight:700;font-size:22px}
-@keyframes flashIn2{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
-.new-badges{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
-.new-badges .badge{width:104px}
-.ci-msg{font-size:15px;font-weight:700}
-
-#confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:20}
-.conf{position:absolute;top:-20px;width:14px;height:14px;-webkit-mask:var(--heart) center/contain no-repeat;mask:var(--heart) center/contain no-repeat;animation:fall linear forwards}
-.conf.st{-webkit-mask-image:var(--star);mask-image:var(--star)}
-.conf.dot{-webkit-mask:none;mask:none;border-radius:50%;width:9px;height:9px}
-@keyframes fall{from{transform:translate(0,0) rotate(0)}to{transform:translate(var(--dx),110vh) rotate(var(--rot))}}
-/* Onglets du bas */
-.page.with-tabs{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:color-mix(in srgb,var(--surface) 94%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));padding-block:6px calc(6px + env(safe-area-inset-bottom,0px))}
-.tabbar-in{max-width:600px;margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
-.tab{display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;padding:6px 4px;border-radius:12px;font-weight:800;font-size:13px;color:var(--ink-2);cursor:pointer;min-height:54px}
-.tab svg{width:24px;height:24px}
-.tab[aria-current="page"]{color:var(--accent);background:var(--surface-2)}
-.link-row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:var(--surface-2);border:0;border-radius:12px;padding:10px 12px;font-weight:700;color:var(--ink);cursor:pointer;min-height:44px;text-align:left}
-.link-row b{font-weight:900;color:var(--prize)}
-.notice .row-btns{margin-top:6px}
-#toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:14px;font-weight:800;font-size:14px;width:max-content;max-width:calc(100% - 32px);z-index:30;box-shadow:var(--shadow);text-align:center}
-
-@media (prefers-reduced-motion: reduce){
-  .pop{animation:none;transform:translate(-50%,0)}
-  .target.hit,.flash,.levelup,.stars svg.on{animation:none}
-  .bike.spin .wheel{animation:none}
-  .xpbar i{transition:none}
-  .marq,.can.wobble,.mascot,.bulb.lit,.brand h1 .spark-txt,.stand-buddy.hop,.stand-buddy.shake{animation:none}
-  .can.down{animation:none;opacity:0}
-}
-</style>
-
-<div id="app" lang="fr"></div>
-<div id="confetti" aria-hidden="true"></div>
-<div id="toast" role="status" aria-live="polite" hidden></div>
-
-<script>
-(() => {
-'use strict';
-
-/* ---------- Exercices ---------- */
-const EX = {
-  transverse: { id: 'transverse', name: 'Respiration du transverse', kind: 'breath', target: 5, tempo: 8,
-    cue: 'Sur le dos, genoux pliés, pieds à plat. Inspire par le nez, puis expire longuement en rentrant doucement le bas du ventre.',
-    tip: 'Suis le cercle : il grossit quand tu inspires, rapetisse quand tu expires.' },
-  birddog: { id: 'birddog', name: 'Bird-dog', kind: 'reps', target: 5, sides: true, tempo: 5,
-    cue: 'À quatre pattes, dos neutre. Tends lentement un bras et la jambe opposée, tiens 2 secondes, puis reviens.',
-    tip: 'Le bassin ne bouge pas, comme si un verre d’eau était posé sur ton dos.' },
-  pont: { id: 'pont', name: 'Pont fessier', kind: 'reps', target: 6, max: 8, tempo: 4,
-    cue: 'Sur le dos, pieds à plat. Serre les fessiers et monte le bassin, sans accentuer la cambrure.',
-    tip: 'Monte jusqu’à l’alignement épaules, hanches, genoux. Pas plus haut.' },
-  velo: { id: 'velo', name: 'Vélo d’appartement', kind: 'timer',
-    cue: 'Résistance légère, buste peu penché. Tu dois pouvoir parler en pédalant.',
-    tip: 'Allonge la durée petit à petit, d’une séance à l’autre, dans les réglages.' },
-  hipthrust: { id: 'hipthrust', name: 'Hip thrust', kind: 'reps', target: 12, sets: 4, tempo: 3,
-    cue: 'Haut du dos appuyé sur un banc ou le canapé. Pousse le bassin vers le haut en serrant les fessiers.',
-    tip: 'Menton rentré, côtes basses : pas de cambrure en haut du mouvement.' },
-  fentes: { id: 'fentes', name: 'Fentes arrière', kind: 'reps', target: 10, sides: true, sideLabel: 'jambe', sets: 3, tempo: 3,
-    cue: 'Recule une jambe, descends le genou arrière vers le sol, remonte en poussant sur le talon avant.',
-    tip: 'Buste droit, genou avant au-dessus de la cheville.' },
-  donkey: { id: 'donkey', name: 'Donkey kicks', kind: 'reps', target: 15, sides: true, sets: 3, tempo: 2,
-    cue: 'À quatre pattes, pousse un talon vers le plafond, genou plié à 90°.',
-    tip: 'Le dos reste plat : le mouvement vient de la fesse, pas des lombaires.' },
-  sumo: { id: 'sumo', name: 'Squats sumo', kind: 'reps', target: 12, sets: 3, tempo: 3,
-    cue: 'Pieds écartés, pointes vers l’extérieur. Descends buste droit, genoux dans l’axe des pieds.',
-    tip: 'Descends seulement tant que ton dos reste neutre.' },
-  hydrant: { id: 'hydrant', name: 'Fire hydrant', kind: 'reps', target: 10, sides: true, free: true, sets: 1, tempo: 2,
-    cue: 'À quatre pattes, ouvre le genou sur le côté sans faire pivoter le bassin.',
-    tip: 'Activation : arrête quand tu sens bien la fesse travailler.' },
-  chatvache: { id: 'chatvache', name: 'Chat-vache', kind: 'reps', target: 6, tempo: 6,
-    cue: 'À quatre pattes, mains sous les épaules. En expirant, arrondis lentement le dos ; en inspirant, creuse-le légèrement. Un aller-retour, une répétition.',
-    tip: 'Petite amplitude, sans forcer dans le bas du dos.' },
-  rotation: { id: 'rotation', name: 'Rotations assises', kind: 'reps', target: 5, sides: true, tempo: 4,
-    cue: 'Assis, dos long, bras croisés sur la poitrine. Tourne lentement le buste d’un côté, puis reviens au centre.',
-    tip: 'Sans chercher l’amplitude maximale. Le bassin reste face à l’avant.' },
-  thorax: { id: 'thorax', name: 'Ouverture thoracique', kind: 'reps', target: 6, tempo: 5,
-    cue: 'Assis ou debout, mains derrière la nuque. Ouvre doucement les coudes et la poitrine, puis relâche.',
-    tip: 'Le bas du dos ne se creuse pas : c’est le haut du dos qui s’ouvre.' },
-  gainage: { id: 'gainage', name: 'Gainage abdominal léger', kind: 'hold', target: 6, hold: 8,
-    cue: 'Sur le dos, genoux pliés. En expirant, rentre doucement le nombril vers la colonne et tiens en respirant calmement.',
-    tip: 'Le dos ne bouge pas : on serre seulement le ventre en profondeur. Pas de crunch.' },
-  planche: { id: 'planche', name: 'Planche sur genoux', kind: 'hold', target: 2, hold: 12,
-    cue: 'Coudes sous les épaules, genoux au sol, ventre rentré, dos droit des épaules aux genoux.',
-    tip: 'Commence par 10 à 15 secondes. Arrête si le bas du dos se creuse.' },
-  marche: { id: 'marche', name: 'Marche', kind: 'timer', minutes: 10,
-    cue: 'Marche à ton rythme, épaules relâchées. Allonge la durée petit à petit tant que la douleur reste tolérable.',
-    tip: 'Dehors, dans le couloir ou sur place : tout compte.' }
-};
-
-const PROGRAMS = {
-  dos: { id: 'dos', name: 'Reprise dos', tag: 'Routine du 11 oct. 2026', rest: 30, xpBase: 100,
-    blurb: 'Gainage doux, fessiers et cardio léger, adaptés à ton dos. À faire valider par ton kiné.',
-    exercises: [EX.transverse, EX.birddog, EX.pont, EX.velo] },
-  milieu: { id: 'milieu', name: 'Dos du milieu', tag: 'Mobilité douce', rest: 20, xpBase: 100,
-    blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pour la marche, la balade du chien fait déjà le travail. Pont fessier et bird-dog sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
-    exercises: [EX.chatvache, EX.rotation, EX.thorax, EX.gainage, EX.planche] },
-  difficile: { id: 'difficile', name: 'Jour difficile', tag: 'Séance douce · 3 min', rest: 30, xpBase: 50,
-    blurb: 'Juste la respiration, pour garder le rythme sans rien forcer. Pour les jours où le dos est sensible.',
-    exercises: [{ ...EX.transverse, sets: 2 }] },
-  boule: { id: 'boule', name: 'Boule qui chamboule', tag: 'Programme fessiers · nov. 2025', rest: 45, xpBase: 100,
-    blurb: 'Ton ancien programme fessiers. Il date d’avant les adaptations pour ton dos et n’a pas été revalidé.',
-    exercises: [EX.hipthrust, EX.fentes, EX.donkey, EX.sumo, EX.hydrant] },
-  essai: { id: 'essai', name: 'Essai', tag: '', rest: 0, xpBase: 0, practice: true, blurb: '',
-    exercises: [{ id: 'essai', name: 'Essai : 3 lancers', kind: 'reps', target: 3, tempo: 3, prescText: 'Tape 3 fois au bon moment',
-      cue: 'Pas besoin de bouger. Regarde le cercle se remplir. Quand il devient jaune et que ça bipe, tape : la balle part sur les boîtes.',
-      tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
-};
-const PROG_ORDER = ['dos', 'milieu', 'difficile', 'boule'];
-
-/* ---------- Illustrations (pictogrammes dessinés : départ puis mouvement) ---------- */
-const Q = {
-  head: [110, 68], neck: [[96, 74], [104, 70]], torso: [[60, 81], [96, 74]],
-  armN: [[96, 74], [97, 91], [97, 108]], armF: [[93, 74], [92, 91], [92, 108]],
-  legN: [[60, 81], [60, 107], [37, 107]], legF: [[57, 81], [55, 107], [33, 107]]
-};
-const SUP = { head: [40, 103], neck: [[47, 105], [50, 106]], torso: [[50, 106], [88, 106]],
-  legN: [[88, 106], [104, 86], [118, 107]], legF: [[88, 106], [101, 87], [114, 107]], arm: [[50, 107], [66, 108], [80, 108]] };
-const BIKE = '<g class="il-bike"><path d="M74 108 V68 M66 64 H82 M108 108 L110 54 M104 52 H118 M62 110 H122 M74 96 L92 92"/><circle cx="92" cy="92" r="13"/></g>';
-const BENCH = '<rect class="il-prop" x="12" y="86" width="34" height="26" rx="3"/>';
-const up = (x, y1, y2) => `<path class="il-arrow" d="M${x} ${y1} V${y2} M${x - 5} ${y2 + 5} L${x} ${y2} L${x + 5} ${y2 + 5}"/>`;
-const down = (x, y1, y2) => `<path class="il-arrow" d="M${x} ${y1} V${y2} M${x - 5} ${y2 - 5} L${x} ${y2} L${x + 5} ${y2 - 5}"/>`;
-
-const ILLUS = {
-  transverse: { labels: ['Inspire : ventre gonflé', 'Expire : ventre rentré'], poses: [
-    { h: SUP.head, b: [SUP.neck, SUP.torso], f: [SUP.legF], n: [SUP.legN, SUP.arm], over: '<path class="il-cue" d="M58 99 Q72 84 86 99"/>' + up(72, 82, 70) },
-    { h: SUP.head, b: [SUP.neck, SUP.torso], f: [SUP.legF], n: [SUP.legN, SUP.arm], over: '<path class="il-cue" d="M58 100 Q72 96 86 100"/>' + down(72, 70, 82) }
-  ]},
-  birddog: { labels: ['Départ, dos plat', 'Bras et jambe opposés'], poses: [
-    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN] },
-    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF], n: [Q.legN], a: [[[96, 74], [114, 71], [132, 69]], [[60, 81], [36, 79], [12, 78]]] }
-  ]},
-  pont: { labels: ['Départ, dos au sol', 'Monte sans cambrer'], poses: [
-    { h: SUP.head, b: [SUP.neck, SUP.torso], f: [SUP.legF], n: [SUP.legN, SUP.arm] },
-    { h: SUP.head, b: [SUP.neck], f: [[[86, 91], [104, 84], [114, 107]]], n: [[[108, 83], [118, 107]], SUP.arm], a: [[[50, 106], [86, 91], [108, 83]]], over: up(86, 110, 99) }
-  ]},
-  velo: { labels: ['Buste peu penché', 'Pédale en souplesse'], poses: [
-    { prop: BIKE, h: [88, 16], b: [[[74, 62], [84, 30]], [[84, 30], [86, 24]]], f: [[[83, 31], [95, 42], [106, 52]], [[74, 62], [90, 80], [87, 101]]], n: [[[84, 30], [97, 40], [108, 51]]], a: [[[74, 62], [96, 58], [97, 83]]], over: '<path class="il-crank" d="M97 83 L87 101"/>' },
-    { prop: BIKE, h: [88, 16], b: [[[74, 62], [84, 30]], [[84, 30], [86, 24]]], f: [[[83, 31], [95, 42], [106, 52]], [[74, 62], [96, 58], [97, 83]]], n: [[[84, 30], [97, 40], [108, 51]]], a: [[[74, 62], [90, 80], [87, 101]]], over: '<path class="il-crank" d="M97 83 L87 101"/>' }
-  ]},
-  hipthrust: { labels: ['Hanches basses', 'Pousse, serre les fesses'], poses: [
-    { prop: BENCH, h: [31, 76], b: [[[44, 82], [38, 79]], [[44, 82], [70, 100]]], f: [[[70, 100], [89, 85], [96, 108]]], n: [[[70, 100], [92, 84], [100, 108]], [[44, 82], [30, 82], [18, 82]]] },
-    { prop: BENCH, h: [31, 76], b: [[[44, 82], [38, 79]]], f: [[[78, 80], [99, 81], [100, 108]]], n: [[[102, 80], [104, 108]], [[44, 82], [30, 82], [18, 82]]], a: [[[44, 82], [78, 80], [102, 80]]], over: up(78, 108, 94) }
-  ]},
-  fentes: { labels: ['Debout', 'Recule et descends'], poses: [
-    { h: [80, 12], b: [[[80, 21], [80, 60]]], f: [[[78, 60], [77, 84], [76, 108], [84, 108]]], n: [[[80, 60], [81, 84], [82, 108], [90, 108]], [[80, 27], [91, 42], [84, 56]]] },
-    { h: [78, 31], b: [[[78, 40], [78, 80]]], n: [[[78, 80], [102, 84], [104, 108], [112, 108]], [[78, 46], [89, 60], [82, 74]]], a: [[[78, 80], [66, 104], [44, 106]]], over: down(130, 30, 48) }
-  ]},
-  donkey: { labels: ['Départ, dos plat', 'Talon vers le plafond'], poses: [
-    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN] },
-    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF, Q.legF], n: [Q.armN], a: [[[60, 81], [35, 80], [34, 56]]], over: up(20, 72, 56) }
-  ]},
-  sumo: { labels: ['Vue de face', 'Descends, genoux ouverts'], poses: [
-    { h: [80, 12], b: [[[80, 21], [80, 60]], [[66, 28], [94, 28]], [[72, 60], [88, 60]]], n: [[[72, 60], [62, 84], [54, 108], [46, 110]], [[88, 60], [98, 84], [106, 108], [114, 110]], [[66, 28], [63, 44], [80, 50]], [[94, 28], [97, 44], [80, 50]]] },
-    { h: [80, 32], b: [[[80, 41], [80, 80]], [[66, 48], [94, 48]], [[72, 80], [88, 80]]], n: [[[66, 48], [63, 64], [80, 70]], [[94, 48], [97, 64], [80, 70]]], a: [[[72, 80], [52, 88], [54, 108], [46, 110]], [[88, 80], [108, 88], [106, 108], [114, 110]]], over: down(136, 34, 52) }
-  ]},
-  hydrant: { labels: ['Vue de dos', 'Ouvre le genou sur le côté'], poses: [
-    { h: [80, 55], f: [[[66, 70], [64, 108]], [[94, 70], [96, 108]]], n: [[[71, 82], [71, 106]], [[89, 82], [89, 106]]], over: '<rect class="il-mass" x="66" y="64" width="28" height="22" rx="9"/>' },
-    { h: [80, 55], f: [[[66, 70], [64, 108]], [[94, 70], [96, 108]]], n: [[[71, 82], [71, 106]]], a: [[[89, 82], [118, 90]]], over: '<rect class="il-mass" x="66" y="64" width="28" height="22" rx="9"/><path class="il-arrow" d="M104 62 L122 62 M117 57 L122 62 L117 67"/>' }
-  ]}
-};
-
-const SUP2 = { head: [40, 103], neck: [[47, 105], [50, 106]], torso: [[50, 106], [88, 106]], legN: [[88, 106], [104, 86], [118, 107]], legF: [[88, 106], [101, 87], [114, 107]], arm: [[50, 107], [66, 108], [80, 108]] };
-const CHAIR = '<path class="il-prop" d="M58 74h44v6H58z"/><path class="il-bike" d="M61 80v32M99 80v32"/>';
-Object.assign(ILLUS, {
-  chatvache: { labels: ['Dos rond, on expire', 'Dos creux, on inspire'], poses: [
-    { h: [106, 85], b: [[[96, 74], [101, 80]]], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN], a: [[[60, 81], [78, 63], [96, 74]]], over: '<path class="il-arrow" d="M78 54 V44 M73 49 L78 44 L83 49"/>' },
-    { h: [111, 64], b: [[[96, 73], [104, 68]]], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN], a: [[[60, 80], [78, 84], [96, 73]]], over: '<path class="il-arrow" d="M78 62 V72 M73 67 L78 72 L83 67"/>' }
-  ]},
-  rotation: { labels: ['Assis, dos long', 'Tourne doucement'], poses: [
-    { prop: CHAIR, h: [80, 20], b: [[[80, 29], [80, 70]], [[64, 38], [96, 38]], [[70, 72], [90, 72]]], n: [[[70, 72], [68, 86], [68, 110]], [[90, 72], [92, 86], [92, 110]], [[64, 38], [72, 50], [92, 46]], [[96, 38], [88, 50], [68, 46]]] },
-    { prop: CHAIR, h: [84, 20], b: [[[80, 29], [80, 70]], [[70, 72], [90, 72]]], n: [[[70, 72], [68, 86], [68, 110]], [[90, 72], [92, 86], [92, 110]]], a: [[[70, 39], [94, 37]], [[70, 39], [76, 50], [92, 45]], [[94, 37], [89, 50], [74, 46]]], over: '<path class="il-arrow" d="M62 10 Q80 0 98 10 M93 5 L98 10 L92 13"/>' }
-  ]},
-  thorax: { labels: ['Coudes rapprochés', 'Ouvre les coudes'], poses: [
-    { h: [80, 16], b: [[[80, 25], [80, 64]], [[66, 32], [94, 32]], [[72, 64], [88, 64]]], n: [[[72, 64], [70, 110]], [[88, 64], [90, 110]], [[66, 32], [72, 22], [78, 14]], [[94, 32], [88, 22], [82, 14]]] },
-    { h: [80, 16], b: [[[80, 25], [80, 64]], [[66, 32], [94, 32]], [[72, 64], [88, 64]]], n: [[[72, 64], [70, 110]], [[88, 64], [90, 110]]], a: [[[66, 32], [50, 22], [73, 12]], [[94, 32], [110, 22], [87, 12]]], over: '<path class="il-arrow" d="M44 34 L34 34 M39 29 L34 34 L39 39 M116 34 L126 34 M121 29 L126 34 L121 39"/>' }
-  ]},
-  gainage: { labels: ['Ventre relâché', 'Nombril rentré, tiens'], poses: [
-    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm], over: '<path class="il-cue" d="M58 100 Q72 89 86 100"/>' },
-    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm], over: '<path class="il-cue" d="M58 101 Q72 97 86 101"/>' + '<path class="il-arrow" d="M72 72 V84 M67 79 L72 84 L77 79"/><text class="il-t" x="104" y="62" text-anchor="middle">8 s</text>' }
-  ]},
-  planche: { labels: ['Sur les avant-bras et genoux', 'Dos droit, tiens'], poses: [
-    { h: [112, 85], b: [[[56, 82], [100, 90]], [[100, 90], [106, 87]]], n: [[[100, 90], [100, 107], [120, 107]], [[56, 82], [56, 107], [34, 100]]] },
-    { h: [112, 85], b: [[[100, 90], [106, 87]]], n: [[[100, 90], [100, 107], [120, 107]], [[50, 105], [30, 96]]], a: [[[100, 90], [75, 97.5], [50, 105]]], over: '<text class="il-t" x="76" y="74" text-anchor="middle">12 s</text>' }
-  ]},
-  marche: { labels: ['Pas souple', 'Bras relâchés'], poses: [
-    { h: [81, 12], b: [[[80, 21], [80, 60]]], f: [[[80, 60], [72, 84], [62, 106], [69, 108]], [[80, 28], [72, 44], [70, 58]]], n: [[[80, 28], [88, 43], [94, 56]]], a: [[[80, 60], [90, 84], [96, 108], [104, 108]]] },
-    { h: [81, 12], b: [[[80, 21], [80, 60]]], f: [[[80, 60], [90, 84], [96, 106], [103, 108]], [[80, 28], [88, 43], [94, 56]]], n: [[[80, 28], [72, 44], [70, 58]]], a: [[[80, 60], [72, 84], [62, 108], [70, 108]]] }
-  ]}
-});
-function poseSVG(p) {
-  const pl = list => (list || []).map(pts => `<polyline points="${pts.map(q => q.join(',')).join(' ')}"/>`).join('');
-  return `${p.prop || ''}<g class="il-far">${pl(p.f)}</g><g class="il-body">${pl(p.b)}${pl(p.n)}</g><g class="il-move">${pl(p.a)}</g><circle class="il-head" cx="${p.h[0]}" cy="${p.h[1]}" r="8"/>${p.over || ''}`;
-}
-function illusFull(id, cls) {
-  const il = ILLUS[id]; if (!il) return '';
-  const panel = (p, i) => `<g transform="translate(${i * 180},0)"><rect class="il-bg" width="160" height="120" rx="12"/><line class="il-floor" x1="8" y1="112" x2="152" y2="112"/>${poseSVG(p)}</g>`;
-  return `<figure class="il-fig ${cls || ''}"><svg class="il" viewBox="0 0 340 120" aria-hidden="true">${panel(il.poses[0], 0)}<path class="il-next" d="M164 60 h12 m-5 -5 l5 5 l-5 5"/>${panel(il.poses[1], 1)}</svg><figcaption class="il-caps"><span>1. ${esc(il.labels[0])}</span><span>2. ${esc(il.labels[1])}</span></figcaption></figure>`;
-}
-function illusMini(id) {
-  const il = ILLUS[id]; if (!il) return '';
-  return `<svg class="il il-mini" viewBox="0 0 160 120" aria-hidden="true"><rect class="il-bg" width="160" height="120" rx="14"/><line class="il-floor" x1="8" y1="112" x2="152" y2="112"/>${poseSVG(il.poses[1])}</svg>`;
-}
-
-const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Cœur de la fête', 'Grande roue', 'Feu d’artifice', 'Légende de la foire'];
-const LINES = {
-  intro: ['Ici, la vitesse ne rapporte rien. Le contrôle, si.', 'Lentement. C’est comme ça qu’on gagne à ce jeu.', 'Respire, et laisse le cercle se remplir.', 'Un mouvement propre vaut mieux que trois rapides.'],
-  rest: ['Récup. Bois une gorgée d’eau.', 'Relâche les épaules et souffle.', 'Belle série. On reprend dans un instant.', 'Secoue les jambes, détends la nuque.']
-};
-const BADGES = [
-  { id: 'premier', name: 'Premier ticket', desc: 'Finir une première séance', glyph: '1', test: s => s.history.length >= 1 },
-  { id: 'combo10', name: 'Tout en contrôle', desc: '10 reps parfaites d’affilée', glyph: 'x10', test: s => s.bestCombo >= 10 },
-  { id: 'etoiles', name: 'Trois étoiles', desc: 'Une séance à 3 étoiles', glyph: '★', test: s => s.history.some(h => h.stars === 3) },
-  { id: 'semaine', name: 'Semaine pleine', desc: '3 jours d’entraînement dans la même semaine', glyph: '3J', test: s => [...daysByWeek(s.history).values()].some(d => d.size >= 3) },
-  { id: 'suivi5', name: 'Carnet à jour', desc: '5 suivis du lendemain remplis', glyph: '5', test: s => s.history.filter(h => h.next != null).length >= 5 },
-  { id: 'velo60', name: 'Roue libre', desc: '60 min de vélo au total', glyph: "60'", test: s => s.history.reduce((a, h) => a + (h.veloMin || 0), 0) >= 60 },
-  { id: 's10', name: 'Habitué de la foire', desc: '10 séances terminées', glyph: '10', test: s => s.history.length >= 10 },
-  { id: 's30', name: 'Pilier de la fête', desc: '30 séances terminées', glyph: '30', test: s => s.history.length >= 30 },
-  { id: 'chamboule', name: 'Boule qui chamboule', desc: 'Première séance du programme fessiers', glyph: 'BQC', test: s => s.history.some(h => h.prog === 'boule') }
-];
-
-/* Défis de la semaine : trois tirés au sort chaque lundi. Aucun ne pousse au volume ni à forcer. */
-const CHALLENGES = [
-  { id: 'stars3', name: 'Trois étoiles', desc: 'Réussir une séance à 3 étoiles', goal: 1, prog: w => w.filter(h => h.stars === 3).length },
-  { id: 'combo8', name: 'Combo de 8', desc: 'Enchaîner 8 répétitions parfaites', goal: 8, prog: w => Math.max(0, ...w.map(h => h.combo || 0)) },
-  { id: 'next2', name: 'Carnet du lendemain', desc: 'Remplir 2 suivis du lendemain', goal: 2, prog: w => w.filter(h => h.next != null).length },
-  { id: 'days2', name: 'Fidèle au poste', desc: 'T’entraîner 2 jours différents', goal: 2, prog: w => new Set(w.map(h => dayKey(h.d))).size },
-  { id: 'clean', name: 'Lent et propre', desc: '90 % de reps parfaites sur une séance', goal: 1, prog: w => w.filter(h => h.reps >= 8 && h.perfect / h.reps >= 0.9).length },
-  { id: 'velo15', name: 'Roue libre', desc: '15 min de vélo dans la semaine', goal: 15, prog: w => Math.floor(w.reduce((a, h) => a + (h.veloMin || 0), 0)) },
-  { id: 'hf1', name: 'Mains libres', desc: 'Faire une séance en mode mains libres', goal: 1, prog: w => w.filter(h => h.hf).length },
-  { id: 'feel2', name: 'À l’écoute', desc: 'Noter ton ressenti après 2 séances', goal: 2, prog: w => w.filter(h => h.pain != null).length },
-  { id: 'pyr', name: 'Tout chambouler', desc: 'Faire tomber une pyramide entière', goal: 1, prog: w => w.filter(h => (h.pyramids || 0) > 0).length },
-  { id: 'pyr3', name: 'Démolition douce', desc: 'Faire tomber 3 pyramides dans la semaine', goal: 3, prog: w => w.reduce((a, h) => a + (h.pyramids || 0), 0) },
-  { id: 'stars2x', name: 'Doublé', desc: '2 séances à 2 étoiles ou plus', goal: 2, prog: w => w.filter(h => h.stars >= 2).length },
-  { id: 'combo12', name: 'Combo de 12', desc: 'Enchaîner 12 répétitions parfaites', goal: 12, prog: w => Math.max(0, ...w.map(h => h.combo || 0)) },
-  { id: 'days3', name: 'Trois cœurs', desc: 'Remplir 3 cœurs cette semaine', goal: 3, prog: w => new Set(w.map(h => dayKey(h.d))).size },
-  { id: 'douceur', name: 'Douceur', desc: 'Faire une séance Jour difficile ou Dos du milieu', goal: 1, prog: w => w.filter(h => h.prog === 'difficile' || h.prog === 'milieu').length },
-  { id: 'save1', name: 'Prudence', desc: 'Exporter ta sauvegarde cette semaine', goal: 1, prog: (w, s) => (s.settings.lastExport && weekKey(new Date(s.settings.lastExport)) === weekKey(new Date()) ? 1 : 0) }
-];
-/* Tenues de Chouquette : gagnées avec les niveaux et les badges, jamais avec le volume d'entraînement. */
-const OUTFITS = [
-  { id: 'noeud', name: 'Nœud lilas', unlock: 'Offert', test: () => true },
-  { id: 'noeud-or', name: 'Nœud doré', unlock: 'Niveau 2', test: s => levelInfo(s.xp).n >= 2 },
-  { id: 'bandeau', name: 'Bandeau de sport', unlock: 'Badge Tout en contrôle', test: s => !!s.badges.combo10 },
-  { id: 'lunettes', name: 'Lunettes de star', unlock: 'Niveau 3', test: s => levelInfo(s.xp).n >= 3 },
-  { id: 'fleur', name: 'Fleur', unlock: 'Badge Carnet à jour', test: s => !!s.badges.suivi5 },
-  { id: 'coeur-lunettes', name: 'Lunettes cœur', unlock: 'Badge Trois étoiles', test: s => !!s.badges.etoiles },
-  { id: 'chapeau', name: 'Chapeau de fête', unlock: 'Badge Semaine pleine', test: s => !!s.badges.semaine },
-  { id: 'couronne', name: 'Couronne', unlock: 'Niveau 5', test: s => levelInfo(s.xp).n >= 5 }
-];
-function weekChallenges(d) {
-  let h = 7;
-  for (const ch of weekKey(d)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  const pool = CHALLENGES.slice(), out = [];
-  for (let i = 0; i < 3; i++) { h = (Math.imul(h, 1103515245) + 12345) >>> 0; out.push(pool.splice(h % pool.length, 1)[0]); }
-  return out;
-}
-
-const ICON = {
-  gear: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
-  close: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-  back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
-  chev: '<svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>',
-  play: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>',
-  tPlay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg>',
-  tTrophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/></svg>',
-  tBook: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v18M12.5 8h3.5M12.5 12h3.5"/></svg>',
-  lock: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
-  sound: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
-  mute: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>',
-  star: (cls, style) => `<svg class="${cls || ''}" ${style ? `style="${style}"` : ''} viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z"/></svg>`,
-  bike: running => `<svg class="bike${running ? ' spin' : ''}" viewBox="0 0 64 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="wheel"><circle cx="13" cy="28" r="10"/><path d="M13 18v20M3 28h20"/></g><g class="wheel"><circle cx="51" cy="28" r="10"/><path d="M51 18v20M41 28h20"/></g><path d="M13 28l11-14h15l12 14M24 14l9 14h4M37 7h7M39 14l-2-7M23 10h7"/></svg>`
-};
+/* Chamboule Coach : écrans, jeu et sauvegarde (tout ce qui touche à la page). */
 
 /* ---------- Utilitaires ---------- */
 const $ = (s, r = document) => r.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-const pad = n => String(n).padStart(2, '0');
 const reduceMotion = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
 const app = $('#app');
 
-function startOfWeek(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
-function weekKey(d) { const s = startOfWeek(d); return s.getFullYear() + '-' + (s.getMonth() + 1) + '-' + s.getDate(); }
-function dayKey(d) { const x = new Date(d); return x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate()); }
-function daysByWeek(hist) {
-  const m = new Map();
-  hist.forEach(h => { const k = weekKey(new Date(h.d)); if (!m.has(k)) m.set(k, new Set()); m.get(k).add(dayKey(h.d)); });
-  return m;
-}
-function fmtDate(iso) { try { return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }); } catch { return ''; } }
-function fmtDateLong(iso) { try { return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); } catch { return ''; } }
-function fmtClock(sec) { sec = Math.max(0, Math.round(sec)); return pad(Math.floor(sec / 60)) + ':' + pad(sec % 60); }
-function fmtMin(v) { return Number(v || 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 }); }
-function exName(id) { return (EX[id] || {}).name || id; }
-
-/* ---------- État & sauvegarde ---------- */
-const LS = 'chamboule-coach.v1';
-function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
-}
-/* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
-   aucune valeur lue n’arrive telle quelle dans la page. */
-const EX_IDS = new Set(Object.keys(EX));
-const BADGE_IDS = new Set(BADGES.map(b => b.id));
-const CHAL_IDS = new Set(CHALLENGES.map(c => c.id));
-const BACKS = ['ok', 'sensible', 'douleur', 'stop'];
-const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
-function numOr(v, lo, hi, dflt, int) {
-  if (v === null || v === undefined || v === '' || typeof v === 'boolean') return dflt;
-  let n = Number(v);
-  if (!Number.isFinite(n)) return dflt;
-  if (int) n = Math.round(n);
-  return Math.min(hi, Math.max(lo, n));
-}
-function isoOr(v) { if (typeof v !== 'string') return null; const t = Date.parse(v); return Number.isFinite(t) ? new Date(t).toISOString() : null; }
-function cleanDayMap(m, allowed) {
-  const out = {};
-  if (m && typeof m === 'object') for (const [k, v] of Object.entries(m)) if (allowed.has(k) && typeof v === 'string' && DAY_RE.test(v)) out[k] = v;
-  return out;
-}
-function cleanEntry(h) {
-  if (!h || typeof h !== 'object') return null;
-  const d = isoOr(h.d); if (!d) return null;
-  const ids = a => Array.isArray(a) ? [...new Set(a.filter(x => typeof x === 'string' && EX_IDS.has(x)))] : [];
-  const prog = typeof h.prog === 'string' && Object.prototype.hasOwnProperty.call(PROGRAMS, h.prog) && !PROGRAMS[h.prog].practice ? h.prog : 'dos';
-  return {
-    id: typeof h.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(h.id) ? h.id : 's' + Date.parse(d).toString(36),
-    d, prog,
-    score: numOr(h.score, 0, 1e6, 0, true), xp: numOr(h.xp, 0, 1e5, null, true),
-    stars: numOr(h.stars, 0, 3, 0, true), perfect: numOr(h.perfect, 0, 1e4, 0, true), reps: numOr(h.reps, 0, 1e4, 0, true),
-    combo: numOr(h.combo, 0, 1e4, 0, true), veloMin: numOr(h.veloMin, 0, 600, 0, false), walkMin: numOr(h.walkMin, 0, 600, 0, false), pyramids: numOr(h.pyramids, 0, 1000, 0, true),
-    skipped: ids(h.skipped), painEx: ids(h.painEx),
-    stop: h.stop === true, back: BACKS.includes(h.back) ? h.back : null, hf: h.hf === true,
-    painBefore: numOr(h.painBefore, 0, 10, null, true), legBefore: h.legBefore === true,
-    pain: numOr(h.pain, 0, 10, null, true), leg: typeof h.leg === 'boolean' ? h.leg : null,
-    next: numOr(h.next, 0, 10, null, true), nextAt: isoOr(h.nextAt),
-    durS: numOr(h.durS, 0, 86400, 0, true)
-  };
-}
-function cleanSettings(s, d) {
-  s = s && typeof s === 'object' ? s : {};
-  return {
-    sets: numOr(s.sets, 1, 3, d.sets, true), veloMin: numOr(s.veloMin, 3, 45, d.veloMin, true), weeklyGoal: numOr(s.weeklyGoal, 1, 7, d.weeklyGoal, true),
-    sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
-    bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
-    lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
-    outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud'
-  };
-}
-function normalize(raw) {
-  const d = defaultState();
-  if (!raw || typeof raw !== 'object') return d;
-  const challenges = {};
-  if (raw.challenges && typeof raw.challenges === 'object') {
-    for (const [k, v] of Object.entries(raw.challenges)) if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(k)) challenges[k] = cleanDayMap(v, CHAL_IDS);
-  }
-  return {
-    v: 1,
-    xp: numOr(raw.xp, 0, 1e7, 0, true),
-    bestCombo: numOr(raw.bestCombo, 0, 1e4, 0, true),
-    settings: cleanSettings(raw.settings, d.settings),
-    badges: cleanDayMap(raw.badges, BADGE_IDS),
-    challenges,
-    history: Array.isArray(raw.history) ? raw.history.slice(0, 300).map(cleanEntry).filter(Boolean) : []
-  };
-}
 function lsGet() { try { const t = localStorage.getItem(LS); return t ? JSON.parse(t) : null; } catch { return null; } }
 function lsSet(obj) { try { localStorage.setItem(LS, JSON.stringify(obj)); } catch {} }
 
@@ -875,90 +65,6 @@ async function initStore() {
     }
     renderScreen({ fromSync: true });
   }, () => { cloudRef = null; mode = 'local'; renderScreen({ fromSync: true }); });
-}
-
-/* ---------- Calculs ---------- */
-function threshold(n) { return 150 * n * (n - 1); }
-function levelInfo(xp) {
-  let n = 1; while (xp >= threshold(n + 1)) n++;
-  const base = threshold(n), next = threshold(n + 1);
-  return { n, name: LEVELS[Math.min(n - 1, LEVELS.length - 1)], base, next, into: xp - base, span: next - base, pct: Math.round(((xp - base) / (next - base)) * 100) };
-}
-function weekDays(d) { return (daysByWeek(state.history).get(weekKey(d)) || new Set()).size; }
-function weekStreak() {
-  const m = daysByWeek(state.history), goal = state.settings.weeklyGoal;
-  const size = s => (m.get(weekKey(s)) || new Set()).size;
-  const s = startOfWeek(new Date()); let n = 0;
-  if (size(s) >= goal) n++;
-  s.setDate(s.getDate() - 7);
-  while (size(s) >= goal) { n++; s.setDate(s.getDate() - 7); }
-  return n;
-}
-/* Catégorie du dos après la séance, à partir de la douleur notée de 0 à 10. */
-function backCat(h) {
-  if (h.stop || h.back === 'stop') return 'stop';
-  if (h.pain == null) return h.back || null;
-  if (h.leg) return 'douleur';
-  const before = h.painBefore ?? h.pain;
-  const rank = v => (v >= 7 || v - before >= 3) ? 2 : (v - before >= 1 && v > 2) ? 1 : 0;
-  const worst = Math.max(rank(h.pain), h.next != null ? rank(h.next) : 0);
-  return ['ok', 'sensible', 'douleur'][worst];
-}
-function painFreeRun() {
-  let n = 0;
-  for (const h of state.history) {
-    if (h.prog !== 'dos') continue;
-    const okNext = h.next == null || h.next <= (h.painBefore ?? h.pain ?? 0) + 1;
-    if (backCat(h) === 'ok' && okNext && !(h.painEx && h.painEx.length)) n++; else break;
-  }
-  return n;
-}
-function pendingNextDay() {
-  const today = dayKey(new Date());
-  const h = state.history.find(x => dayKey(x.d) !== today);
-  if (!h || h.next != null) return null;
-  if (Date.now() - new Date(h.d).getTime() > 3 * 86400000) return null;
-  return h;
-}
-function weekEntries() { const k = weekKey(new Date()); return state.history.filter(h => weekKey(new Date(h.d)) === k); }
-function chalProgress(c) { return Math.min(c.goal, c.prog(weekEntries(), state)); }
-function evalChallenges() {
-  const now = new Date(), k = weekKey(now);
-  state.challenges = state.challenges || {};
-  const done = state.challenges[k] || (state.challenges[k] = {});
-  const fresh = [];
-  weekChallenges(now).forEach(c => { if (!done[c.id] && chalProgress(c) >= c.goal) { done[c.id] = dayKey(now); state.xp += 50; fresh.push(c); } });
-  const keep = new Set(); const s = startOfWeek(now);
-  for (let i = 0; i < 4; i++) { keep.add(weekKey(s)); s.setDate(s.getDate() - 7); }
-  Object.keys(state.challenges).forEach(x => { if (!keep.has(x)) delete state.challenges[x]; });
-  return fresh;
-}
-function evalBadges() {
-  const fresh = [];
-  BADGES.forEach(b => { if (!state.badges[b.id] && b.test(state)) { state.badges[b.id] = dayKey(new Date()); fresh.push(b); } });
-  return fresh;
-}
-function setsFor(prog, ex) { return prog.id === 'dos' ? state.settings.sets : (ex.sets || 1); }
-function sideText(ex, side) { return ex.sideLabel === 'jambe' ? 'jambe ' + (side === 'droit' ? 'droite' : 'gauche') : 'côté ' + side; }
-function presc(ex, sets) {
-  if (ex.prescText) return ex.prescText;
-  if (ex.kind === 'timer') return ex.id === 'velo' ? state.settings.veloMin + ' min, résistance légère' : timerMin(ex) + ' min, à ton rythme';
-  if (ex.kind === 'hold') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' maintiens de ' + ex.hold + ' s';
-  const side = ex.sides ? ' par ' + (ex.sideLabel || 'côté') : '';
-  if (ex.kind === 'breath') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' respirations lentes';
-  if (ex.free) return 'Activation, environ ' + ex.target + side;
-  const reps = ex.max ? ex.target + ' à ' + ex.max : String(ex.target);
-  return sets > 1 ? sets + ' × ' + reps + side : reps + ' répétitions' + side;
-}
-function timerMin(ex) { return ex.id === 'velo' ? state.settings.veloMin : (ex.minutes || 10); }
-function estMin(p) {
-  let s = 0;
-  p.exercises.forEach(ex => {
-    if (ex.kind === 'timer') { s += timerMin(ex) * 60; return; }
-    const sets = setsFor(p, ex);
-    s += sets * (ex.max || ex.target) * (ex.kind === 'hold' ? ex.hold + 4 : ex.tempo) * (ex.sides ? 2 : 1) + (sets - 1) * p.rest + 30;
-  });
-  return Math.max(2, Math.round(s / 60));
 }
 
 /* ---------- Son, voix, vibrations ---------- */
@@ -1089,13 +195,13 @@ function renderScreen(opts = {}) {
 function homeHTML() {
   const lv = levelInfo(state.xp);
   const goal = state.settings.weeklyGoal;
-  const wk = weekDays(new Date());
-  const streak = weekStreak();
+  const wk = weekDays(state, new Date());
+  const streak = weekStreak(state);
   const bulbs = Array.from({ length: Math.max(goal, wk) }, (_, i) => `<span class="bulb${i < wk ? ' lit' : ''}"></span>`).join('');
   const last = state.history[0];
   const lastCat = last ? backCat(last) : null;
-  const run = painFreeRun();
-  const pend = pendingNextDay();
+  const run = painFreeRun(state);
+  const pend = pendingNextDay(state);
   let notices = '';
   if (ui.nextMsg) notices += `<div class="notice warn"><b>${esc(ui.nextMsg.title)}</b><span>${esc(ui.nextMsg.text)}</span></div>`;
   if (pend) {
@@ -1219,9 +325,9 @@ function tabbarHTML() {
 function ticketHTML(id) {
   const p = PROGRAMS[id];
   const locked = id === 'boule' && !state.settings.bouleUnlocked;
-  const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(ex, setsFor(p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
+  const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(state, ex, setsFor(state, p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
   let foot;
-  if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
+  if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
   else if (!ui.unlockOpen) foot = `<div class="t-row"><span class="est">À débloquer avec ton kiné</span><button class="btn ghost" data-action="unlock-open">${ICON.lock} Débloquer</button></div>`;
   else foot = unlockPanelHTML();
   return `
@@ -1246,7 +352,7 @@ function exSheetHTML(key) {
   return `<div class="sheet-wrap" data-action="ex-close-bg"><div class="ex-sheet" role="dialog" aria-modal="true" aria-labelledby="ex-t">
     <div class="ex-sheet-top"><div><p class="eyebrow">${esc(p.name)}</p><h2 id="ex-t">${esc(ex.name)}</h2></div><button class="icon-btn" data-action="ex-close" aria-label="Fermer">${ICON.close}</button></div>
     ${illusFull(ex.id)}
-    <p class="presc">${esc(presc(ex, setsFor(p, ex)))}</p>
+    <p class="presc">${esc(presc(state, ex, setsFor(state, p, ex)))}</p>
     <p>${esc(ex.cue)}</p>
     ${ex.tip ? `<p class="tip">${esc(ex.tip)}</p>` : ''}
     <p class="tip">En lilas : ce qui bouge. Le côté pâle est le côté opposé.</p>
@@ -1264,19 +370,8 @@ function unlockPanelHTML() {
   </div>`;
 }
 
-/* Garde-robe : chaque tenue ajoute des calques au dessin de Chouquette. */
-const BOW = '<path class="m-bow" d="M26 9 15 3.5q-3 5.5 0 11zM26 9 37 3.5q3 5.5 0 11z"/><circle class="m-bow" cx="26" cy="9" r="3.4"/>';
-const OUTFIT_SVG = {
-  noeud: { top: BOW },
-  'noeud-or': { top: BOW.replace(/m-bow/g, 'm-gold') },
-  bandeau: { under: '<rect class="m-sweat" x="7" y="19" width="38" height="5"/><path class="m-sweat-h" d="M26 23.2 24.4 21.6a1 1 0 0 1 1.6-1.2 1 1 0 0 1 1.6 1.2z"/>' },
-  lunettes: { top: BOW, face: '<g class="m-shades"><rect x="12.5" y="25.5" width="13" height="8.5" rx="4"/><rect x="26.5" y="25.5" width="13" height="8.5" rx="4"/><path d="M25.5 28.5h1"/></g><path class="m-glint" d="M15 28.6l3-1.2M29 28.6l3-1.2"/>' },
-  fleur: { top: '<g class="m-flower"><circle cx="38" cy="6.4" r="3.3"/><circle cx="43.4" cy="9.8" r="3.3"/><circle cx="41.4" cy="15.4" r="3.3"/><circle cx="34.6" cy="15.4" r="3.3"/><circle cx="32.6" cy="9.8" r="3.3"/></g><circle class="m-gold" cx="38" cy="11" r="2.6"/>' },
-  'coeur-lunettes': { top: BOW, face: '<path class="m-hglass" d="M19.5 35.2 14.4 30.2a3.1 3.1 0 0 1 5.1-3.7 3.1 3.1 0 0 1 5.1 3.7zM32.5 35.2 27.4 30.2a3.1 3.1 0 0 1 5.1-3.7 3.1 3.1 0 0 1 5.1 3.7z"/><path class="m-line" d="M24.6 29.5h2.8"/>' },
-  chapeau: { top: '<path class="m-hat" d="M26 1.5 35.5 13.5h-19z"/><path class="m-hat-s" d="M23.2 5.6h5.6M20.4 9.6h11.2"/><circle class="m-gold" cx="26" cy="2.4" r="2.2"/>' },
-  couronne: { top: '<path class="m-gold" d="M13.5 14.5V5.5l6.2 4.8L26 2.5l6.3 7.8 6.2-4.8v9z"/><circle class="m-jewel" cx="26" cy="9.5" r="1.6"/><circle class="m-jewel" cx="18" cy="11" r="1.2"/><circle class="m-jewel" cx="34" cy="11" r="1.2"/>' }
-};
-function unlockedOutfits(s) { return OUTFITS.filter(o => o.test(s)).map(o => o.id); }
+/* Chouquette porte la tenue choisie, sauf si on en demande une autre (garde-robe). */
+function mascot(mood, outfit) { return mascotSVG(mood, outfit || state.settings.outfit); }
 function wardrobeHTML() {
   const cur = state.settings.outfit || 'noeud';
   const items = OUTFITS.map(o => {
@@ -1288,20 +383,6 @@ function wardrobeHTML() {
     <div class="outfits">${items}</div>
   </section>`;
 }
-function mascot(mood, outfit) {
-  const o = OUTFIT_SVG[outfit || state.settings.outfit] || OUTFIT_SVG.noeud;
-  const eyes = mood === 'calm'
-    ? '<path class="m-line" d="M16.5 31q3 2.6 6 0M29.5 31q3 2.6 6 0"/>'
-    : mood === 'wow'
-      ? '<circle class="m-eye" cx="19.5" cy="30" r="3"/><circle class="m-eye" cx="32.5" cy="30" r="3"/><circle class="m-shine" cx="20.6" cy="28.8" r="1"/><circle class="m-shine" cx="33.6" cy="28.8" r="1"/>'
-      : '<ellipse class="m-eye" cx="19.5" cy="30" rx="2.4" ry="2.9"/><ellipse class="m-eye" cx="32.5" cy="30" rx="2.4" ry="2.9"/><circle class="m-shine" cx="20.4" cy="28.9" r=".9"/><circle class="m-shine" cx="33.4" cy="28.9" r=".9"/>';
-  const mouth = mood === 'wow' ? '<ellipse class="m-mouth" cx="26" cy="38" rx="2.6" ry="3.1"/>' : '<path class="m-line" d="M22.6 36.5q3.4 3.6 6.8 0"/>';
-  return '<svg class="mascot" viewBox="0 0 52 62" aria-hidden="true">'
-    + '<rect class="m-body" x="7" y="15" width="38" height="45" rx="10"/><rect class="m-face" x="7" y="25" width="38" height="20"/>'
-    + '<rect class="m-rim" x="9" y="12" width="34" height="6" rx="3"/>' + (o.under || '')
-    + eyes + '<ellipse class="m-blush" cx="13.5" cy="36" rx="3.2" ry="2"/><ellipse class="m-blush" cx="38.5" cy="36" rx="3.2" ry="2"/>' + mouth
-    + (o.face || '') + (o.top || '') + '</svg>';
-}
 function buddyHTML(text, mood, size) {
   return `<div class="buddy ${size || ''}">${mascot(mood)}<p class="bubble"><b>Chouquette</b>${esc(text)}</p></div>`;
 }
@@ -1309,7 +390,7 @@ function buddyLine() {
   const today = dayKey(new Date()), day = new Date().getDate();
   const pickDay = arr => arr[day % arr.length];
   if (!state.history.length) return 'Coucou, moi c’est Chouquette ! Fais tomber mes copines les boîtes… tout doucement.';
-  if (pendingNextDay()) return 'Coucou ! Dis-moi d’abord comment va ton dos ce matin.';
+  if (pendingNextDay(state)) return 'Coucou ! Dis-moi d’abord comment va ton dos ce matin.';
   if (state.history.some(h => dayKey(h.d) === today)) return pickDay(['Bravo pour aujourd’hui ! Maintenant, repos et chouchoutage.', 'Séance faite, cœur rempli. Tu gères !', 'Ton dos te dit merci. À demain peut-être ?']);
   return pickDay(['Une petite partie aujourd’hui ? Lentement, c’est comme ça qu’on gagne.', 'Je t’attends sur le stand, mes boîtes sont prêtes à tomber !', 'Même 3 minutes de respiration, ça compte.', 'Un cœur à remplir aujourd’hui ?']);
 }
@@ -1322,7 +403,7 @@ function lvlToken(n) {
 function challengesHTML() {
   const done = (state.challenges || {})[weekKey(new Date())] || {};
   const items = weekChallenges(new Date()).map(c => {
-    const p = chalProgress(c), won = !!done[c.id];
+    const p = chalProgress(state, c), won = !!done[c.id];
     return `<li class="chal${won ? ' won' : ''}">
       <div class="chal-txt"><b>${esc(c.name)}</b><span>${esc(c.desc)}</span>
         <div class="chal-bar" role="progressbar" aria-label="${esc(c.name)}" aria-valuemin="0" aria-valuemax="${c.goal}" aria-valuenow="${p}"><i style="width:${Math.round((p / c.goal) * 100)}%"></i></div>
@@ -1494,40 +575,6 @@ function precheckHTML() {
 }
 
 /* ---------- Résumé kiné ---------- */
-function kineSummary() {
-  const now = new Date(), from = new Date(now); from.setDate(from.getDate() - 30); from.setHours(0, 0, 0, 0);
-  const list = state.history.filter(h => new Date(h.d) >= from).slice().reverse();
-  const days = new Set(list.map(h => dayKey(h.d))).size;
-  const s = state.settings;
-  const L = [];
-  L.push('Suivi Chamboule Coach');
-  L.push(`Période : du ${from.toLocaleDateString('fr-FR')} au ${now.toLocaleDateString('fr-FR')}`);
-  L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
-  L.push(`Réglages actuels : ${s.sets} série${s.sets > 1 ? 's' : ''} par exercice au sol, vélo ${s.veloMin} min`);
-  L.push(`Programme Boule qui chamboule : ${s.bouleUnlocked ? 'débloqué' + (s.bouleUnlockedAt ? ' le ' + new Date(s.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);
-  L.push('');
-  L.push('Douleur de dos notée de 0 à 10 : avant la séance → juste après → le lendemain.');
-  L.push('');
-  if (!list.length) L.push('Aucune séance sur la période.');
-  const painCount = {};
-  list.forEach(h => {
-    const p = PROGRAMS[h.prog] || { name: h.prog };
-    L.push(`${fmtDateLong(h.d)} · ${p.name}${h.hf ? ' (mains libres)' : ''}`);
-    L.push(`  Douleur : ${h.painBefore ?? '?'} → ${h.pain ?? '?'} → ${h.next ?? '?'}`);
-    if (h.legBefore) L.push('  Symptômes dans la jambe AVANT la séance');
-    if (h.leg) L.push('  Symptômes dans la jambe APRÈS la séance');
-    if (backCat(h) === 'stop') L.push('  Séance arrêtée : douleur dans la jambe ou fourmillements');
-    if (h.painEx && h.painEx.length) { L.push('  Passé pour douleur : ' + h.painEx.map(exName).join(', ')); h.painEx.forEach(id => { painCount[id] = (painCount[id] || 0) + 1; }); }
-    const other = (h.skipped || []).filter(id => !(h.painEx || []).includes(id));
-    if (other.length) L.push('  Non fait : ' + other.map(exName).join(', '));
-    if (h.veloMin) L.push(`  Vélo : ${fmtMin(h.veloMin)} min`);
-    if (h.walkMin) L.push(`  Marche : ${fmtMin(h.walkMin)} min`);
-  });
-  L.push('');
-  const pc = Object.entries(painCount);
-  L.push('Exercices passés pour douleur sur la période : ' + (pc.length ? pc.map(([id, n]) => `${exName(id)} (${n})`).join(', ') : 'aucun'));
-  return L.join('\n');
-}
 function summaryHTML() {
   return `<main class="page plain">
     <header class="sub-top">
@@ -1535,7 +582,7 @@ function summaryHTML() {
       <h1>Résumé pour mon kiné</h1>
     </header>
     <p class="muted">Les 30 derniers jours, avec uniquement ce que tu as noté dans l’appli. À montrer en séance ou à envoyer.</p>
-    <pre class="summary" id="sum-text" tabindex="0">${esc(kineSummary())}</pre>
+    <pre class="summary" id="sum-text" tabindex="0">${esc(kineSummary(state))}</pre>
     <div class="btn-col">
       <button class="btn primary big" data-action="sum-copy">Copier le texte</button>
       ${canSave() ? `<button class="btn ghost" data-action="sum-dl">${window.claude ? 'Télécharger (.txt)' : 'Enregistrer en fichier (.txt)'}</button>` : ''}
@@ -1553,12 +600,7 @@ function stopLoop() { cancelAnimationFrame(rafId); clearInterval(tickIv); }
 function startGame(progId, pre) {
   audio();
   const prog = PROGRAMS[progId];
-  const steps = [];
-  prog.exercises.forEach((ex, ei) => {
-    if (ex.kind === 'timer') { steps.push({ ex, ei, set: 1, sets: 1, side: null }); return; }
-    const sets = setsFor(prog, ex);
-    for (let s = 1; s <= sets; s++) (ex.sides ? ['droit', 'gauche'] : [null]).forEach(side => steps.push({ ex, ei, set: s, sets, side }));
-  });
+  const steps = buildSteps(state, prog);
   G = {
     prog, steps, i: 0, phase: 'intro', line: pick(LINES.intro), hf: prog.practice ? false : !!state.settings.handsFree,
     setPerfect: 0, nCans: 0, pyramids: 0, canGeo: null, litL: -1,
@@ -1633,7 +675,7 @@ function introHTML(st) {
     <div class="g-head">
       <p class="eyebrow">${G.prog.practice ? 'Premier lancer · rien n’est enregistré' : `Exercice ${st.ei + 1} / ${n}`}</p>
       <h2 class="g-title">${esc(ex.name)}</h2>
-      <p class="presc">${esc(presc(ex, st.sets))}</p>
+      <p class="presc">${esc(presc(state, ex, st.sets))}</p>
     </div>
     <div class="cue">${illusFull(ex.id)}<p>${esc(ex.cue)}</p>${ex.tip ? `<p class="tip">${esc(ex.tip)}</p>` : ''}</div>
     ${hfCard}
@@ -1686,9 +728,9 @@ function timerHTML(st) {
   return `<div class="g-body">
     <div class="g-head">
       <h2 class="g-title sm">${esc(ex.name)}</h2>
-      <p class="g-meta">${ex.id === 'velo' ? state.settings.veloMin + ' min · résistance légère · buste peu penché' : timerMin(ex) + ' min · à ton rythme'}</p>
+      <p class="g-meta">${ex.id === 'velo' ? state.settings.veloMin + ' min · résistance légère · buste peu penché' : timerMin(state, ex) + ' min · à ton rythme'}</p>
     </div>
-    <div class="lanterns" aria-hidden="true">${Array.from({ length: Math.min(timerMin(ex), 20) }, () => '<span class="bulb sm"></span>').join('')}</div>
+    <div class="lanterns" aria-hidden="true">${Array.from({ length: Math.min(timerMin(state, ex), 20) }, () => '<span class="bulb sm"></span>').join('')}</div>
     <div class="zone" data-tap role="button" tabindex="0" aria-label="Démarrer ou mettre en pause le chrono" data-autofocus>
       <div class="target">
         <div class="disc"></div>
@@ -1940,13 +982,6 @@ function sparks() {
   }
 }
 
-/* Chamboule-tout : une pyramide de boîtes par série, une boîte par répétition parfaite. */
-const CAN_SVG = '<svg viewBox="0 0 20 26" preserveAspectRatio="none"><rect class="can-body" x="1" y="1.5" width="18" height="23" rx="3"/><rect class="can-band" x="1" y="9" width="18" height="8"/><path class="can-heart" d="M10 15.6 7.5 13.2a1.55 1.55 0 0 1 2.5-1.8 1.55 1.55 0 0 1 2.5 1.8z"/><rect class="can-rim" x="2" y="1" width="16" height="2.5" rx="1.2"/></svg>';
-function canRows(n) {
-  const rows = []; let left = n, b = Math.ceil((Math.sqrt(8 * n + 1) - 1) / 2);
-  while (left > 0) { const k = Math.min(b, left); rows.push(k); left -= k; b = Math.max(1, b - 1); }
-  return rows;
-}
 function standHTML(n, knocked) {
   if (!n) { G.canGeo = null; return ''; }
   const rows = canRows(n);
@@ -2099,15 +1134,6 @@ function closeOverlay() {
   renderGame();
 }
 
-function computeXP(prog, reason) {
-  const ids = prog.exercises.map(e => e.id);
-  const considered = ids.filter(id => !G.painEx.includes(id));
-  const done = considered.filter(id => !G.skipped.includes(id)).length;
-  const completion = considered.length ? done / considered.length : 0;
-  const quality = G.reps ? G.perfect / G.reps : 1;
-  return Math.round(prog.xpBase * completion * (0.6 + 0.4 * quality)) + 30;
-}
-
 function finish(reason) {
   stopLoop();
   wakeLock(false);
@@ -2127,10 +1153,8 @@ function finish(reason) {
     toast('Séance vide : rien n’a été enregistré.');
     return;
   }
-  const quality = G.reps ? G.perfect / G.reps : 1;
-  const realSkips = G.skipped.filter(id => !G.painEx.includes(id));
-  const stars = reason === 'pain' ? 0 : (quality >= 0.8 && !realSkips.length ? 3 : quality >= 0.5 ? 2 : 1);
-  const xp = computeXP(G.prog, reason);
+  const stars = computeStars(reason, G);
+  const xp = computeXP(G.prog, G);
   const sameDay = state.history.some(h => dayKey(h.d) === dayKey(new Date()));
   const entry = {
     id: 's' + Date.now().toString(36), d: new Date().toISOString(), prog: G.prog.id,
@@ -2146,8 +1170,8 @@ function finish(reason) {
   state.bestCombo = Math.max(state.bestCombo, G.bestCombo);
   state.history.unshift(entry);
   if (state.history.length > 300) state.history.length = 300;
-  const fresh = evalBadges();
-  const chal = evalChallenges();
+  const fresh = evalBadges(state);
+  const chal = evalChallenges(state);
   persist();
   const newOutfits = OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id));
   R = { entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
@@ -2237,9 +1261,9 @@ function applyCheckin() {
   });
   const outfitsBefore = unlockedOutfits(state);
   if (first) state.xp += 20;
-  const fresh = evalBadges();
+  const fresh = evalBadges(state);
   if (fresh.length) R.badges = R.badges.concat(fresh);
-  const ch = evalChallenges();
+  const ch = evalChallenges(state);
   if (ch.length) R.challenges = (R.challenges || []).concat(ch);
   R.outfits = (R.outfits || []).concat(OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id)));
   R.after = levelInfo(state.xp);
@@ -2281,14 +1305,8 @@ function saveFile(name, text, type) {
     return Promise.resolve({ status: 'saved' });
   } catch { return Promise.reject({ code: 'unavailable' }); }
 }
-function backupDue() {
-  if (window.claude || state.history.length < 3) return false;
-  const s = state.settings, now = Date.now();
-  if (s.exportSnooze && now < Date.parse(s.exportSnooze)) return false;
-  return !s.lastExport || now - Date.parse(s.lastExport) > 30 * 86400000;
-}
 function backupReminderHTML() {
-  if (!backupDue()) return '';
+  if (!backupDue(state, Date.now(), !!window.claude)) return '';
   return `<div class="notice warn"><b>Pense à sauvegarder ta progression.</b><span>Tes séances ne sont que dans ce téléphone. Exporte un fichier de sauvegarde et range-le dans tes fichiers ou envoie-le-toi par mail.</span>
     <div class="row-btns"><button class="btn primary" data-action="export">Exporter maintenant</button><button class="btn ghost" data-action="backup-later">Plus tard</button></div></div>`;
 }
@@ -2325,7 +1343,7 @@ const ACTIONS = {
   },
   'import-cancel'() { ui.importData = null; renderScreen(); },
   'sum-share'() {
-    try { navigator.share({ title: 'Suivi dos', text: kineSummary() }).catch(() => {}); } catch {}
+    try { navigator.share({ title: 'Suivi dos', text: kineSummary(state) }).catch(() => {}); } catch {}
   },
   'pre-pain'(b) { ui.pre.pain = Number(b.dataset.v); ui.pre.step = 'ask'; renderScreen(); },
   'pre-leg'(b) { ui.pre.leg = b.dataset.v === '1'; ui.pre.step = 'ask'; renderScreen(); },
@@ -2348,8 +1366,8 @@ const ACTIONS = {
     const base = h.painBefore ?? h.pain ?? 0;
     ui.nextMsg = (v >= 7 || v >= base + 3) ? { title: `Plus douloureux qu’avant la séance (${base} → ${v}).`, text: 'Prends un jour de repos ou fais Jour difficile, et parles-en à ton kiné.' } : null;
     h.back = backCat(h);
-    evalBadges();
-    const ch = evalChallenges();
+    evalBadges(state);
+    const ch = evalChallenges(state);
     persist(); renderScreen({ still: true });
     const newOutfit = OUTFITS.find(o => o.test(state) && !outfitsBefore.includes(o.id));
     if (newOutfit) { setTimeout(() => toast(`Nouvelle tenue pour Chouquette : ${newOutfit.name} ! Va voir dans Progrès.`), 4300); }
@@ -2358,7 +1376,7 @@ const ACTIONS = {
   summary() { ui.summaryBack = ui.screen; ui.screen = 'summary'; renderScreen(); window.scrollTo(0, 0); },
   'summary-back'() { ui.screen = ui.summaryBack === 'settings' ? 'settings' : 'home'; renderScreen(); window.scrollTo(0, 0); },
   'sum-copy'() {
-    const text = kineSummary();
+    const text = kineSummary(state);
     const fallback = () => {
       const el = $('#sum-text'); if (!el) return;
       try { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } catch {}
@@ -2370,7 +1388,7 @@ const ACTIONS = {
     } catch { fallback(); }
   },
   'sum-dl'() {
-    saveFile('suivi-dos-' + dayKey(new Date()) + '.txt', kineSummary(), 'text/plain')
+    saveFile('suivi-dos-' + dayKey(new Date()) + '.txt', kineSummary(state), 'text/plain')
       .then(() => toast('Résumé téléchargé.'))
       .catch(e => { if (!e || e.code !== 'declined') toast('Téléchargement impossible ici. Utilise Copier le texte.'); });
   },
@@ -2400,7 +1418,7 @@ const ACTIONS = {
   go() {
     if (!G) return;
     const ex = G.steps[G.i].ex;
-    if (G.phase === 'intro' && ex.kind === 'timer') { G.phase = 'timer'; G.lastMin = null; G.timer = { running: false, acc: 0, since: 0, dur: timerMin(ex) * 60000, credited: false }; renderGame(); return; }
+    if (G.phase === 'intro' && ex.kind === 'timer') { G.phase = 'timer'; G.lastMin = null; G.timer = { running: false, acc: 0, since: 0, dur: timerMin(state, ex) * 60000, credited: false }; renderGame(); return; }
     beginPlay();
     // iOS ne laisse parler l’appli que si la première phrase part d’un toucher : on parle ici, tout de suite.
     if (G.hf) { if (ex.kind === 'breath') { say('Inspire'); G.cue = 1; } else say('C’est parti'); }
@@ -2498,5 +1516,3 @@ app.addEventListener('focusin', e => { const h = e.target.closest && e.target.cl
 app.addEventListener('focusout', e => { if (e.target.closest && e.target.closest('[data-tip]')) hideTip(); });
 
 initStore();
-})();
-</script>
