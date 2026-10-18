@@ -36,6 +36,7 @@ img{max-width:100%}
   --face:#FFFFFF; --face-ink:#3A1238; --blush:#FF9EC2;
   --shadow:0 1px 0 rgba(147,36,90,.06),0 12px 28px -14px rgba(147,36,90,.40);
   --heart:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.3 3.4 12.9a5.2 5.2 0 0 1 8.6-7.1 5.2 5.2 0 0 1 8.6 7.1z'/%3E%3C/svg%3E");
+  --heart-o:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 20 4.3 12.5a4.6 4.6 0 0 1 7.7-6.3 4.6 4.6 0 0 1 7.7 6.3z' fill='none' stroke='black' stroke-width='2.6' stroke-linejoin='round'/%3E%3C/svg%3E");
   --star:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z'/%3E%3C/svg%3E");
   --f-display:'Fredoka','Nunito','Segoe UI',system-ui,sans-serif;
   --f-script:'Pacifico','Brush Script MT',cursive;
@@ -120,8 +121,9 @@ button{font:inherit;color:inherit}
 .week-head p{font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .week-head p b{font-family:var(--f-display);font-weight:700;font-size:20px;color:var(--ink)}
 .bulbs{display:flex;gap:12px;flex-wrap:wrap}
-.bulb{width:32px;height:32px;background:var(--bulb-off);-webkit-mask:var(--heart) center/contain no-repeat;mask:var(--heart) center/contain no-repeat}
-.bulb.lit{background:var(--accent);animation:beat 1.4s ease-in-out infinite}
+/* Cœur vide = contour rose, cœur plein = rempli : l'état se lit à la forme, pas seulement à la teinte. */
+.bulb{width:32px;height:32px;background:var(--accent);-webkit-mask:var(--heart-o) center/contain no-repeat;mask:var(--heart-o) center/contain no-repeat}
+.bulb.lit{-webkit-mask-image:var(--heart);mask-image:var(--heart);animation:beat 1.4s ease-in-out infinite}
 @keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.14)}30%{transform:scale(1)}45%{transform:scale(1.08)}}
 .week-meta{font-size:14px;color:var(--ink-2);font-weight:600}
 
@@ -155,6 +157,7 @@ button{font:inherit;color:inherit}
 .ticket{--t-color:var(--accent);--t-ink:var(--accent-ink);position:relative;background:var(--surface);border-radius:24px;overflow:hidden;box-shadow:var(--shadow)}
 .ticket.boule{--t-color:var(--prize);--t-ink:var(--prize-ink)}
 .ticket.difficile{--t-color:var(--ok);--t-ink:var(--ok-ink)}
+.ticket.milieu{--t-color:var(--ticket);--t-ink:var(--ticket-ink)}
 .ticket.locked{--t-color:var(--surface-2);--t-ink:var(--ink-2)}
 .ticket-head{background:var(--t-color);color:var(--t-ink);padding:16px 18px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
 .ticket-head h3{font-size:22px}
@@ -197,6 +200,7 @@ button{font:inherit;color:inherit}
 .il-bike circle{fill:var(--surface)}
 .il-crank{stroke:var(--ink-2);stroke-width:3;stroke-linecap:round}
 .il-mini{width:64px;flex:none;border-radius:10px}
+.il-t{fill:var(--prize);font:800 12px var(--f-body)}
 .il-fig{margin:0;display:flex;flex-direction:column;gap:6px}
 .il-caps{display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:center;font-size:14px;font-weight:800;color:var(--ink-2);line-height:1.25}
 
@@ -235,6 +239,30 @@ button{font:inherit;color:inherit}
 .bubble b{display:block;font-family:var(--f-display);color:var(--accent);font-size:14px;margin-bottom:2px}
 .buddy.sm .bubble{font-size:15px}
 .flash .mascot{width:46px;display:block;margin:0 auto 4px;animation:none}
+.m-gold{fill:var(--ticket)}.m-jewel{fill:var(--prize)}.m-hat{fill:var(--prize)}
+.m-hat-s{fill:none;stroke:var(--ticket);stroke-width:2.2;stroke-linecap:round}
+.m-shades rect{fill:var(--face-ink)}.m-shades path{fill:none;stroke:var(--face-ink);stroke-width:2}
+.m-glint{fill:none;stroke:var(--face);stroke-width:1.2;stroke-linecap:round}
+.m-hglass{fill:var(--accent-deep)}.m-sweat{fill:var(--prize)}.m-sweat-h{fill:var(--face)}.m-flower circle{fill:var(--face)}
+.wardrobe{display:flex;flex-direction:column;gap:12px}
+.outfits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.outfit{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:18px;border:2px solid var(--line);background:var(--surface);cursor:pointer;min-width:0;text-align:center}
+.outfit .mascot{width:44px;animation:none}
+.outfit b{font-size:13px;font-weight:900;line-height:1.15}
+.outfit span{font-size:12px;color:var(--ink-2);font-weight:700;line-height:1.2;display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap}
+.outfit span svg{width:11px;height:11px;flex:none}
+.outfit.on{border-color:var(--accent);background:var(--surface-2)}
+.outfit.on span{color:var(--accent)}
+.outfit.locked{cursor:default}
+.outfit.locked .mascot{filter:grayscale(1);opacity:.45}
+.new-outfit{flex-direction:row;align-items:center;gap:12px}
+.new-outfit .mascot{width:48px;animation:none}
+.stand-buddy{position:absolute;left:4px;bottom:8px;width:38px;z-index:2}
+.stand-buddy .mascot{width:38px;animation:none}
+.stand-buddy.hop{animation:hop .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes hop{35%{transform:translateY(-16px) rotate(-8deg)}70%{transform:translateY(0) rotate(4deg)}}
+.stand-buddy.shake{animation:shakeit .4s ease}
+@keyframes shakeit{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
 
 /* Défis de la semaine */
 .chal-card{display:flex;flex-direction:column;gap:6px}
@@ -467,7 +495,7 @@ button{font:inherit;color:inherit}
   .target.hit,.flash,.levelup,.stars svg.on{animation:none}
   .bike.spin .wheel{animation:none}
   .xpbar i{transition:none}
-  .marq,.can.wobble,.mascot,.bulb.lit,.brand h1 .spark-txt{animation:none}
+  .marq,.can.wobble,.mascot,.bulb.lit,.brand h1 .spark-txt,.stand-buddy.hop,.stand-buddy.shake{animation:none}
   .can.down{animation:none;opacity:0}
 }
 </style>
@@ -509,13 +537,34 @@ const EX = {
     tip: 'Descends seulement tant que ton dos reste neutre.' },
   hydrant: { id: 'hydrant', name: 'Fire hydrant', kind: 'reps', target: 10, sides: true, free: true, sets: 1, tempo: 2,
     cue: 'À quatre pattes, ouvre le genou sur le côté sans faire pivoter le bassin.',
-    tip: 'Activation : arrête quand tu sens bien la fesse travailler.' }
+    tip: 'Activation : arrête quand tu sens bien la fesse travailler.' },
+  chatvache: { id: 'chatvache', name: 'Chat-vache', kind: 'reps', target: 6, tempo: 6,
+    cue: 'À quatre pattes, mains sous les épaules. En expirant, arrondis lentement le dos ; en inspirant, creuse-le légèrement. Un aller-retour, une répétition.',
+    tip: 'Petite amplitude, sans forcer dans le bas du dos.' },
+  rotation: { id: 'rotation', name: 'Rotations assises', kind: 'reps', target: 5, sides: true, tempo: 4,
+    cue: 'Assis, dos long, bras croisés sur la poitrine. Tourne lentement le buste d’un côté, puis reviens au centre.',
+    tip: 'Sans chercher l’amplitude maximale. Le bassin reste face à l’avant.' },
+  thorax: { id: 'thorax', name: 'Ouverture thoracique', kind: 'reps', target: 6, tempo: 5,
+    cue: 'Assis ou debout, mains derrière la nuque. Ouvre doucement les coudes et la poitrine, puis relâche.',
+    tip: 'Le bas du dos ne se creuse pas : c’est le haut du dos qui s’ouvre.' },
+  gainage: { id: 'gainage', name: 'Gainage abdominal léger', kind: 'hold', target: 6, hold: 8,
+    cue: 'Sur le dos, genoux pliés. En expirant, rentre doucement le nombril vers la colonne et tiens en respirant calmement.',
+    tip: 'Le dos ne bouge pas : on serre seulement le ventre en profondeur. Pas de crunch.' },
+  planche: { id: 'planche', name: 'Planche sur genoux', kind: 'hold', target: 2, hold: 12,
+    cue: 'Coudes sous les épaules, genoux au sol, ventre rentré, dos droit des épaules aux genoux.',
+    tip: 'Commence par 10 à 15 secondes. Arrête si le bas du dos se creuse.' },
+  marche: { id: 'marche', name: 'Marche', kind: 'timer', minutes: 10,
+    cue: 'Marche à ton rythme, épaules relâchées. Allonge la durée petit à petit tant que la douleur reste tolérable.',
+    tip: 'Dehors, dans le couloir ou sur place : tout compte.' }
 };
 
 const PROGRAMS = {
   dos: { id: 'dos', name: 'Reprise dos', tag: 'Routine du 11 oct. 2026', rest: 30, xpBase: 100,
     blurb: 'Gainage doux, fessiers et cardio léger, adaptés à ton dos. À faire valider par ton kiné.',
     exercises: [EX.transverse, EX.birddog, EX.pont, EX.velo] },
+  milieu: { id: 'milieu', name: 'Dos du milieu', tag: 'Mobilité douce', rest: 20, xpBase: 100,
+    blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pont fessier et bird-dog sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
+    exercises: [EX.chatvache, EX.rotation, EX.thorax, EX.gainage, EX.planche, EX.marche] },
   difficile: { id: 'difficile', name: 'Jour difficile', tag: 'Séance douce · 3 min', rest: 30, xpBase: 50,
     blurb: 'Juste la respiration, pour garder le rythme sans rien forcer. Pour les jours où le dos est sensible.',
     exercises: [{ ...EX.transverse, sets: 2 }] },
@@ -527,7 +576,7 @@ const PROGRAMS = {
       cue: 'Pas besoin de bouger. Regarde le cercle se remplir. Quand il devient jaune et que ça bipe, tape : la balle part sur les boîtes.',
       tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
 };
-const PROG_ORDER = ['dos', 'difficile', 'boule'];
+const PROG_ORDER = ['dos', 'milieu', 'difficile', 'boule'];
 
 /* ---------- Illustrations (pictogrammes dessinés : départ puis mouvement) ---------- */
 const Q = {
@@ -581,6 +630,34 @@ const ILLUS = {
   ]}
 };
 
+const SUP2 = { head: [40, 103], neck: [[47, 105], [50, 106]], torso: [[50, 106], [88, 106]], legN: [[88, 106], [104, 86], [118, 107]], legF: [[88, 106], [101, 87], [114, 107]], arm: [[50, 107], [66, 108], [80, 108]] };
+const CHAIR = '<path class="il-prop" d="M58 74h44v6H58z"/><path class="il-bike" d="M61 80v32M99 80v32"/>';
+Object.assign(ILLUS, {
+  chatvache: { labels: ['Dos rond, on expire', 'Dos creux, on inspire'], poses: [
+    { h: [106, 85], b: [[[96, 74], [101, 80]]], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN], a: [[[60, 81], [78, 63], [96, 74]]], over: '<path class="il-arrow" d="M78 54 V44 M73 49 L78 44 L83 49"/>' },
+    { h: [111, 64], b: [[[96, 73], [104, 68]]], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN], a: [[[60, 80], [78, 84], [96, 73]]], over: '<path class="il-arrow" d="M78 62 V72 M73 67 L78 72 L83 67"/>' }
+  ]},
+  rotation: { labels: ['Assis, dos long', 'Tourne doucement'], poses: [
+    { prop: CHAIR, h: [80, 20], b: [[[80, 29], [80, 70]], [[64, 38], [96, 38]], [[70, 72], [90, 72]]], n: [[[70, 72], [68, 86], [68, 110]], [[90, 72], [92, 86], [92, 110]], [[64, 38], [72, 50], [92, 46]], [[96, 38], [88, 50], [68, 46]]] },
+    { prop: CHAIR, h: [84, 20], b: [[[80, 29], [80, 70]], [[70, 72], [90, 72]]], n: [[[70, 72], [68, 86], [68, 110]], [[90, 72], [92, 86], [92, 110]]], a: [[[70, 39], [94, 37]], [[70, 39], [76, 50], [92, 45]], [[94, 37], [89, 50], [74, 46]]], over: '<path class="il-arrow" d="M62 10 Q80 0 98 10 M93 5 L98 10 L92 13"/>' }
+  ]},
+  thorax: { labels: ['Coudes rapprochés', 'Ouvre les coudes'], poses: [
+    { h: [80, 16], b: [[[80, 25], [80, 64]], [[66, 32], [94, 32]], [[72, 64], [88, 64]]], n: [[[72, 64], [70, 110]], [[88, 64], [90, 110]], [[66, 32], [72, 22], [78, 14]], [[94, 32], [88, 22], [82, 14]]] },
+    { h: [80, 16], b: [[[80, 25], [80, 64]], [[66, 32], [94, 32]], [[72, 64], [88, 64]]], n: [[[72, 64], [70, 110]], [[88, 64], [90, 110]]], a: [[[66, 32], [50, 22], [73, 12]], [[94, 32], [110, 22], [87, 12]]], over: '<path class="il-arrow" d="M44 34 L34 34 M39 29 L34 34 L39 39 M116 34 L126 34 M121 29 L126 34 L121 39"/>' }
+  ]},
+  gainage: { labels: ['Ventre relâché', 'Nombril rentré, tiens'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm], over: '<path class="il-cue" d="M58 100 Q72 89 86 100"/>' },
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm], over: '<path class="il-cue" d="M58 101 Q72 97 86 101"/>' + '<path class="il-arrow" d="M72 72 V84 M67 79 L72 84 L77 79"/><text class="il-t" x="104" y="62" text-anchor="middle">8 s</text>' }
+  ]},
+  planche: { labels: ['Sur les avant-bras et genoux', 'Dos droit, tiens'], poses: [
+    { h: [112, 85], b: [[[56, 82], [100, 90]], [[100, 90], [106, 87]]], n: [[[100, 90], [100, 107], [120, 107]], [[56, 82], [56, 107], [34, 100]]] },
+    { h: [112, 85], b: [[[100, 90], [106, 87]]], n: [[[100, 90], [100, 107], [120, 107]], [[50, 105], [30, 96]]], a: [[[100, 90], [75, 97.5], [50, 105]]], over: '<text class="il-t" x="76" y="74" text-anchor="middle">12 s</text>' }
+  ]},
+  marche: { labels: ['Pas souple', 'Bras relâchés'], poses: [
+    { h: [81, 12], b: [[[80, 21], [80, 60]]], f: [[[80, 60], [72, 84], [62, 106], [69, 108]], [[80, 28], [72, 44], [70, 58]]], n: [[[80, 28], [88, 43], [94, 56]]], a: [[[80, 60], [90, 84], [96, 108], [104, 108]]] },
+    { h: [81, 12], b: [[[80, 21], [80, 60]]], f: [[[80, 60], [90, 84], [96, 106], [103, 108]], [[80, 28], [88, 43], [94, 56]]], n: [[[80, 28], [72, 44], [70, 58]]], a: [[[80, 60], [72, 84], [62, 108], [70, 108]]] }
+  ]}
+});
 function poseSVG(p) {
   const pl = list => (list || []).map(pts => `<polyline points="${pts.map(q => q.join(',')).join(' ')}"/>`).join('');
   return `${p.prop || ''}<g class="il-far">${pl(p.f)}</g><g class="il-body">${pl(p.b)}${pl(p.n)}</g><g class="il-move">${pl(p.a)}</g><circle class="il-head" cx="${p.h[0]}" cy="${p.h[1]}" r="8"/>${p.over || ''}`;
@@ -595,7 +672,7 @@ function illusMini(id) {
   return `<svg class="il il-mini" viewBox="0 0 160 120" aria-hidden="true"><rect class="il-bg" width="160" height="120" rx="14"/><line class="il-floor" x1="8" y1="112" x2="152" y2="112"/>${poseSVG(il.poses[1])}</svg>`;
 }
 
-const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Légende de la foire'];
+const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Cœur de la fête', 'Grande roue', 'Feu d’artifice', 'Légende de la foire'];
 const LINES = {
   intro: ['Ici, la vitesse ne rapporte rien. Le contrôle, si.', 'Lentement. C’est comme ça qu’on gagne à ce jeu.', 'Respire, et laisse le cercle se remplir.', 'Un mouvement propre vaut mieux que trois rapides.'],
   rest: ['Récup. Bois une gorgée d’eau.', 'Relâche les épaules et souffle.', 'Belle série. On reprend dans un instant.', 'Secoue les jambes, détends la nuque.']
@@ -622,7 +699,24 @@ const CHALLENGES = [
   { id: 'velo15', name: 'Roue libre', desc: '15 min de vélo dans la semaine', goal: 15, prog: w => Math.floor(w.reduce((a, h) => a + (h.veloMin || 0), 0)) },
   { id: 'hf1', name: 'Mains libres', desc: 'Faire une séance en mode mains libres', goal: 1, prog: w => w.filter(h => h.hf).length },
   { id: 'feel2', name: 'À l’écoute', desc: 'Noter ton ressenti après 2 séances', goal: 2, prog: w => w.filter(h => h.pain != null).length },
-  { id: 'pyr', name: 'Tout chambouler', desc: 'Faire tomber une pyramide entière', goal: 1, prog: w => w.filter(h => (h.pyramids || 0) > 0).length }
+  { id: 'pyr', name: 'Tout chambouler', desc: 'Faire tomber une pyramide entière', goal: 1, prog: w => w.filter(h => (h.pyramids || 0) > 0).length },
+  { id: 'pyr3', name: 'Démolition douce', desc: 'Faire tomber 3 pyramides dans la semaine', goal: 3, prog: w => w.reduce((a, h) => a + (h.pyramids || 0), 0) },
+  { id: 'stars2x', name: 'Doublé', desc: '2 séances à 2 étoiles ou plus', goal: 2, prog: w => w.filter(h => h.stars >= 2).length },
+  { id: 'combo12', name: 'Combo de 12', desc: 'Enchaîner 12 répétitions parfaites', goal: 12, prog: w => Math.max(0, ...w.map(h => h.combo || 0)) },
+  { id: 'days3', name: 'Trois cœurs', desc: 'Remplir 3 cœurs cette semaine', goal: 3, prog: w => new Set(w.map(h => dayKey(h.d))).size },
+  { id: 'douceur', name: 'Douceur', desc: 'Faire une séance Jour difficile ou Dos du milieu', goal: 1, prog: w => w.filter(h => h.prog === 'difficile' || h.prog === 'milieu').length },
+  { id: 'save1', name: 'Prudence', desc: 'Exporter ta sauvegarde cette semaine', goal: 1, prog: (w, s) => (s.settings.lastExport && weekKey(new Date(s.settings.lastExport)) === weekKey(new Date()) ? 1 : 0) }
+];
+/* Tenues de Chouquette : gagnées avec les niveaux et les badges, jamais avec le volume d'entraînement. */
+const OUTFITS = [
+  { id: 'noeud', name: 'Nœud lilas', unlock: 'Offert', test: () => true },
+  { id: 'noeud-or', name: 'Nœud doré', unlock: 'Niveau 2', test: s => levelInfo(s.xp).n >= 2 },
+  { id: 'bandeau', name: 'Bandeau de sport', unlock: 'Badge Tout en contrôle', test: s => !!s.badges.combo10 },
+  { id: 'lunettes', name: 'Lunettes de star', unlock: 'Niveau 3', test: s => levelInfo(s.xp).n >= 3 },
+  { id: 'fleur', name: 'Fleur', unlock: 'Badge Carnet à jour', test: s => !!s.badges.suivi5 },
+  { id: 'coeur-lunettes', name: 'Lunettes cœur', unlock: 'Badge Trois étoiles', test: s => !!s.badges.etoiles },
+  { id: 'chapeau', name: 'Chapeau de fête', unlock: 'Badge Semaine pleine', test: s => !!s.badges.semaine },
+  { id: 'couronne', name: 'Couronne', unlock: 'Niveau 5', test: s => levelInfo(s.xp).n >= 5 }
 ];
 function weekChallenges(d) {
   let h = 7;
@@ -674,7 +768,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, lastExport: null, exportSnooze: null }, badges: {}, challenges: {}, history: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -706,7 +800,7 @@ function cleanEntry(h) {
     d, prog,
     score: numOr(h.score, 0, 1e6, 0, true), xp: numOr(h.xp, 0, 1e5, null, true),
     stars: numOr(h.stars, 0, 3, 0, true), perfect: numOr(h.perfect, 0, 1e4, 0, true), reps: numOr(h.reps, 0, 1e4, 0, true),
-    combo: numOr(h.combo, 0, 1e4, 0, true), veloMin: numOr(h.veloMin, 0, 600, 0, false), pyramids: numOr(h.pyramids, 0, 1000, 0, true),
+    combo: numOr(h.combo, 0, 1e4, 0, true), veloMin: numOr(h.veloMin, 0, 600, 0, false), walkMin: numOr(h.walkMin, 0, 600, 0, false), pyramids: numOr(h.pyramids, 0, 1000, 0, true),
     skipped: ids(h.skipped), painEx: ids(h.painEx),
     stop: h.stop === true, back: BACKS.includes(h.back) ? h.back : null, hf: h.hf === true,
     painBefore: numOr(h.painBefore, 0, 10, null, true), legBefore: h.legBefore === true,
@@ -721,7 +815,8 @@ function cleanSettings(s, d) {
     sets: numOr(s.sets, 1, 3, d.sets, true), veloMin: numOr(s.veloMin, 3, 45, d.veloMin, true), weeklyGoal: numOr(s.weeklyGoal, 1, 7, d.weeklyGoal, true),
     sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
     bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
-    lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze)
+    lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
+    outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud'
   };
 }
 function normalize(raw) {
@@ -847,7 +942,7 @@ function pendingNextDay() {
   return h;
 }
 function weekEntries() { const k = weekKey(new Date()); return state.history.filter(h => weekKey(new Date(h.d)) === k); }
-function chalProgress(c) { return Math.min(c.goal, c.prog(weekEntries())); }
+function chalProgress(c) { return Math.min(c.goal, c.prog(weekEntries(), state)); }
 function evalChallenges() {
   const now = new Date(), k = weekKey(now);
   state.challenges = state.challenges || {};
@@ -868,19 +963,21 @@ function setsFor(prog, ex) { return prog.id === 'dos' ? state.settings.sets : (e
 function sideText(ex, side) { return ex.sideLabel === 'jambe' ? 'jambe ' + (side === 'droit' ? 'droite' : 'gauche') : 'côté ' + side; }
 function presc(ex, sets) {
   if (ex.prescText) return ex.prescText;
-  if (ex.kind === 'timer') return state.settings.veloMin + ' min, résistance légère';
+  if (ex.kind === 'timer') return ex.id === 'velo' ? state.settings.veloMin + ' min, résistance légère' : timerMin(ex) + ' min, à ton rythme';
+  if (ex.kind === 'hold') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' maintiens de ' + ex.hold + ' s';
   const side = ex.sides ? ' par ' + (ex.sideLabel || 'côté') : '';
   if (ex.kind === 'breath') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' respirations lentes';
   if (ex.free) return 'Activation, environ ' + ex.target + side;
   const reps = ex.max ? ex.target + ' à ' + ex.max : String(ex.target);
   return sets > 1 ? sets + ' × ' + reps + side : reps + ' répétitions' + side;
 }
+function timerMin(ex) { return ex.id === 'velo' ? state.settings.veloMin : (ex.minutes || 10); }
 function estMin(p) {
   let s = 0;
   p.exercises.forEach(ex => {
-    if (ex.kind === 'timer') { s += state.settings.veloMin * 60; return; }
+    if (ex.kind === 'timer') { s += timerMin(ex) * 60; return; }
     const sets = setsFor(p, ex);
-    s += sets * (ex.max || ex.target) * ex.tempo * (ex.sides ? 2 : 1) + (sets - 1) * p.rest + 30;
+    s += sets * (ex.max || ex.target) * (ex.kind === 'hold' ? ex.hold + 4 : ex.tempo) * (ex.sides ? 2 : 1) + (sets - 1) * p.rest + 30;
   });
   return Math.max(2, Math.round(s / 60));
 }
@@ -980,7 +1077,7 @@ function redFlagsHTML(compact) {
   return `<section class="alert${compact ? ' compact' : ''}" aria-label="Signes d’alerte">
     <h2>Signes d’alerte</h2>
     <p><b>Appelle le 15 (ou le 112)</b> en cas de perte de sensibilité entre les cuisses ou autour de l’anus, de difficulté à uriner ou à te retenir, ou d’une jambe qui lâche ou faiblit de plus en plus.</p>
-    ${compact ? '' : '<p><b>Consulte rapidement</b> si la douleur descend dans les deux jambes, s’accompagne de fièvre, ou ne se calme ni au repos ni la nuit.</p>'}
+    ${compact ? '' : '<p><b>Consulte rapidement</b> si la douleur descend dans les deux jambes, s’accompagne de fièvre, d’une perte de poids inexpliquée ou de douleurs au ventre, ou ne se calme ni au repos ni la nuit.</p>'}
   </section>`;
 }
 function scaleHTML(action, value, extra) {
@@ -1043,6 +1140,7 @@ function homeHTML() {
     main = `
     <header class="top"><div class="brand"><h1>Progrès</h1><p>Défis, badges et régularité.</p></div>${gear}</header>
     ${challengesHTML()}
+    ${wardrobeHTML()}
     <section aria-label="Badges">
       <div class="badges-head"><h2 class="section-title">Badges</h2><p>${earned} / ${BADGES.length}</p></div>
       <div class="badges">${BADGES.map(badgeHTML).join('')}</div>
@@ -1067,6 +1165,16 @@ function homeHTML() {
         <li>Douleur qui descend dans la jambe ou fourmillements : <b>on arrête tout de suite</b> avec le bouton Douleur. Tu gardes tes points.</li>
         <li>Un exercice passé pour douleur ne coûte aucune étoile.</li>
         <li>Ces programmes sont à faire valider par ton kiné.</li>
+      </ul>
+    </section>
+    <section class="rules" aria-label="À éviter avec ton dos">
+      <h2 class="section-title">À éviter avec ton dos</h2>
+      <ul>
+        <li>Crunchs, sit-ups et relevés de buste complets.</li>
+        <li>Torsions rapides ou forcées, grandes extensions du bas du dos.</li>
+        <li>Porter des charges depuis le sol.</li>
+        <li>Tout exercice qui donne une douleur vive, qui dure après, ou qui descend dans une jambe.</li>
+        <li>Rester complètement immobile plusieurs jours : bouger doucement aide plus que le repos total.</li>
       </ul>
     </section>
     <p class="foot">${mode === 'cloud' ? 'Progression sauvegardée sur ton compte, sur tous tes appareils.' : window.claude ? 'Progression sauvegardée dans ce navigateur.' : 'Progression gardée dans ce téléphone. Pense à l’exporter de temps en temps (Réglages).'}</p>`;
@@ -1162,7 +1270,7 @@ function exSheetHTML(key) {
     <p class="presc">${esc(presc(ex, setsFor(p, ex)))}</p>
     <p>${esc(ex.cue)}</p>
     ${ex.tip ? `<p class="tip">${esc(ex.tip)}</p>` : ''}
-    <p class="tip">En rose : ce qui bouge. Le côté pâle est le côté opposé.</p>
+    <p class="tip">En lilas : ce qui bouge. Le côté pâle est le côté opposé.</p>
   </div></div>`;
 }
 
@@ -1177,7 +1285,32 @@ function unlockPanelHTML() {
   </div>`;
 }
 
-function mascot(mood) {
+/* Garde-robe : chaque tenue ajoute des calques au dessin de Chouquette. */
+const BOW = '<path class="m-bow" d="M26 9 15 3.5q-3 5.5 0 11zM26 9 37 3.5q3 5.5 0 11z"/><circle class="m-bow" cx="26" cy="9" r="3.4"/>';
+const OUTFIT_SVG = {
+  noeud: { top: BOW },
+  'noeud-or': { top: BOW.replace(/m-bow/g, 'm-gold') },
+  bandeau: { under: '<rect class="m-sweat" x="7" y="19" width="38" height="5"/><path class="m-sweat-h" d="M26 23.2 24.4 21.6a1 1 0 0 1 1.6-1.2 1 1 0 0 1 1.6 1.2z"/>' },
+  lunettes: { top: BOW, face: '<g class="m-shades"><rect x="12.5" y="25.5" width="13" height="8.5" rx="4"/><rect x="26.5" y="25.5" width="13" height="8.5" rx="4"/><path d="M25.5 28.5h1"/></g><path class="m-glint" d="M15 28.6l3-1.2M29 28.6l3-1.2"/>' },
+  fleur: { top: '<g class="m-flower"><circle cx="38" cy="6.4" r="3.3"/><circle cx="43.4" cy="9.8" r="3.3"/><circle cx="41.4" cy="15.4" r="3.3"/><circle cx="34.6" cy="15.4" r="3.3"/><circle cx="32.6" cy="9.8" r="3.3"/></g><circle class="m-gold" cx="38" cy="11" r="2.6"/>' },
+  'coeur-lunettes': { top: BOW, face: '<path class="m-hglass" d="M19.5 35.2 14.4 30.2a3.1 3.1 0 0 1 5.1-3.7 3.1 3.1 0 0 1 5.1 3.7zM32.5 35.2 27.4 30.2a3.1 3.1 0 0 1 5.1-3.7 3.1 3.1 0 0 1 5.1 3.7z"/><path class="m-line" d="M24.6 29.5h2.8"/>' },
+  chapeau: { top: '<path class="m-hat" d="M26 1.5 35.5 13.5h-19z"/><path class="m-hat-s" d="M23.2 5.6h5.6M20.4 9.6h11.2"/><circle class="m-gold" cx="26" cy="2.4" r="2.2"/>' },
+  couronne: { top: '<path class="m-gold" d="M13.5 14.5V5.5l6.2 4.8L26 2.5l6.3 7.8 6.2-4.8v9z"/><circle class="m-jewel" cx="26" cy="9.5" r="1.6"/><circle class="m-jewel" cx="18" cy="11" r="1.2"/><circle class="m-jewel" cx="34" cy="11" r="1.2"/>' }
+};
+function unlockedOutfits(s) { return OUTFITS.filter(o => o.test(s)).map(o => o.id); }
+function wardrobeHTML() {
+  const cur = state.settings.outfit || 'noeud';
+  const items = OUTFITS.map(o => {
+    const open = o.test(state), on = open && o.id === cur;
+    return `<button class="outfit${on ? ' on' : ''}${open ? '' : ' locked'}" data-action="outfit" data-id="${o.id}" ${open ? '' : 'disabled'} aria-pressed="${on}">${mascot('happy', o.id)}<b>${esc(o.name)}</b><span>${open ? (on ? 'Portée' : 'Mettre') : ICON.lock + esc(o.unlock)}</span></button>`;
+  }).join('');
+  return `<section class="card wardrobe" aria-label="Garde-robe de Chouquette">
+    <div class="badges-head"><h2 class="section-title">Garde-robe de Chouquette</h2><p>${unlockedOutfits(state).length} / ${OUTFITS.length}</p></div>
+    <div class="outfits">${items}</div>
+  </section>`;
+}
+function mascot(mood, outfit) {
+  const o = OUTFIT_SVG[outfit || state.settings.outfit] || OUTFIT_SVG.noeud;
   const eyes = mood === 'calm'
     ? '<path class="m-line" d="M16.5 31q3 2.6 6 0M29.5 31q3 2.6 6 0"/>'
     : mood === 'wow'
@@ -1186,9 +1319,9 @@ function mascot(mood) {
   const mouth = mood === 'wow' ? '<ellipse class="m-mouth" cx="26" cy="38" rx="2.6" ry="3.1"/>' : '<path class="m-line" d="M22.6 36.5q3.4 3.6 6.8 0"/>';
   return '<svg class="mascot" viewBox="0 0 52 62" aria-hidden="true">'
     + '<rect class="m-body" x="7" y="15" width="38" height="45" rx="10"/><rect class="m-face" x="7" y="25" width="38" height="20"/>'
-    + '<rect class="m-rim" x="9" y="12" width="34" height="6" rx="3"/>'
-    + '<path class="m-bow" d="M26 9 15 3.5q-3 5.5 0 11zM26 9 37 3.5q3 5.5 0 11z"/><circle class="m-bow" cx="26" cy="9" r="3.4"/>'
-    + eyes + '<ellipse class="m-blush" cx="13.5" cy="36" rx="3.2" ry="2"/><ellipse class="m-blush" cx="38.5" cy="36" rx="3.2" ry="2"/>' + mouth + '</svg>';
+    + '<rect class="m-rim" x="9" y="12" width="34" height="6" rx="3"/>' + (o.under || '')
+    + eyes + '<ellipse class="m-blush" cx="13.5" cy="36" rx="3.2" ry="2"/><ellipse class="m-blush" cx="38.5" cy="36" rx="3.2" ry="2"/>' + mouth
+    + (o.face || '') + (o.top || '') + '</svg>';
 }
 function buddyHTML(text, mood, size) {
   return `<div class="buddy ${size || ''}">${mascot(mood)}<p class="bubble"><b>Chouquette</b>${esc(text)}</p></div>`;
@@ -1279,6 +1412,7 @@ function historyHTML() {
     bits.push(`+${esc(h.xp ?? h.score ?? 0)} XP`);
     if (h.painBefore != null || h.pain != null) bits.push(`· douleur ${esc(h.painBefore ?? '?')}→${esc(h.pain ?? '?')}${h.next != null ? ' · lendemain ' + esc(h.next) : ''}`);
     if (h.veloMin) bits.push(`· vélo ${fmtMin(h.veloMin)} min`);
+    if (h.walkMin) bits.push(`· marche ${fmtMin(h.walkMin)} min`);
     return `<li><span class="h-date">${esc(fmtDate(h.d))}</span><div class="h-main"><b>${esc(p.name)}</b><span>${bits.join(' ')}</span></div>${backChip(h)}</li>`;
   }).join('');
   const more = state.history.length > 6 ? `<button class="link-btn" data-action="hist-toggle">${ui.historyAll ? 'Voir moins' : `Voir les ${state.history.length} séances`}</button>` : '<span></span>';
@@ -1408,6 +1542,7 @@ function kineSummary() {
     const other = (h.skipped || []).filter(id => !(h.painEx || []).includes(id));
     if (other.length) L.push('  Non fait : ' + other.map(exName).join(', '));
     if (h.veloMin) L.push(`  Vélo : ${fmtMin(h.veloMin)} min`);
+    if (h.walkMin) L.push(`  Marche : ${fmtMin(h.walkMin)} min`);
   });
   L.push('');
   const pc = Object.entries(painCount);
@@ -1450,7 +1585,7 @@ function startGame(progId, pre) {
     setPerfect: 0, nCans: 0, pyramids: 0, canGeo: null, litL: -1,
     painBefore: pre ? pre.pain : null, legBefore: pre ? !!pre.leg : false,
     count: 0, taps: [], lastTap: 0, combo: 0, bestCombo: 0, score: 0, perfect: 0, fast: 0, reps: 0,
-    skipped: [], painEx: [], veloSec: 0, t0: Date.now(),
+    skipped: [], painEx: [], veloSec: 0, walkSec: 0, t0: Date.now(), holdStart: null,
     restEnd: 0, switchEnd: 0, flashUntil: 0, lastRem: -1, overlay: null, pausedAt: 0,
     paused: false, pauseStart: 0, cue: 0, readyCued: false, lastMin: null,
     timer: { running: false, acc: 0, since: 0, dur: state.settings.veloMin * 60000, credited: false },
@@ -1508,7 +1643,9 @@ function renderGame() {
 function introHTML(st) {
   const ex = st.ex, n = G.prog.exercises.length;
   const tempoNote = ex.kind === 'timer'
-    ? `<div class="tempo-note"><span class="dial" aria-hidden="true"></span><span>Lance le chrono et pédale tranquillement. Chaque minute rapporte des points, tu peux t’arrêter avant la fin.</span></div>`
+    ? `<div class="tempo-note"><span class="dial" aria-hidden="true"></span><span>Lance le chrono et ${ex.id === 'velo' ? 'pédale' : 'marche'} tranquillement. Chaque minute rapporte des points, tu peux t’arrêter avant la fin.</span></div>`
+    : ex.kind === 'hold'
+      ? `<div class="tempo-note"><span class="dial" aria-hidden="true"></span><span>${G.hf ? `L’appli lance chaque maintien de ${ex.hold} s, compte pour toi et laisse 4 s de pause entre deux.` : `Mets-toi en place et tape pour commencer à tenir : le cercle se remplit pendant ${ex.hold} s et la répétition compte toute seule à la fin. Relâcher avant ne rapporte presque rien.`}</span></div>`
     : G.hf
       ? `<div class="tempo-note"><span class="dial" aria-hidden="true"></span><span>Pose le téléphone et écoute : l’appli rythme chaque répétition (${ex.tempo} s) et compte à voix haute. Touche l’écran pour faire pause.</span></div>`
       : `<div class="tempo-note"><span class="dial" aria-hidden="true"></span><span>Le cercle met ${ex.tempo} s à se remplir. Fais ta répétition, puis tape quand il est jaune : un bip te prévient. Plus lent, c’est toujours parfait.</span></div>`;
@@ -1530,7 +1667,7 @@ function introHTML(st) {
   </div>`;
 }
 
-function targetLabel(ex) { return G && G.hf ? String(ex.target) : ex.free ? 'env. ' + ex.target : ex.max ? ex.target + '–' + ex.max : String(ex.target); }
+function targetLabel(ex) { return (G && G.hf) || ex.kind === 'hold' ? String(ex.target) : ex.free ? 'env. ' + ex.target : ex.max ? ex.target + '–' + ex.max : String(ex.target); }
 function showSetDone(ex) { return !G.hf && ((ex.max && G.count >= ex.target) || (ex.free && G.count > 0)); }
 
 function playHTML(st) {
@@ -1570,14 +1707,14 @@ function timerHTML(st) {
   return `<div class="g-body">
     <div class="g-head">
       <h2 class="g-title sm">${esc(ex.name)}</h2>
-      <p class="g-meta">${state.settings.veloMin} min · résistance légère · buste peu penché</p>
+      <p class="g-meta">${ex.id === 'velo' ? state.settings.veloMin + ' min · résistance légère · buste peu penché' : timerMin(ex) + ' min · à ton rythme'}</p>
     </div>
-    <div class="lanterns" aria-hidden="true">${Array.from({ length: Math.min(state.settings.veloMin, 20) }, () => '<span class="bulb sm"></span>').join('')}</div>
+    <div class="lanterns" aria-hidden="true">${Array.from({ length: Math.min(timerMin(ex), 20) }, () => '<span class="bulb sm"></span>').join('')}</div>
     <div class="zone" data-tap role="button" tabindex="0" aria-label="Démarrer ou mettre en pause le chrono" data-autofocus>
       <div class="target">
         <div class="disc"></div>
         <svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><circle class="ring-bg" cx="100" cy="100" r="92"/><circle class="ring-fg" id="ring" cx="100" cy="100" r="92" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg>
-        <div class="count">${ICON.bike(G.timer.running)}<b class="clock" id="tclock">${fmtClock(G.timer.dur / 1000)}</b><span id="tstate"></span></div>
+        <div class="count">${ex.id === 'velo' ? ICON.bike(G.timer.running) : ''}<b class="clock" id="tclock">${fmtClock(G.timer.dur / 1000)}</b><span id="tstate"></span></div>
       </div>
       <p class="zone-hint" id="tpts">+0 pt</p>
       <div class="fx" id="fx"></div>
@@ -1652,8 +1789,36 @@ function frame(now) {
   }
 }
 
+function setHint(h) { if (h !== G.hintText) { G.hintText = h; setText(G.el.hint, h); } }
+function startHold(now) { G.holdStart = now; G.lastSec = -1; SFX.go(); buzz(20); if (G.hf) say('Tiens'); }
+function updateHold(now, ex) {
+  const el = G.el;
+  if (G.holdStart == null) {
+    if (el.ring) el.ring.style.strokeDashoffset = '100';
+    if (G.hf && now - G.lastTap >= 4000) { startHold(now); return; }
+    setHint(G.hf ? 'Relâche… le prochain maintien démarre tout seul' : (G.count ? 'Relâche, puis tape pour le suivant' : 'Mets-toi en place, puis tape pour tenir'));
+    return;
+  }
+  const t = (now - G.holdStart) / 1000;
+  if (el.ring) el.ring.style.strokeDashoffset = String(100 - 100 * Math.min(1, t / ex.hold));
+  const left = Math.max(0, Math.ceil(ex.hold - t));
+  if (left !== G.lastSec) { if (G.lastSec !== -1 && left > 0 && left <= 3) SFX.tick(); G.lastSec = left; }
+  setHint(`Tiens… ${left} s`);
+  if (t >= ex.hold) {
+    G.holdStart = null;
+    const rec = scoreRep(true);
+    G.lastTap = now;
+    buzz(25); launch(true); cheer(true);
+    if (G.hf) say(String(G.count));
+    pop('TENU ♥', '+' + rec.pts, true);
+    hit(); refreshPlay();
+    setText(el.live, `${G.count} sur ${ex.target}`);
+    if (G.count >= ex.target) finishSet();
+  }
+}
 function updateRing(now) {
   const ex = G.steps[G.i].ex, el = G.el;
+  if (ex.kind === 'hold') { updateHold(now, ex); return; }
   const t = Math.max(0, (now - G.lastTap) / 1000);
   const prog = Math.min(1, t / ex.tempo);
   if (el.ring) el.ring.style.strokeDashoffset = String(100 - 100 * prog);
@@ -1687,7 +1852,7 @@ function updateRing(now) {
 function beginPlay() {
   G.phase = 'play'; G.count = 0; G.taps = []; G.lastTap = performance.now();
   G.cue = 0; G.readyCued = false; G.paused = false;
-  G.setPerfect = 0; G.nCans = G.steps[G.i].ex.target || 0;
+  G.setPerfect = 0; G.nCans = G.steps[G.i].ex.target || 0; G.holdStart = null;
   SFX.go();
   renderGame();
 }
@@ -1705,12 +1870,24 @@ function scoreRep(good) {
 function tap() {
   if (G.flashUntil || G.phase !== 'play') return;
   const ex = G.steps[G.i].ex, now = performance.now();
+  if (ex.kind === 'hold') {
+    if (G.holdStart == null) { startHold(now); return; }
+    G.holdStart = null;
+    const rec = scoreRep(false);
+    G.lastTap = now;
+    SFX.fast(); buzz([15, 40, 15]); launch(false); cheer(false);
+    pop('TROP COURT', '+' + rec.pts, false, 'Tiens jusqu’au bout');
+    hit(); refreshPlay();
+    if (G.count >= ex.target) finishSet();
+    return;
+  }
   const good = (now - G.lastTap) / 1000 >= ex.tempo * 0.85;
   const rec = scoreRep(good);
   G.lastTap = now;
   const mult = rec.pts / 10;
   if (good) buzz(25); else { SFX.fast(); buzz([15, 40, 15]); }
   launch(good);
+  cheer(good);
   pop(good ? (G.setPerfect > G.nCans ? 'BONUS' : mult > 1 ? 'PARFAIT ×' + mult : 'PARFAIT ♥') : 'RATÉ, TROP VITE', '+' + rec.pts, good, good ? null : 'Ralentis');
   if (good && G.combo >= 3) sparks();
   hit(); refreshPlay();
@@ -1725,6 +1902,7 @@ function autoRep(now) {
   G.lastTap = now;
   buzz(20);
   launch(true);
+  cheer(true);
   if (ex.kind !== 'breath') say(String(G.count));
   pop(rec.pts > 10 ? 'PARFAIT ×' + rec.pts / 10 : 'PARFAIT ♥', '+' + rec.pts, true);
   hit(); refreshPlay();
@@ -1734,7 +1912,7 @@ function autoRep(now) {
 
 function togglePause() {
   const now = performance.now();
-  if (G.paused) { G.lastTap += now - G.pauseStart; G.paused = false; G.hintText = null; SFX.go(); }
+  if (G.paused) { G.lastTap += now - G.pauseStart; if (G.holdStart != null) G.holdStart += now - G.pauseStart; G.paused = false; G.hintText = null; SFX.go(); }
   else { G.paused = true; G.pauseStart = now; hush(); setText(G.el.hint, 'En pause. Touche l’écran pour reprendre'); }
   if (G.el.zone) G.el.zone.classList.toggle('paused', G.paused);
 }
@@ -1743,7 +1921,7 @@ function undo() {
   const r = G.taps.pop(); if (!r) return;
   G.score -= r.pts; G.count--; G.reps--;
   if (r.good) { G.perfect--; G.setPerfect--; restoreCan(G.setPerfect); } else G.fast--;
-  G.combo = r.prevCombo; G.lastTap = r.prevLast;
+  G.combo = r.prevCombo; G.lastTap = r.prevLast; G.holdStart = null;
   refreshPlay();
 }
 
@@ -1798,7 +1976,7 @@ function standHTML(n, knocked) {
   rows.forEach((k, r) => { const total = k * canW + (k - 1) * gap; for (let j = 0; j < k; j++) cans.push({ r, x: -total / 2 + j * (canW + gap), y: 10 + r * canH }); });
   const order = cans.sort((a, b) => b.r - a.r || a.x - b.x);
   G.canGeo = { canW, canH, list: order };
-  return `<div class="stand" aria-hidden="true"><div class="stand-back"></div>${order.map((c, i) => `<div class="can c${c.r % 2}${i < knocked ? ' gone' : ''}" id="can-${i}" style="left:calc(50% + ${c.x}px);bottom:${c.y}px;width:${canW}px;height:${canH}px">${CAN_SVG}</div>`).join('')}<div class="plank"></div></div>`;
+  return `<div class="stand" aria-hidden="true"><div class="stand-back"></div>${order.map((c, i) => `<div class="can c${c.r % 2}${i < knocked ? ' gone' : ''}" id="can-${i}" style="left:calc(50% + ${c.x}px);bottom:${c.y}px;width:${canW}px;height:${canH}px">${CAN_SVG}</div>`).join('')}<div class="stand-buddy" id="stand-buddy">${mascot('happy')}</div><div class="plank"></div></div>`;
 }
 function throwBall(i, hitIt) {
   const stand = $('.stand'), geo = G.canGeo; if (!stand || !geo) return;
@@ -1827,6 +2005,14 @@ function launch(good) {
     if (G.setPerfect <= G.nCans) { if (!quiet) SFX.whoosh(); throwBall(G.setPerfect - 1, true); }
     else if (!quiet) SFX.perfect();
   } else if (G.setPerfect < G.nCans) { SFX.whoosh(); throwBall(G.setPerfect, false); }
+}
+let cheerT = 0;
+function cheer(good) {
+  const el = $('#stand-buddy'); if (!el) return;
+  el.innerHTML = mascot(good ? 'wow' : 'calm');
+  if (!reduceMotion) { el.classList.remove('hop', 'shake'); void el.offsetWidth; el.classList.add(good ? 'hop' : 'shake'); }
+  clearTimeout(cheerT);
+  cheerT = setTimeout(() => { const e2 = $('#stand-buddy'); if (e2) e2.innerHTML = mascot('happy'); }, 800);
 }
 function restoreCan(i) { const c = $('#can-' + i); if (c) c.classList.remove('down', 'gone', 'wobble'); }
 function finishSet() {
@@ -1872,6 +2058,7 @@ function skipExercise(fromPain) {
 }
 
 /* Vélo */
+function addTimerSec(sec) { if (G.steps[G.i].ex.id === 'velo') G.veloSec += sec; else G.walkSec += sec; }
 function timerElapsed(now) { const t = G.timer; return Math.min(t.dur, t.acc + (t.running ? now - t.since : 0)); }
 function toggleTimer() {
   const t = G.timer, now = performance.now();
@@ -1910,10 +2097,10 @@ function creditTimer(full) {
   const e = timerElapsed(performance.now());
   if (t.running) { t.acc = e; t.running = false; }
   t.credited = true;
-  G.veloSec += e / 1000;
+  addTimerSec(e / 1000);
   if (G.el.bike) G.el.bike.classList.remove('spin');
   const pts = Math.floor(e / 60000) * 10 + (full ? 30 : 0);
-  stepDone(full ? 'OBJECTIF ATTEINT' : 'BIEN ROULÉ', pts);
+  stepDone(full ? 'OBJECTIF ATTEINT' : (G.steps[G.i].ex.id === 'velo' ? 'BIEN ROULÉ' : 'BIEN MARCHÉ'), pts);
 }
 
 function openOverlay(kind) {
@@ -1926,7 +2113,7 @@ function openOverlay(kind) {
 function closeOverlay() {
   const d = performance.now() - G.pausedAt;
   G.restEnd += d; G.switchEnd += d;
-  if (G.paused) G.pauseStart += d; else G.lastTap += d;
+  if (G.paused) G.pauseStart += d; else { G.lastTap += d; if (G.holdStart != null) G.holdStart += d; }
   if (G.flashUntil) G.flashUntil += d;
   if (G.resumeTimer) { G.timer.since = performance.now(); G.timer.running = true; G.resumeTimer = false; }
   G.overlay = null;
@@ -1950,13 +2137,13 @@ function finish(reason) {
   if (G.phase === 'timer' && !G.timer.credited) {
     const e = timerElapsed(performance.now());
     G.timer.credited = true; G.timer.running = false;
-    if (e > 0) { G.veloSec += e / 1000; G.score += Math.floor(e / 60000) * 10; }
+    if (e > 0) { addTimerSec(e / 1000); G.score += Math.floor(e / 60000) * 10; }
   }
   if (reason !== 'done') {
     const from = G.flashUntil ? G.i + 1 : G.i;
     for (let k = from; k < G.steps.length; k++) { const id = G.steps[k].ex.id; if (!G.skipped.includes(id)) G.skipped.push(id); }
   }
-  if (!G.reps && G.veloSec < 30 && reason !== 'pain') {
+  if (!G.reps && G.veloSec + G.walkSec < 30 && reason !== 'pain') {
     G = null; ui.screen = 'home'; renderScreen(); window.scrollTo(0, 0);
     toast('Séance vide : rien n’a été enregistré.');
     return;
@@ -1969,12 +2156,13 @@ function finish(reason) {
   const entry = {
     id: 's' + Date.now().toString(36), d: new Date().toISOString(), prog: G.prog.id,
     score: G.score, xp, stars, perfect: G.perfect, reps: G.reps, combo: G.bestCombo,
-    veloMin: Math.round(G.veloSec / 6) / 10, skipped: [...G.skipped], painEx: [...G.painEx],
+    veloMin: Math.round(G.veloSec / 6) / 10, walkMin: Math.round(G.walkSec / 6) / 10, skipped: [...G.skipped], painEx: [...G.painEx],
     stop: reason === 'pain', back: reason === 'pain' ? 'stop' : null, hf: G.hf, pyramids: G.pyramids,
     painBefore: G.painBefore, legBefore: G.legBefore, pain: null, leg: null, next: null,
     durS: Math.round((Date.now() - G.t0) / 1000)
   };
   const before = levelInfo(state.xp);
+  const outfitsBefore = unlockedOutfits(state);
   state.xp += xp;
   state.bestCombo = Math.max(state.bestCombo, G.bestCombo);
   state.history.unshift(entry);
@@ -1982,7 +2170,8 @@ function finish(reason) {
   const fresh = evalBadges();
   const chal = evalChallenges();
   persist();
-  R = { entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
+  const newOutfits = OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id));
+  R = { entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
   G = null;
   ui.screen = 'result';
   renderResult();
@@ -2050,6 +2239,7 @@ function renderResult() {
     </section>
     ${lvUp}
     ${(R.challenges || []).map(c => `<div class="notice good"><b>Défi réussi : ${esc(c.name)} · +50 XP</b><span>${esc(c.desc)}</span></div>`).join('')}
+    ${(R.outfits || []).map(o => `<div class="notice good new-outfit">${mascot('wow', o.id)}<div><b>Nouvelle tenue pour Chouquette : ${esc(o.name)}</b><span>Mets-la-lui dans l’onglet Progrès.</span></div></div>`).join('')}
     ${badges}
     ${R.sameDay ? '<div class="notice warn"><b>Deuxième séance aujourd’hui.</b><span>Elle ne remplit pas de nouveau cœur : ton dos a aussi besoin de jours de récupération.</span></div>' : ''}
     ${painExNames.length ? `<div class="notice warn"><b>Passé pour douleur, sans perte d’étoile</b><span>${esc(painExNames.join(', '))}. À signaler à ton kiné.</span></div>` : ''}
@@ -2066,11 +2256,13 @@ function applyCheckin() {
     o.back = backCat(o);
     if (first) o.xp = (o.xp || 0) + 20;
   });
+  const outfitsBefore = unlockedOutfits(state);
   if (first) state.xp += 20;
   const fresh = evalBadges();
   if (fresh.length) R.badges = R.badges.concat(fresh);
   const ch = evalChallenges();
   if (ch.length) R.challenges = (R.challenges || []).concat(ch);
+  R.outfits = (R.outfits || []).concat(OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id)));
   R.after = levelInfo(state.xp);
   persist();
   renderResult();
@@ -2142,6 +2334,10 @@ const ACTIONS = {
     state.settings.exportSnooze = new Date(Date.now() + 7 * 86400000).toISOString();
     persist(); renderScreen({ still: true });
   },
+  outfit(b) {
+    const o = OUTFITS.find(x => x.id === b.dataset.id); if (!o || !o.test(state)) return;
+    state.settings.outfit = o.id; persist(); renderScreen({ still: true }); toast(`Chouquette porte : ${o.name}`);
+  },
   tab(b) { ui.tab = b.dataset.tab; ui.sheet = null; ui.nextMsg = null; renderScreen({ still: true }); window.scrollTo(0, 0); },
   'import-confirm'() {
     if (!ui.importData) return;
@@ -2168,6 +2364,7 @@ const ACTIONS = {
   next(b) {
     const h = state.history.find(x => x.id === b.dataset.id); if (!h || h.next != null) return;
     const v = Number(b.dataset.v);
+    const outfitsBefore = unlockedOutfits(state);
     h.next = v; h.nextAt = new Date().toISOString(); h.xp = (h.xp || 0) + 20; state.xp += 20;
     const base = h.painBefore ?? h.pain ?? 0;
     ui.nextMsg = (v >= 7 || v >= base + 3) ? { title: `Plus douloureux qu’avant la séance (${base} → ${v}).`, text: 'Prends un jour de repos ou fais Jour difficile, et parles-en à ton kiné.' } : null;
@@ -2175,6 +2372,8 @@ const ACTIONS = {
     evalBadges();
     const ch = evalChallenges();
     persist(); renderScreen({ still: true });
+    const newOutfit = OUTFITS.find(o => o.test(state) && !outfitsBefore.includes(o.id));
+    if (newOutfit) { setTimeout(() => toast(`Nouvelle tenue pour Chouquette : ${newOutfit.name} ! Va voir dans Progrès.`), 4300); }
     toast(ch.length > 1 ? `+20 XP. ${ch.length} défis réussis, +${ch.length * 50} XP !` : ch.length ? `+20 XP. Défi réussi : ${ch[0].name}, +50 XP !` : '+20 XP. Noté pour ton kiné.');
   },
   summary() { ui.summaryBack = ui.screen; ui.screen = 'summary'; renderScreen(); window.scrollTo(0, 0); },
@@ -2222,7 +2421,7 @@ const ACTIONS = {
   go() {
     if (!G) return;
     const ex = G.steps[G.i].ex;
-    if (G.phase === 'intro' && ex.kind === 'timer') { G.phase = 'timer'; G.lastMin = null; renderGame(); return; }
+    if (G.phase === 'intro' && ex.kind === 'timer') { G.phase = 'timer'; G.lastMin = null; G.timer = { running: false, acc: 0, since: 0, dur: timerMin(ex) * 60000, credited: false }; renderGame(); return; }
     beginPlay();
     // iOS ne laisse parler l’appli que si la première phrase part d’un toucher : on parle ici, tout de suite.
     if (G.hf) { if (ex.kind === 'breath') { say('Inspire'); G.cue = 1; } else say('C’est parti'); }
