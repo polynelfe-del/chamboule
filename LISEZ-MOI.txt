@@ -1,6 +1,8 @@
 CHAMBOULE COACH, VERSION TÉLÉPHONE
 ==================================
 
+Ton appli en ligne : https://polynelfe-del.github.io/chamboule/
+
 Deux façons gratuites d'avoir l'appli sur ton téléphone.
 
 
@@ -36,11 +38,12 @@ OPTION B : L'APPLI DE CE DOSSIER SUR GITHUB PAGES (gratuit, marche hors ligne)
    Réglages > Sauvegarde dans un fichier > Importer.
 
 4. LES MISES À JOUR
-   Après une modification de chamboule-coach.html, relance la commande
-       node build-phone-app.js
-   puis, sur la page du dépôt GitHub, "Add file" > "Upload files" et glisse à nouveau
-   tous les fichiers du dossier (ils remplacent les anciens). "Commit changes".
-   L'appli du téléphone se met à jour toute seule à la prochaine ouverture avec du réseau.
+   Le code de travail est dans source/chamboule-coach.html.
+   Après une modification, depuis la racine du dépôt :
+       node source/build-phone-app.js
+       git add -A && git commit -m "..." && git push
+   GitHub Pages republie en 1 à 2 minutes. L'appli du téléphone se met à jour toute seule
+   à la prochaine ouverture avec du réseau (jusqu'à 10 minutes de délai).
 
 BON À SAVOIR (option B)
 - Tes séances et ta douleur notée restent dans le téléphone. Personne d'autre ne les voit.
