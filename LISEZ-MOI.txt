@@ -1,0 +1,49 @@
+CHAMBOULE COACH, VERSION TÉLÉPHONE
+==================================
+
+Deux façons gratuites d'avoir l'appli sur ton téléphone.
+
+
+OPTION A : LE LIEN CLAUDE SUR L'ÉCRAN D'ACCUEIL (rien à créer)
+--------------------------------------------------------------
+   Ouvre le lien de l'appli Claude sur ton téléphone, connecté à ton compte Claude.
+   iPhone : dans Safari, touche Partager, puis "Sur l'écran d'accueil".
+   Android : dans Chrome, menu (trois points), puis "Ajouter à l'écran d'accueil".
+   + Ta progression est la même sur l'ordinateur et le téléphone.
+   - Il faut du réseau et être connecté à Claude.
+
+
+OPTION B : L'APPLI DE CE DOSSIER SUR GITHUB PAGES (gratuit, marche hors ligne)
+-----------------------------------------------------------------------------
+1. LA METTRE EN LIGNE (une seule fois)
+   - Crée un compte gratuit sur https://github.com
+   - Clique "New repository", nomme-le "chamboule", laisse "Public", puis "Create repository".
+   - Sur la page du dépôt, clique "uploading an existing file".
+   - Glisse TOUS LES FICHIERS qui sont DANS ce dossier (pas le dossier lui-même),
+     puis clique "Commit changes".
+   - Va dans Settings > Pages. Dans "Branch", choisis "main" et "/ (root)", puis "Save".
+   - Une à deux minutes plus tard, ton appli est à l'adresse :
+         https://TON-PSEUDO.github.io/chamboule/
+
+2. L'INSTALLER SUR TON TÉLÉPHONE
+   iPhone : ouvre l'adresse dans Safari, touche Partager, puis "Sur l'écran d'accueil".
+   Android : ouvre l'adresse dans Chrome, menu (trois points), puis "Installer l'application".
+   L'icône Chamboule apparaît sur ton écran d'accueil. L'appli s'ouvre en plein écran.
+
+3. RÉCUPÉRER TA PROGRESSION DEPUIS LA VERSION CLAUDE
+   Dans la version Claude : Réglages > Sauvegarde dans un fichier > Exporter.
+   Envoie-toi le fichier (mail, messagerie...), puis dans l'appli du téléphone :
+   Réglages > Sauvegarde dans un fichier > Importer.
+
+4. LES MISES À JOUR
+   Après une modification de chamboule-coach.html, relance la commande
+       node build-phone-app.js
+   puis, sur la page du dépôt GitHub, "Add file" > "Upload files" et glisse à nouveau
+   tous les fichiers du dossier (ils remplacent les anciens). "Commit changes".
+   L'appli du téléphone se met à jour toute seule à la prochaine ouverture avec du réseau.
+
+BON À SAVOIR (option B)
+- Tes séances et ta douleur notée restent dans le téléphone. Personne d'autre ne les voit.
+- Le code de l'appli, lui, est public sur GitHub (pas de nom, pas de diagnostic dedans).
+- Si tu changes de téléphone ou effaces les données du navigateur, la progression est perdue :
+  pense à exporter ta sauvegarde de temps en temps.
