@@ -143,8 +143,9 @@ const CACHE = 'chamboule-${version}';
 const FONTS = 'chamboule-fonts';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-512-maskable.png', './apple-touch-icon.png'];
 
+// cache: 'reload' : on prend toujours la version fraîche sur GitHub, jamais une copie gardée par le navigateur.
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
@@ -157,7 +158,8 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.origin === location.origin) {
     if (req.mode === 'navigate') {
-      e.respondWith(fetch(req)
+      // À chaque ouverture avec du réseau, on revérifie la page auprès de GitHub (no-cache).
+      e.respondWith(fetch(req.url, { cache: 'no-cache' })
         .then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); return r; })
         .catch(() => caches.match('./index.html')));
       return;
