@@ -91,6 +91,38 @@ const EX = {
     tip: 'Dès que le bas du dos se creuse, repose les genoux.' }
 };
 
+/* Haut du corps doux et versions plus difficiles (échelles de progression), d’après la calisthénie et des fiches de kinés :
+   debout, sans charge sur la colonne, sans saut ni flexion du dos sous charge. */
+Object.assign(EX, {
+  murpompe: { id: 'murpompe', name: 'Pompes contre le mur', kind: 'reps', target: 8, sets: 2, tempo: 4,
+    cue: 'Debout face au mur, mains à hauteur des épaules, un peu plus écartées. Corps droit des talons à la tête, plie les coudes pour approcher la poitrine du mur, puis repousse.',
+    tip: 'Rentre légèrement le ventre : le bas du dos ne se creuse pas. Recule les pieds pour rendre plus dur.' },
+  planpompe: { id: 'planpompe', name: 'Pompes au plan de travail', kind: 'reps', target: 8, sets: 2, tempo: 4,
+    cue: 'Mains sur le bord d’un plan de travail ou d’une table bien stable, un peu plus écartées que les épaules. Corps droit des talons à la tête, descends la poitrine vers le bord, puis repousse.',
+    tip: 'Plus le support est bas, plus c’est dur. Si le bas du dos se creuse, reviens au mur.' },
+  genoupompe: { id: 'genoupompe', name: 'Pompes sur les genoux', kind: 'reps', target: 6, sets: 2, tempo: 4,
+    cue: 'À genoux sur un tapis, mains sous les épaules. Corps droit des genoux à la tête, descends la poitrine vers le sol, puis repousse.',
+    tip: 'Ventre rentré tout du long. Si le bas du dos se creuse, reviens au plan de travail.' },
+  rowserviette: { id: 'rowserviette', name: 'Rowing à la serviette', kind: 'reps', target: 8, sets: 2, tempo: 4,
+    cue: 'Face à une porte fermée qui s’ouvre de l’autre côté : en tirant, tu la plaques contre son cadre. Passe une serviette solide autour de la poignée, un bout dans chaque main. Pieds près de la porte, penche-toi un peu en arrière bras tendus, puis tire la poitrine vers la porte en serrant les omoplates.',
+    tip: 'Commence presque droit : plus tu te penches, plus c’est dur. Corps gainé, gestes lents pour que la serviette ne glisse pas.' },
+  rowpenche: { id: 'rowpenche', name: 'Rowing à la serviette, penché', kind: 'reps', target: 8, sets: 2, tempo: 4,
+    cue: 'Même installation, pieds plus près de la porte : tu es davantage penché en arrière. Tire la poitrine vers la porte en serrant les omoplates, puis redescends lentement.',
+    tip: 'Corps droit comme une planche. Si la serviette glisse ou si le dos tire, reviens à la version debout.' },
+  angesmur: { id: 'angesmur', name: 'Anges au mur', kind: 'reps', target: 8, sets: 2, tempo: 5,
+    cue: 'Dos, tête et fesses contre le mur, pieds un peu en avant, genoux souples. Bras en chandelier contre le mur, fais-les glisser vers le haut sans les décoller, puis redescends.',
+    tip: 'Ne monte que jusqu’où tout reste en contact. Le bas du dos ne se creuse pas : rentre légèrement le ventre.' },
+  charniere: { id: 'charniere', name: 'Charnière de hanche', kind: 'reps', target: 8, sets: 2, tempo: 4,
+    cue: 'Dos au mur, à une demi-longueur de pied. Genoux souples, recule les fesses jusqu’à toucher le mur en penchant le buste, dos bien droit, puis remonte en serrant les fesses.',
+    tip: 'Tu dois sentir l’arrière des cuisses et les fesses, pas le bas du dos. C’est le bon geste pour te pencher au quotidien.' },
+  charniereunejambe: { id: 'charniereunejambe', name: 'Charnière sur une jambe', kind: 'reps', target: 6, sets: 2, sides: true, sideLabel: 'jambe', tempo: 5,
+    cue: 'Debout près d’un mur, une main dessus. Sur une jambe, genou souple, penche le buste en avant pendant que l’autre jambe part en arrière, dos droit, puis reviens.',
+    tip: 'Le bassin reste face au sol, sans tourner. Petite amplitude au début.' },
+  fentesoutenue: { id: 'fentesoutenue', name: 'Fente arrière avec appui', kind: 'reps', target: 6, sides: true, sideLabel: 'jambe', tempo: 4,
+    cue: 'Une main sur le dossier d’une chaise stable ou un meuble. Recule une jambe, descends doucement le genou arrière vers le sol, puis remonte en poussant sur le talon avant.',
+    tip: 'Buste droit, genou avant au-dessus de la cheville. Ne descends que là où c’est confortable.' }
+});
+
 const PROGRAMS = {
   dos: { id: 'dos', name: 'Reprise dos', tag: 'Routine du 11 oct. 2026', rest: 30,
     blurb: 'Gainage doux, fessiers et cardio léger, adaptés à ton dos. À faire valider par ton kiné.',
@@ -101,6 +133,9 @@ const PROGRAMS = {
   fessiers: { id: 'fessiers', name: 'Fessiers doux', tag: 'Sans charger le dos', rest: 30,
     blurb: 'Les fessiers travaillent sur le côté ou depuis une chaise, sans pression sur les disques. Une alternative douce à Boule qui chamboule. À faire valider par ton kiné.',
     exercises: [EX.coquillage, EX.abduction, EX.assisdebout, EX.gainagelat] },
+  haut: { id: 'haut', name: 'Haut du corps doux', tag: 'Debout · sans charge', rest: 30,
+    blurb: 'Bras, épaules et haut du dos, debout et sans charge sur la colonne, plus la charnière de hanche pour apprendre à te pencher sans plier le dos. Inspiré des programmes de calisthénie et de fiches de kinés. À faire valider par ton kiné.',
+    exercises: [EX.murpompe, EX.rowserviette, EX.angesmur, EX.charniere] },
   calme: { id: 'calme', name: 'Dos calme', tag: 'Mobilité · 5 min', rest: 20,
     blurb: 'Des mouvements doux pour dérouiller le dos, même les jours un peu raides. Inspirés de fiches de kinés hospitaliers. Arrête si ça descend dans la jambe.',
     exercises: [EX.bascule, EX.genoupoitrine, EX.rouleau, EX.talons] },
@@ -118,7 +153,7 @@ const PROGRAMS = {
       cue: 'Pas besoin de bouger. Regarde le cercle se remplir. Quand il devient jaune et que ça bipe, tape : la balle part sur les boîtes.',
       tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
 };
-const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'calme', 'difficile', 'solide', 'boule'];
+const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'haut', 'calme', 'difficile', 'solide', 'boule'];
 const SOLIDE_NEEDED = 10;
 
 const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Cœur de la fête', 'Grande roue', 'Feu d’artifice', 'Légende de la foire'];
@@ -135,7 +170,8 @@ const BADGES = [
   { id: 'velo60', name: 'Roue libre', desc: '60 min de vélo au total', glyph: "60'", test: s => s.history.reduce((a, h) => a + (h.veloMin || 0), 0) >= 60 },
   { id: 's10', name: 'Habitué de la foire', desc: '10 séances terminées', glyph: '10', test: s => s.history.length >= 10 },
   { id: 's30', name: 'Pilier de la fête', desc: '30 séances terminées', glyph: '30', test: s => s.history.length >= 30 },
-  { id: 'chamboule', name: 'Boule qui chamboule', desc: 'Première séance du programme fessiers', glyph: 'BQC', test: s => s.history.some(h => h.prog === 'boule') }
+  { id: 'chamboule', name: 'Boule qui chamboule', desc: 'Première séance du programme fessiers', glyph: 'BQC', test: s => s.history.some(h => h.prog === 'boule') },
+  { id: 'forme', name: 'En forme', desc: 'Faire un test de forme', glyph: 'T', test: s => (s.tests || []).length >= 1 }
 ];
 
 /* Défis de la semaine : trois tirés au sort chaque lundi. Aucun ne pousse au volume ni à forcer. */
@@ -202,7 +238,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {} }, badges: {}, challenges: {}, history: [], tests: [] };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -243,6 +279,26 @@ function cleanEntry(h) {
     durS: numOr(h.durS, 0, 86400, 0, true)
   };
 }
+/* Test de forme du mois : deux mesures de 30 secondes, debout, comparées à soi-même d’un mois sur l’autre. */
+const FIT_TESTS = [
+  { id: 'chaise', name: 'Assis-debout en 30 secondes', short: 'assis-debout', ex: 'assisdebout', max: 60,
+    cue: 'Assis au milieu d’une chaise calée contre un mur, bras croisés sur la poitrine. Au top, lève-toi complètement puis rassieds-toi, autant de fois que possible en 30 secondes, sans te précipiter. Compte à voix haute : tu noteras le total à la fin.' },
+  { id: 'mur', name: 'Pompes contre le mur en 30 secondes', short: 'pompes au mur', ex: 'murpompe', max: 120,
+    cue: 'Face au mur, mains à hauteur des épaules, corps droit. Au top, fais autant de pompes contrôlées que possible en 30 secondes. Compte à voix haute : tu noteras le total à la fin.' }
+];
+const TEST_EVERY_DAYS = 28, TEST_XP = 30;
+function cleanTest(t) {
+  if (!t || typeof t !== 'object') return null;
+  const d = isoOr(t.d); if (!d) return null;
+  const out = { d };
+  FIT_TESTS.forEach(f => { out[f.id] = numOr(t[f.id], 0, f.max, null, true); });
+  return FIT_TESTS.some(f => out[f.id] != null) ? out : null;
+}
+function testDue(s, now = new Date()) {
+  if (s.history.length < 3) return false;
+  const last = (s.tests || [])[0];
+  return !last || now.getTime() - Date.parse(last.d) >= TEST_EVERY_DAYS * 86400000;
+}
 function cleanSettings(s, d) {
   s = s && typeof s === 'object' ? s : {};
   return {
@@ -254,7 +310,9 @@ function cleanSettings(s, d) {
     lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
     reminderDays: Array.isArray(s.reminderDays) ? [...new Set(s.reminderDays.filter(x => Number.isInteger(x) && x >= 0 && x <= 6))].sort((a, b) => a - b) : d.reminderDays.slice(),
     reminderTime: typeof s.reminderTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s.reminderTime) ? s.reminderTime : d.reminderTime,
-    outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud'
+    outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud',
+    rungs: Object.fromEntries(LADDERS.map(l => [l.id, numOr((s.rungs || {})[l.id], 0, l.rungs.length - 1, 0, true)]).filter(([, v]) => v > 0)),
+    stepReset: Object.fromEntries(STEP_PROGS.map(id => [id, isoOr((s.stepReset || {})[id])]).filter(([, v]) => v))
   };
 }
 function normalize(raw) {
@@ -271,7 +329,8 @@ function normalize(raw) {
     settings: cleanSettings(raw.settings, d.settings),
     badges: cleanDayMap(raw.badges, BADGE_IDS),
     challenges,
-    history: Array.isArray(raw.history) ? raw.history.slice(0, 300).map(cleanEntry).filter(Boolean) : []
+    history: Array.isArray(raw.history) ? raw.history.slice(0, 300).map(cleanEntry).filter(Boolean) : [],
+    tests: Array.isArray(raw.tests) ? raw.tests.slice(0, 60).map(cleanTest).filter(Boolean) : []
   };
 }
 
@@ -328,7 +387,7 @@ function solidStreak(s) {
   return n;
 }
 /* Séance du jour proposée par Chouquette : la douleur récente d’abord, puis le programme fait le moins récemment. */
-const SUGGEST_ROTATION = ['dos', 'fessiers', 'milieu'];
+const SUGGEST_ROTATION = ['dos', 'fessiers', 'milieu', 'haut'];
 function suggestToday(s, now = new Date()) {
   const last = s.history[0];
   if (!last) return { prog: 'dos', why: 'Coucou, moi c’est Chouquette ! Pour commencer, ta routine de base, tout en douceur.' };
@@ -347,12 +406,13 @@ function suggestToday(s, now = new Date()) {
   }
   /* Dos du milieu n’est proposé qu’une fois l’avis médical déclaré. */
   const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : []);
-  const lastDone = id => { const h = s.history.find(x => x.prog === id); return h ? new Date(h.d).getTime() : -Infinity; };
+  const lastDone = id => { const h = s.history.find(x => x.prog === id); return h ? new Date(h.d).getTime() : 0; };
   const prog = pool.slice().sort((a, b) => lastDone(a) - lastDone(b))[0];
   const why = {
     dos: s.settings.bike ? 'Ta routine de base : respiration, bras-jambe opposés, pont et vélo.' : 'Ta routine de base : respiration, bras-jambe opposés et pont, sans le vélo.',
     fessiers: 'Au tour des fessiers, sans charger le dos.',
     milieu: 'Un peu de mobilité et de gainage pour le dos du milieu.',
+    haut: 'Au tour du haut du corps : bras, épaules et haut du dos, debout.',
     solide: 'Ton dos va bien : on passe un cran au-dessus.'
   }[prog];
   return { prog, why: why + ' C’est celui que tu as fait le moins récemment.' };
@@ -413,13 +473,16 @@ function hasBike(p) { return !!p && p.exercises.some(ex => ex.id === 'velo'); }
 /* Progression automatique : un cran de plus toutes les 3 séances calmes et complètes du programme (2 crans au plus),
    un cran de moins dès qu’une séance, quel que soit le programme, dépasse 3/10. Dans Reprise dos, la routine du kiné
    ne progresse que dans la fourchette qu’il a donnée (pont : 6 à 8). La mobilité et la respiration ne progressent pas. */
-const STEP_PROGS = ['dos', 'fessiers', 'milieu', 'solide'];
+const STEP_PROGS = ['dos', 'fessiers', 'milieu', 'haut', 'solide'];
 const STEP_EVERY = 3, STEP_MAX = 2;
 function stepLevel(s, progId) {
   if (!STEP_PROGS.includes(progId)) return 0;
+  const since = Date.parse((s.settings.stepReset || {})[progId] || '') || 0;
   let lvl = 0, run = 0;
   for (let i = s.history.length - 1; i >= 0; i--) {
-    const h = s.history[i], q = quietState(h);
+    const h = s.history[i];
+    if (Date.parse(h.d) <= since) continue;
+    const q = quietState(h);
     if (q === 'break') { lvl = Math.max(0, lvl - 1); run = 0; continue; }
     if (q !== 'count' || h.prog !== progId || (h.skipped && h.skipped.length)) continue;
     if (++run >= STEP_EVERY) { lvl = Math.min(STEP_MAX, lvl + 1); run = 0; }
@@ -431,13 +494,29 @@ function stepped(ex, progId, lvl) {
   if (ex.kind === 'hold') return Object.assign({}, ex, { hold: ex.hold + Math.max(1, Math.round(ex.hold * 0.2)) * lvl });
   return Object.assign({}, ex, { target: ex.max ? Math.min(ex.max, ex.target + lvl) : ex.target + lvl });
 }
-/* Le programme tel qu’il sera joué : progression comprise, et sans le vélo quand il est mis de côté. */
+/* Échelles de progression (principe de la calisthénie) : chaque mouvement a des versions de plus en plus dures.
+   Au dernier cran d’un programme, ses versions suivantes peuvent se débloquer, avec l’accord du kiné ;
+   les crans de ce programme repartent alors de zéro. On peut toujours revenir à la version précédente. */
+const LADDERS = [
+  { id: 'pousser', name: 'Pousser', prog: 'haut', rungs: ['murpompe', 'planpompe', 'genoupompe'] },
+  { id: 'tirer', name: 'Tirer', prog: 'haut', rungs: ['rowserviette', 'rowpenche'] },
+  { id: 'pencher', name: 'Se pencher', prog: 'haut', rungs: ['charniere', 'charniereunejambe'] },
+  { id: 'squat', name: 'S’accroupir', prog: 'fessiers', rungs: ['assisdebout', 'squatchaise', 'fentesoutenue'] },
+  { id: 'gainage', name: 'Gainage', prog: 'milieu', rungs: ['planche', 'plancheplus'] }
+];
+function rungOf(s, l) { return Math.min(l.rungs.length - 1, (s.settings.rungs || {})[l.id] || 0); }
+function laddersOf(progId) { return LADDERS.filter(l => l.prog === progId); }
+function rungsReady(s, progId) { return stepLevel(s, progId) >= STEP_MAX ? laddersOf(progId).filter(l => rungOf(s, l) < l.rungs.length - 1) : []; }
+/* Le programme tel qu’il sera joué : versions choisies, progression comprise, et sans le vélo quand il est mis de côté. */
 function progFor(s, id) {
   const p = PROGRAMS[id];
   if (!p) return p;
   const lvl = stepLevel(s, id);
   let exercises = p.exercises;
   if (hasBike(p) && !s.settings.bike) exercises = exercises.filter(ex => ex.id !== 'velo');
+  const swap = {};
+  laddersOf(id).forEach(l => { const r = rungOf(s, l); if (r) swap[l.rungs[0]] = EX[l.rungs[r]]; });
+  if (Object.keys(swap).length) exercises = exercises.map(ex => swap[ex.id] || ex);
   if (lvl) exercises = exercises.map(ex => stepped(ex, id, lvl));
   return exercises === p.exercises ? p : Object.assign({}, p, { exercises, level: lvl });
 }
@@ -532,6 +611,9 @@ function kineSummary(s, now = new Date()) {
   L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
   L.push(`Réglages actuels : Reprise dos ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, Fessiers doux ${st.fessiersSets} série${st.fessiersSets > 1 ? 's' : ''}, ${st.bike ? 'vélo ' + st.veloMin + ' min' : 'vélo mis de côté pour le moment'}`);
   L.push('Progression automatique : ' + STEP_PROGS.map(id => PROGRAMS[id].name + ' cran ' + stepLevel(s, id) + '/' + STEP_MAX).join(', '));
+  L.push('Versions des exercices : ' + LADDERS.map(l => `${l.name} ${rungOf(s, l) + 1}/${l.rungs.length} (${exName(l.rungs[rungOf(s, l)])})`).join(', '));
+  const tl = (s.tests || []).slice(0, 4).reverse();
+  if (tl.length) L.push('Tests de forme (30 s) : ' + tl.map(t => `${new Date(t.d).toLocaleDateString('fr-FR')} assis-debout ${t.chaise ?? '?'}, pompes au mur ${t.mur ?? '?'}`).join(' ; '));
   L.push(`Programme Dos solide : ${st.solideUnlocked ? 'débloqué' + (st.solideUnlockedAt ? ' le ' + new Date(st.solideUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : 'verrouillé (' + solidStreak(s) + ' / ' + SOLIDE_NEEDED + ' séances de renforcement d’affilée à 3/10 au plus, lendemain compris)'}`);
   L.push(`Programme Dos du milieu : ${st.milieuOk ? 'ouvert après vérification médicale déclarée' + (st.milieuOkAt ? ' le ' + new Date(st.milieuOkAt).toLocaleDateString('fr-FR') : '') : 'en attente d’une vérification médicale'}`);
   L.push(`Programme Boule qui chamboule : ${st.bouleUnlocked ? 'débloqué' + (st.bouleUnlockedAt ? ' le ' + new Date(st.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);

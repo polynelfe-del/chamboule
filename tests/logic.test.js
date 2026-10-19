@@ -265,12 +265,13 @@ test('séance du jour proposée par Chouquette', () => {
   assert.equal(api.suggestToday(state({ history: [ok('dos', 1, { pain: 4 })] }), NOW).prog, 'calme', 'dos sensible');
   assert.equal(api.suggestToday(state({ history: [ok('dos', 5, { pain: 8 })] }), NOW).prog, 'fessiers', 'vieille douleur : rotation normale');
   const checked = o => { const x = state(o); x.settings.milieuOk = true; return x; };
-  assert.equal(api.suggestToday(state({ history: [ok('dos', 1), ok('fessiers', 3)] }), NOW).prog, 'fessiers', 'Dos du milieu jamais proposé sans avis médical');
-  assert.equal(api.suggestToday(checked({ history: [ok('dos', 1), ok('fessiers', 3)] }), NOW).prog, 'milieu', 'jamais fait passe en premier');
-  assert.equal(api.suggestToday(checked({ history: [ok('dos', 1), ok('milieu', 2), ok('fessiers', 4)] }), NOW).prog, 'fessiers', 'le moins récent');
+  assert.equal(api.suggestToday(state({ history: [ok('dos', 1), ok('fessiers', 4)] }), NOW).prog, 'haut', 'Haut du corps doux jamais fait : proposé');
+  assert.equal(api.suggestToday(state({ history: [ok('dos', 1), ok('haut', 2), ok('fessiers', 4)] }), NOW).prog, 'fessiers', 'Dos du milieu jamais proposé sans avis médical');
+  assert.equal(api.suggestToday(checked({ history: [ok('dos', 1), ok('haut', 2), ok('fessiers', 4)] }), NOW).prog, 'milieu', 'jamais fait passe en premier');
+  assert.equal(api.suggestToday(checked({ history: [ok('dos', 1), ok('milieu', 2), ok('haut', 4), ok('fessiers', 5)] }), NOW).prog, 'fessiers', 'le moins récent');
   assert.equal(api.normalize({ settings: { milieuOk: 'oui' } }).settings.milieuOk, false, 'seul true ouvre Dos du milieu');
   assert.match(api.kineSummary(state(), NOW), /Dos du milieu : en attente d’une vérification médicale/);
-  const s = checked({ history: [ok('dos', 1), ok('milieu', 2), ok('fessiers', 4)] });
+  const s = checked({ history: [ok('dos', 1), ok('milieu', 2), ok('haut', 4), ok('fessiers', 5)] });
   s.settings.solideUnlocked = true;
   assert.equal(api.suggestToday(s, NOW).prog, 'solide', 'Dos solide entre dans la rotation une fois débloqué');
   for (const p of api.SUGGEST_ROTATION || []) assert.ok(api.PROGRAMS[p]);
@@ -339,6 +340,39 @@ test('rappels pour l’agenda', () => {
   assert.equal(api.normalize({ settings: { reminderTime: '25:00' } }).settings.reminderTime, '18:00');
 });
 
+test('échelles de progression', () => {
+  const day = n => iso(2026, 10, 18 - n);
+  const calm = (prog, n) => entry({ prog, d: day(n), painBefore: 2, pain: 2, next: 2 });
+  const s = state();
+  assert.equal(api.progFor(s, 'haut').exercises[0].id, 'murpompe');
+  s.settings.rungs = { pousser: 1, squat: 2 };
+  assert.equal(api.progFor(s, 'haut').exercises[0].id, 'planpompe', 'version suivante');
+  assert.ok(api.progFor(s, 'fessiers').exercises.some(e => e.id === 'fentesoutenue'), 'troisième version');
+  assert.equal(api.PROGRAMS.haut.exercises[0].id, 'murpompe', 'le programme d’origine reste intact');
+  const t = state({ history: Array.from({ length: 6 }, (_, i) => calm('haut', 1 + 2 * i)) });
+  assert.equal(api.stepLevel(t, 'haut'), 2);
+  same(api.rungsReady(t, 'haut').map(l => l.id), ['pousser', 'tirer', 'pencher'], 'dernier cran : versions suivantes prêtes');
+  same(api.rungsReady(t, 'fessiers'), [], 'pas pour un autre programme');
+  t.settings.stepReset = { haut: iso(2026, 10, 18, 9) };
+  assert.equal(api.stepLevel(t, 'haut'), 0, 'les crans repartent de zéro après une nouvelle version');
+  same(api.rungsReady(t, 'haut'), []);
+  same(api.normalize({ settings: { rungs: { pousser: 9, inconnu: 1, tirer: 'x' } } }).settings.rungs, { pousser: 2 });
+  assert.match(api.kineSummary(s, NOW), /Versions des exercices : Pousser 2\/3 \(Pompes au plan de travail\)/);
+});
+
+test('test de forme du mois', () => {
+  const three = [1, 2, 3].map(n => entry({ d: iso(2026, 10, 18 - n * 2) }));
+  assert.equal(api.testDue(state(), NOW), false, 'pas avant 3 séances');
+  assert.equal(api.testDue(state({ history: three }), NOW), true, 'premier test');
+  assert.equal(api.testDue(state({ history: three, tests: [{ d: iso(2026, 10, 8), chaise: 12, mur: 20 }] }), NOW), false, 'déjà fait il y a 10 jours');
+  assert.equal(api.testDue(state({ history: three, tests: [{ d: iso(2026, 9, 10), chaise: 12, mur: 20 }] }), NOW), true, 'plus de 4 semaines');
+  const n = api.normalize({ tests: [{ d: iso(2026, 10, 1), chaise: 500, mur: '18' }, { d: 'pas une date', chaise: 3 }, { d: iso(2026, 9, 1) }] }).tests;
+  assert.equal(n.length, 1, 'mesures invalides écartées');
+  assert.equal(n[0].chaise, 60); assert.equal(n[0].mur, 18);
+  assert.match(api.kineSummary(state({ tests: [{ d: iso(2026, 10, 1), chaise: 14, mur: 22 }] }), NOW), /assis-debout 14, pompes au mur 22/);
+  assert.ok(api.BADGES.find(b => b.id === 'forme').test(state({ tests: [{ d: iso(2026, 10, 1), chaise: 14 }] })));
+});
+
 test('séances de suite sans douleur', () => {
   const s = state({ history: [entry({ pain: 2, next: 2 }), entry({ pain: 3, prog: 'boule', next: 2 }), entry({ pain: 2, next: 2 }), entry({ pain: 7, next: 2 }), entry({ pain: 1, next: 1 })] });
   assert.equal(api.painFreeRun(s), 2, 's’arrête à la première séance douloureuse ; les autres programmes ne comptent pas');
@@ -393,6 +427,14 @@ test('cohérence des données', () => {
     }
   }
   for (const o of api.OUTFITS) assert.ok(api.OUTFIT_SVG[o.id], `dessin de tenue ${o.id}`);
+  uniq(api.LADDERS.map(l => l.id), 'échelles');
+  for (const l of api.LADDERS) {
+    assert.ok(api.PROGRAMS[l.prog].exercises.some(e => e.id === l.rungs[0]), `${l.id} : première version dans ${l.prog}`);
+    for (const id of l.rungs) {
+      assert.ok(api.EX[id] && api.EX[id].cue.length > 20, `${l.id} : exercice ${id}`);
+      assert.equal(((api.ILLUS[id] || {}).poses || []).length, 2, `dessin pour ${id}`);
+    }
+  }
   const empty = state();
   for (const c of api.CHALLENGES) {
     assert.ok(c.goal > 0, `défi ${c.id} : objectif`);

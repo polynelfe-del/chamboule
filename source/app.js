@@ -16,7 +16,7 @@ let downloadsApi = null;
 let writeChain = Promise.resolve();
 let warnedSave = false;
 
-function body() { return JSON.parse(JSON.stringify({ v: 1, xp: state.xp, bestCombo: state.bestCombo, settings: state.settings, badges: state.badges, challenges: state.challenges, history: state.history })); }
+function body() { return JSON.parse(JSON.stringify({ v: 1, xp: state.xp, bestCombo: state.bestCombo, settings: state.settings, badges: state.badges, challenges: state.challenges, history: state.history, tests: state.tests })); }
 function persist() {
   clearTimeout(persistTimer);
   const b = body();
@@ -184,6 +184,7 @@ function renderScreen(opts = {}) {
   else if (ui.screen === 'settings') app.innerHTML = settingsHTML();
   else if (ui.screen === 'precheck') { if (!opts.fromSync) app.innerHTML = precheckHTML(); }
   else if (ui.screen === 'summary') app.innerHTML = summaryHTML();
+  else if (ui.screen === 'test') app.innerHTML = testHTML();
   else if (ui.screen === 'result' && !opts.fromSync) renderResult();
   const xpEl = ui.screen === 'home' ? $('#home-xp') : null;
   if (xpEl) {
@@ -216,6 +217,8 @@ function homeHTML() {
   } else if (state.settings.sets === 1 && run >= 6) {
     notices += `<div class="notice good"><b>${run} séances de suite sans douleur.</b><span>Demande à ton kiné si tu peux passer à 2 séries. Le réglage est dans les réglages.</span></div>`;
   }
+  const readyProgs = [...new Set(LADDERS.map(l => l.prog))].filter(pid => rungsReady(state, pid).length && !(pid === 'milieu' && !state.settings.milieuOk));
+  if (readyProgs.length) notices += `<div class="notice good"><b>Prêt pour la suite : ${esc(readyProgs.map(pid => PROGRAMS[pid].name).join(', '))}</b><span>Tu es au dernier cran. Une version plus difficile t’attend dans l’arbre de progression, avec l’accord de ton kiné.</span><div class="row-btns"><button class="btn ghost" data-action="tab" data-tab="progress">Voir l’arbre</button></div></div>`;
   const earned = BADGES.filter(b => state.badges[b.id]).length;
   const gear = `<button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button>`;
   const wkDone = (state.challenges || {})[weekKey(new Date())] || {};
@@ -225,6 +228,8 @@ function homeHTML() {
     main = `
     <header class="top"><div class="brand"><h1>Progrès</h1><p>Défis, badges et régularité.</p></div>${gear}</header>
     ${challengesHTML()}
+    ${treeHTML()}
+    ${fitHTML()}
     ${wardrobeHTML()}
     <section aria-label="Badges">
       <div class="badges-head"><h2 class="section-title">Badges</h2><p>${earned} / ${BADGES.length}</p></div>
@@ -277,6 +282,7 @@ function homeHTML() {
 
     ${notices}
     ${backupReminderHTML()}
+    ${testDue(state) ? testCardHTML() : ''}
 
     <section class="card player" aria-label="Ta progression">
       <div class="player-top">
@@ -375,7 +381,7 @@ function ticketHTML(id) {
 
 function exSheetHTML(key) {
   const [progId, exId] = key.split(':');
-  const p = progFor(state, progId), ex = p && (p.exercises.find(e => e.id === exId) || PROGRAMS[progId].exercises.find(e => e.id === exId));
+  const p = progFor(state, progId) || PROGRAMS.dos, ex = p.exercises.find(e => e.id === exId) || EX[exId];
   if (!ex) return '';
   return `<div class="sheet-wrap" data-action="ex-close-bg"><div class="ex-sheet" role="dialog" aria-modal="true" aria-labelledby="ex-t">
     <div class="ex-sheet-top"><div><p class="eyebrow">${esc(p.name)}</p><h2 id="ex-t">${esc(ex.name)}</h2></div><button class="icon-btn" data-action="ex-close" aria-label="Fermer">${ICON.close}</button></div>
@@ -387,7 +393,73 @@ function exSheetHTML(key) {
   </div></div>`;
 }
 
+/* ---------- Arbre de progression et test de forme ---------- */
+function nextRungNames(pid) { return rungsReady(state, pid).map(l => exName(l.rungs[rungOf(state, l) + 1])).join(', '); }
+function treeHTML() {
+  const groups = [...new Set(LADDERS.map(l => l.prog))];
+  return `<section class="card tree" aria-label="Arbre de progression">
+    <h2 class="section-title">Arbre de progression</h2>
+    <p class="muted">Chaque mouvement a des versions de plus en plus dures. Au cran ${STEP_MAX}/${STEP_MAX} d’un programme, ses versions suivantes peuvent se débloquer, avec l’accord de ton kiné.</p>
+    ${groups.map(pid => {
+      const ready = rungsReady(state, pid), locked = pid === 'milieu' && !state.settings.milieuOk;
+      const rows = laddersOf(pid).map(l => {
+        const r = rungOf(state, l);
+        const nodes = l.rungs.map((id, i) => `<li class="${i < r ? 'done' : i === r ? 'now' : 'next'}"><button class="tree-node" data-action="ex-open" data-prog="${pid}" data-ex="${id}" aria-label="${esc(exName(id))}, ${i < r ? 'déjà passée' : i === r ? 'version actuelle' : 'à venir'}">${illusMini(id)}</button><span>${esc(exName(id))}</span></li>`).join('');
+        return `<div class="tree-row"><span class="tree-name">${esc(l.name)}</span><ol class="tree-rungs">${nodes}</ol>${r > 0 ? `<button class="link-btn" data-action="rung-down" data-ladder="${l.id}">Revenir à la version précédente</button>` : ''}</div>`;
+      }).join('');
+      let foot = '';
+      if (ready.length && !locked) foot = ui.unlockOpen === 'rung:' + pid ? unlockPanelHTML('rung:' + pid)
+        : `<div class="t-row"><span class="est">Prêt pour la suite : ${esc(nextRungNames(pid))}</span><button class="btn primary" data-action="unlock-open" data-prog="rung:${pid}">${ICON.lock} Débloquer</button></div>`;
+      return `<div class="tree-group"><div class="tree-head"><b>${esc(PROGRAMS[pid].name)}</b><span class="est">cran ${stepLevel(state, pid)}/${STEP_MAX}</span></div>${rows}${foot}</div>`;
+    }).join('')}
+  </section>`;
+}
+function rungPanelHTML(pid) {
+  return `<div class="unlock">
+    <p>Nouvelles versions pour ${esc(PROGRAMS[pid].name)} : ${esc(nextRungNames(pid))}. Elles sont plus difficiles : demande d’abord l’accord de ton kiné. Les crans de ce programme repartiront de zéro.</p>
+    <label class="check"><input type="checkbox" id="unlock-check" ${ui.unlockChecked ? 'checked' : ''}> Mon kiné est d’accord pour ces versions</label>
+    <div class="t-row">
+      <button class="btn primary" id="unlock-confirm" data-action="rung-confirm" data-prog="${pid}" ${ui.unlockChecked ? '' : 'disabled'}>Débloquer</button>
+      <button class="btn ghost" data-action="unlock-cancel">Plus tard</button>
+    </div>
+  </div>`;
+}
+function fitHTML() {
+  const t = state.tests, due = testDue(state);
+  const rows = FIT_TESTS.map(f => {
+    const vals = t.slice(0, 6).reverse().filter(x => x[f.id] != null);
+    const max = Math.max(1, ...vals.map(x => x[f.id]));
+    const bars = vals.map(x => `<span style="height:${Math.round(25 + 75 * x[f.id] / max)}%" title="${esc(fmtDate(x.d))}"><i>${x[f.id]}</i></span>`).join('');
+    return `<div class="fit-row"><b>${esc(f.name)}</b>${vals.length ? `<div class="fit-bars" role="img" aria-label="${esc(f.name)}, du plus ancien au plus récent : ${vals.map(x => x[f.id]).join(', ')}">${bars}</div>` : '<span class="muted">Pas encore de mesure.</span>'}</div>`;
+  }).join('');
+  const next = t[0] ? new Date(Date.parse(t[0].d) + TEST_EVERY_DAYS * 86400000) : null;
+  const when = due ? `À faire maintenant · +${TEST_XP} XP` : next ? 'Prochain test conseillé à partir du ' + fmtDate(next.toISOString()) : 'Conseillé après tes 3 premières séances';
+  return `<section class="card fit" aria-label="Test de forme">
+    <h2 class="section-title">Test de forme du mois</h2>
+    <p class="muted">Deux mesures de 30 secondes, debout, à comparer à toi-même d’un mois sur l’autre. Arrête au moindre signe de douleur.</p>
+    ${rows}
+    <div class="t-row"><span class="est">${esc(when)}</span><button class="btn ${due ? 'primary' : 'ghost'}" data-action="test-start">Faire le test</button></div>
+  </section>`;
+}
+function testCardHTML() {
+  return `<div class="notice good"><b>Test de forme du mois · +${TEST_XP} XP</b><span>Deux minutes, debout : assis-debout et pompes contre le mur, 30 secondes chacun.</span><div class="row-btns"><button class="btn primary" data-action="test-start">Faire le test</button></div></div>`;
+}
+function testHTML() {
+  const T = ui.test, f = FIT_TESTS[T.i], prev = state.tests[0];
+  let inner;
+  if (T.phase === 'intro') inner = `${illusFull(f.ex)}<p>${esc(f.cue)}</p><button class="btn primary big" data-action="test-go">${ICON.play} Partez, 30 secondes</button>`;
+  else if (T.phase === 'run') inner = `<div class="test-clock" role="timer"><b id="test-left">${Math.max(0, Math.ceil((T.endAt - Date.now()) / 1000))}</b><span>secondes</span></div><p class="muted center-note">Compte à voix haute. Arrête tout de suite si ça fait mal.</p><button class="btn ghost" data-action="test-stop">Arrêter : douleur</button>`;
+  else inner = `<h2 class="section-title">Combien en 30 secondes ?</h2>${prev && prev[f.id] != null ? `<p class="muted">La dernière fois : ${prev[f.id]}.</p>` : ''}<div class="stepper big"><button data-action="test-dec" aria-label="Un de moins">−</button><output id="test-val" aria-live="polite">${T.val}</output><button data-action="test-inc" aria-label="Un de plus">+</button></div><button class="btn primary big" data-action="test-save">${T.i < FIT_TESTS.length - 1 ? 'Valider et passer au suivant' : 'Valider'}</button>`;
+  return `<main class="page plain">
+    <header class="sub-top">
+      <button class="icon-btn" data-action="home" aria-label="Quitter le test">${ICON.back}</button>
+      <div><p class="eyebrow">Test de forme · ${T.i + 1} / ${FIT_TESTS.length}</p><h1>${esc(f.name)}</h1></div>
+    </header>
+    <section class="card set-card test-card">${inner}</section>
+  </main>`;
+}
 function unlockPanelHTML(id) {
+  if (id.startsWith('rung:')) return rungPanelHTML(id.slice(5));
   const solide = id === 'solide';
   return `<div class="unlock">
     <p>${solide ? `Ton dos va bien depuis ${solidStreak(state)} séances de renforcement d’affilée. Avant de passer au niveau supérieur, demande l’accord de ton kiné.` : 'Ce programme date de novembre 2025, avant les adaptations pour ton dos. Pour ta reprise, la priorité reste la routine Reprise dos.'}</p>
@@ -1503,6 +1575,58 @@ const ACTIONS = {
   },
   relock() { state.settings.bouleUnlocked = false; state.settings.bouleUnlockedAt = null; persist(); renderScreen(); },
   'hist-toggle'() { ui.historyAll = !ui.historyAll; renderScreen({ still: true }); },
+  'rung-confirm'(b) {
+    if (!ui.unlockChecked) return;
+    const pid = b.dataset.prog, ready = rungsReady(state, pid); if (!ready.length) return;
+    const st = state.settings;
+    st.rungs = Object.assign({}, st.rungs);
+    ready.forEach(l => { st.rungs[l.id] = rungOf(state, l) + 1; });
+    st.stepReset = Object.assign({}, st.stepReset, { [pid]: new Date().toISOString() });
+    ui.unlockOpen = null; ui.unlockChecked = false;
+    persist(); renderScreen({ still: true });
+    toast('Nouvelles versions débloquées. Commence doucement, et reviens en arrière au moindre doute.');
+  },
+  'rung-down'(b) {
+    const l = LADDERS.find(x => x.id === b.dataset.ladder); if (!l) return;
+    state.settings.rungs = Object.assign({}, state.settings.rungs, { [l.id]: Math.max(0, rungOf(state, l) - 1) });
+    persist(); renderScreen({ still: true });
+    toast(`Retour à : ${exName(l.rungs[rungOf(state, l)])}.`);
+  },
+  'test-start'() { audio(); ui.test = { i: 0, phase: 'intro', vals: {}, val: 10, timer: 0 }; ui.screen = 'test'; renderScreen(); window.scrollTo(0, 0); },
+  'test-go'() {
+    const T = ui.test; if (!T) return;
+    T.phase = 'run'; T.endAt = Date.now() + 30000; renderScreen();
+    if (state.settings.sound) SFX.perfect();
+    clearInterval(T.timer);
+    T.timer = setInterval(() => {
+      if (ui.screen !== 'test' || ui.test !== T || T.phase !== 'run') { clearInterval(T.timer); return; }
+      const left = Math.max(0, Math.ceil((T.endAt - Date.now()) / 1000));
+      const el = $('#test-left'); if (el) el.textContent = left;
+      if (left > 0) return;
+      clearInterval(T.timer);
+      const f = FIT_TESTS[T.i], prev = state.tests[0];
+      T.phase = 'count'; T.val = prev && prev[f.id] != null ? prev[f.id] : 10;
+      renderScreen();
+      if (state.settings.sound) SFX.end();
+    }, 200);
+  },
+  'test-stop'() { if (ui.test) clearInterval(ui.test.timer); ui.test = null; goHome(); toast('Test arrêté. Si la douleur persiste, parles-en à ton kiné.'); },
+  'test-dec'() { const T = ui.test; if (!T) return; T.val = Math.max(0, T.val - 1); const o = $('#test-val'); if (o) o.textContent = T.val; },
+  'test-inc'() { const T = ui.test; if (!T) return; T.val = Math.min(FIT_TESTS[T.i].max, T.val + 1); const o = $('#test-val'); if (o) o.textContent = T.val; },
+  'test-save'() {
+    const T = ui.test; if (!T) return;
+    T.vals[FIT_TESTS[T.i].id] = T.val;
+    if (T.i < FIT_TESTS.length - 1) { T.i++; T.phase = 'intro'; renderScreen(); window.scrollTo(0, 0); return; }
+    const xp = testDue(state) ? TEST_XP : 0, prev = state.tests[0];
+    state.tests.unshift(Object.assign({ d: new Date().toISOString() }, T.vals));
+    if (state.tests.length > 60) state.tests.length = 60;
+    state.xp += xp;
+    evalBadges(state);
+    persist();
+    ui.test = null; ui.tab = 'progress'; goHome();
+    const cmp = prev ? FIT_TESTS.filter(f => prev[f.id] != null).map(f => `${f.short} ${prev[f.id]} → ${T.vals[f.id]}`).join(', ') : '';
+    toast(`Test enregistré${xp ? ` · +${xp} XP` : ''}.${cmp ? ' ' + cmp + '.' : ''}`);
+  },
   'set-fsets'(b) { state.settings.fessiersSets = clamp(Number(b.dataset.v) || 1, 1, 2); persist(); renderScreen({ still: true }); },
   'rem-day'(b) {
     const d = Number(b.dataset.v), days = state.settings.reminderDays;
