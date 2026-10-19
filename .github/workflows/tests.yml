@@ -1,0 +1,31 @@
+# À chaque envoi sur GitHub : les tests automatiques tournent dans plusieurs fuseaux horaires,
+# puis on vérifie que la page publiée (index.html) a bien été reconstruite à partir du code source.
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tz: [Europe/Paris, UTC, Pacific/Auckland]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Tests automatiques
+        run: node --test tests/logic.test.js
+        env:
+          TZ: ${{ matrix.tz }}
+      - name: La page publiée correspond au code source
+        if: matrix.tz == 'Europe/Paris'
+        env:
+          TZ: Europe/Paris
+        run: |
+          node source/build.js
+          git diff --exit-code -- index.html || (echo "index.html n'a pas été reconstruit : lance node source/build.js avant d'envoyer." && exit 1)

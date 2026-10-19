@@ -177,7 +177,7 @@ function legHTML(action, value) {
 }
 
 /* ---------- Écrans ---------- */
-const ui = { screen: 'home', unlockOpen: false, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play' };
+const ui = { screen: 'home', unlockOpen: false, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set() };
 
 function renderScreen(opts = {}) {
   if (ui.screen === 'home') app.innerHTML = homeHTML();
@@ -325,6 +325,9 @@ function tabbarHTML() {
 function ticketHTML(id) {
   const p = PROGRAMS[id];
   const locked = id === 'boule' && !state.settings.bouleUnlocked;
+  const n = p.exercises.length, open = n === 1 || ui.openTickets.has(id);
+  const strip = p.exercises.map(ex => `<button class="ex-thumb" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}</button>`).join('');
+  const toggle = n > 1 ? `<button class="link-btn ticket-toggle" data-action="ticket-toggle" data-prog="${id}" aria-expanded="${open}">${open ? 'Masquer le détail' : `Voir le détail des ${n} exercices`}</button>` : '';
   const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(state, ex, setsFor(state, p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
   let foot;
   if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
@@ -338,8 +341,9 @@ function ticketHTML(id) {
     </div>
     <div class="perf" aria-hidden="true"></div>
     <div class="ticket-body">
-      <p>${esc(p.blurb)}</p>
-      <ul class="ex-list">${list}</ul>
+      <p${open ? '' : ' class="clamp"'}>${esc(p.blurb)}</p>
+      ${open ? `<ul class="ex-list">${list}</ul>` : `<div class="ex-strip">${strip}</div>`}
+      ${toggle}
       ${foot}
     </div>
   </article>`;
@@ -1334,6 +1338,11 @@ const ACTIONS = {
   outfit(b) {
     const o = OUTFITS.find(x => x.id === b.dataset.id); if (!o || !o.test(state)) return;
     state.settings.outfit = o.id; persist(); renderScreen({ still: true }); toast(`Chouquette porte : ${o.name}`);
+  },
+  'ticket-toggle'(b) {
+    const id = b.dataset.prog;
+    if (ui.openTickets.has(id)) ui.openTickets.delete(id); else ui.openTickets.add(id);
+    renderScreen({ still: true });
   },
   tab(b) { ui.tab = b.dataset.tab; ui.sheet = null; ui.nextMsg = null; renderScreen({ still: true }); window.scrollTo(0, 0); },
   'import-confirm'() {

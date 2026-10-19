@@ -103,7 +103,7 @@ const CHALLENGES = [
   { id: 'combo12', name: 'Combo de 12', desc: 'Enchaîner 12 répétitions parfaites', goal: 12, prog: w => Math.max(0, ...w.map(h => h.combo || 0)) },
   { id: 'days3', name: 'Trois cœurs', desc: 'Remplir 3 cœurs cette semaine', goal: 3, prog: w => new Set(w.map(h => dayKey(h.d))).size },
   { id: 'douceur', name: 'Douceur', desc: 'Faire une séance Jour difficile ou Dos du milieu', goal: 1, prog: w => w.filter(h => h.prog === 'difficile' || h.prog === 'milieu').length },
-  { id: 'save1', name: 'Prudence', desc: 'Exporter ta sauvegarde cette semaine', goal: 1, prog: (w, s) => (s.settings.lastExport && weekKey(new Date(s.settings.lastExport)) === weekKey(new Date()) ? 1 : 0) }
+  { id: 'save1', name: 'Prudence', desc: 'Exporter ta sauvegarde cette semaine', goal: 1, prog: (w, s, now) => (s.settings.lastExport && weekKey(new Date(s.settings.lastExport)) === weekKey(now) ? 1 : 0) }
 ];
 /* Tenues de Chouquette : gagnées avec les niveaux et les badges, jamais avec le volume d'entraînement. */
 const OUTFITS = [
@@ -262,7 +262,7 @@ function pendingNextDay(s, now = new Date()) {
   return h;
 }
 function weekEntries(s, now = new Date()) { const k = weekKey(now); return s.history.filter(h => weekKey(new Date(h.d)) === k); }
-function chalProgress(s, c, now = new Date()) { return Math.min(c.goal, c.prog(weekEntries(s, now), s)); }
+function chalProgress(s, c, now = new Date()) { return Math.min(c.goal, c.prog(weekEntries(s, now), s, now)); }
 /* Donne les défis réussis cette semaine (+50 XP chacun, une seule fois) et oublie les semaines de plus d’un mois. */
 function evalChallenges(s, now = new Date()) {
   const k = weekKey(now);

@@ -97,6 +97,15 @@ test('défis de la semaine : tirage stable, +50 XP une seule fois, vieux défis 
   assert.ok(!('2026-8-3' in s.challenges), 'les semaines de plus d’un mois sont oubliées');
 });
 
+test('défis : calculés à la date donnée, jamais à l’horloge du téléphone', () => {
+  const save = api.CHALLENGES.find(c => c.id === 'save1');
+  const s = state();
+  s.settings.lastExport = NOW.toISOString(); // dimanche 18 octobre
+  assert.equal(api.chalProgress(s, save, NOW), 1, 'même semaine');
+  assert.equal(api.chalProgress(s, save, D(2026, 10, 19)), 0, 'le lundi suivant, nouvelle semaine');
+  assert.equal(api.chalProgress(s, save, D(2026, 10, 12)), 1, 'lundi de la même semaine');
+});
+
 test('badges : donnés une seule fois', () => {
   const s = state({ history: [entry()] });
   same(api.evalBadges(s, NOW).map(b => b.id), ['premier']);
