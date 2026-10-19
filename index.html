@@ -158,6 +158,10 @@ button{font:inherit;color:inherit}
 .ticket.boule{--t-color:var(--prize);--t-ink:var(--prize-ink)}
 .ticket.difficile{--t-color:var(--ok);--t-ink:var(--ok-ink)}
 .ticket.milieu{--t-color:var(--ticket);--t-ink:var(--ticket-ink)}
+.ticket.fessiers{--t-color:var(--accent-deep);--t-ink:var(--accent-ink)}
+.ticket.calme{--t-color:var(--blush);--t-ink:var(--face-ink)}
+.ticket.solide{--t-color:var(--prize);--t-ink:var(--prize-ink)}
+.unlock-progress{display:flex;flex-direction:column;gap:6px}
 .ticket.locked{--t-color:var(--surface-2);--t-ink:var(--ink-2)}
 .ticket-head{background:var(--t-color);color:var(--t-ink);padding:16px 18px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
 .ticket-head h3{font-size:22px}
@@ -563,13 +567,63 @@ const EX = {
     tip: 'Commence par 10 à 15 secondes. Arrête si le bas du dos se creuse.' },
   marche: { id: 'marche', name: 'Marche', kind: 'timer', minutes: 10,
     cue: 'Marche à ton rythme, épaules relâchées. Allonge la durée petit à petit tant que la douleur reste tolérable.',
-    tip: 'Dehors, dans le couloir ou sur place : tout compte.' }
+    tip: 'Dehors, dans le couloir ou sur place : tout compte.' },
+  /* Ajoutés après recherche : fiches de kinés hospitaliers (CUH), Hinge Health, MSD, HUG Genève. */
+  bascule: { id: 'bascule', name: 'Bascule du bassin', kind: 'reps', target: 8, tempo: 4,
+    cue: 'Sur le dos, genoux pliés. En expirant, plaque doucement le bas du dos au sol en basculant le bassin, puis relâche.',
+    tip: 'Petit mouvement, sans pousser avec les pieds ni décoller les fesses.' },
+  genoupoitrine: { id: 'genoupoitrine', name: 'Genou vers la poitrine', kind: 'hold', target: 2, hold: 15, sides: true,
+    cue: 'Sur le dos, genoux pliés. Ramène un genou vers la poitrine avec les mains et tiens en respirant calmement.',
+    tip: 'Tire doucement, sans douleur. L’autre pied reste au sol.' },
+  rouleau: { id: 'rouleau', name: 'Rotation des genoux', kind: 'reps', target: 8, tempo: 5,
+    cue: 'Sur le dos, genoux pliés et serrés. Laisse lentement tomber les genoux d’un côté puis de l’autre, les épaules restent au sol.',
+    tip: 'Seulement dans l’amplitude confortable. Un côté puis l’autre, deux répétitions.' },
+  talons: { id: 'talons', name: 'Fesses vers les talons', kind: 'reps', target: 8, tempo: 6,
+    cue: 'À quatre pattes. Recule lentement les fesses vers les talons en gardant les mains au sol, respire, puis reviens.',
+    tip: 'Ne descends pas jusqu’aux talons si tes genoux n’aiment pas.' },
+  coquillage: { id: 'coquillage', name: 'Coquillage', kind: 'reps', target: 10, sides: true, tempo: 3,
+    cue: 'Sur le côté, hanches et genoux pliés, pieds joints. Ouvre le genou du dessus sans faire rouler le bassin, puis redescends lentement.',
+    tip: 'Le bassin ne bascule pas vers l’arrière : c’est la fesse qui travaille.' },
+  abduction: { id: 'abduction', name: 'Jambe levée sur le côté', kind: 'reps', target: 10, sides: true, tempo: 3,
+    cue: 'Sur le côté, jambes tendues, tête posée sur le bras. Lève la jambe du dessus, pointe du pied vers l’avant, puis redescends lentement.',
+    tip: 'Une petite hauteur suffit. Le dos ne se creuse pas.' },
+  assisdebout: { id: 'assisdebout', name: 'Assis-debout', kind: 'reps', target: 8, tempo: 4,
+    cue: 'Au bord d’une chaise calée contre un mur. Pousse dans les talons pour te lever, puis rassieds-toi en reculant les fesses.',
+    tip: 'Buste droit, genoux dans l’axe des pieds. Mains sur les cuisses au début si besoin.' },
+  gainagelat: { id: 'gainagelat', name: 'Gainage latéral sur genoux', kind: 'hold', target: 2, hold: 15, sides: true,
+    cue: 'Sur le côté, coude sous l’épaule, genoux pliés. Soulève les hanches pour aligner épaules, hanches et genoux, et tiens.',
+    tip: 'Commence par 10 à 15 secondes. Arrête si le bas du dos tire.' },
+  /* Dos solide : les mêmes muscles, un cran plus fort. Verrouillé tant que le dos n’est pas stable. */
+  birddogtenu: { id: 'birddogtenu', name: 'Bird-dog tenu', kind: 'hold', target: 3, hold: 5, sides: true,
+    cue: 'À quatre pattes, dos neutre. Tends un bras et la jambe opposée et tiens 5 secondes sans bouger le bassin.',
+    tip: 'Si le bassin tourne, raccourcis le bras ou la jambe.' },
+  pontmarche: { id: 'pontmarche', name: 'Pont marché', kind: 'reps', target: 6, tempo: 4,
+    cue: 'En pont, bassin levé. Décolle lentement un pied de quelques centimètres, repose-le, puis l’autre, sans que le bassin penche.',
+    tip: 'Si le bassin bascule, garde les deux pieds au sol : le pont simple suffit encore.' },
+  deadbug: { id: 'deadbug', name: 'Dead bug', kind: 'reps', target: 6, tempo: 5,
+    cue: 'Sur le dos, bras tendus vers le plafond, genoux pliés à 90° au-dessus des hanches. Allonge lentement un bras et la jambe opposée, reviens, change de côté.',
+    tip: 'Le bas du dos reste plaqué au sol. Plus la jambe descend, plus c’est dur : garde-la haute au début.' },
+  squatchaise: { id: 'squatchaise', name: 'Squat à la chaise', kind: 'reps', target: 8, tempo: 4,
+    cue: 'Debout devant une chaise, pieds écartés de la largeur des hanches. Recule les fesses jusqu’à effleurer la chaise, puis remonte en poussant dans les talons.',
+    tip: 'Buste droit, genoux dans l’axe des pieds. Tu effleures la chaise sans t’asseoir.' },
+  plancheplus: { id: 'plancheplus', name: 'Planche sur les pieds', kind: 'hold', target: 3, hold: 10,
+    cue: 'Sur les avant-bras, coudes sous les épaules, jambes tendues sur la pointe des pieds. Corps droit, ventre rentré.',
+    tip: 'Dès que le bas du dos se creuse, repose les genoux.' }
 };
 
 const PROGRAMS = {
   dos: { id: 'dos', name: 'Reprise dos', tag: 'Routine du 11 oct. 2026', rest: 30, xpBase: 100,
     blurb: 'Gainage doux, fessiers et cardio léger, adaptés à ton dos. À faire valider par ton kiné.',
     exercises: [EX.transverse, EX.birddog, EX.pont, EX.velo] },
+  solide: { id: 'solide', name: 'Dos solide', tag: 'Niveau supérieur', rest: 30, xpBase: 100,
+    blurb: 'La suite quand ton dos va bien : les mêmes muscles, un cran plus fort. Se débloque après 10 séances sans douleur d’affilée et l’accord de ton kiné. Se reverrouille si la douleur revient dans la jambe.',
+    exercises: [EX.birddogtenu, EX.pontmarche, EX.deadbug, EX.squatchaise, EX.plancheplus] },
+  fessiers: { id: 'fessiers', name: 'Fessiers doux', tag: 'Sans charger le dos', rest: 30, xpBase: 100,
+    blurb: 'Les fessiers travaillent sur le côté ou depuis une chaise, sans pression sur les disques. Une alternative douce à Boule qui chamboule. À faire valider par ton kiné.',
+    exercises: [EX.coquillage, EX.abduction, EX.assisdebout, EX.gainagelat] },
+  calme: { id: 'calme', name: 'Dos calme', tag: 'Mobilité · 5 min', rest: 20, xpBase: 80,
+    blurb: 'Des mouvements doux pour dérouiller le dos, même les jours un peu raides. Inspirés de fiches de kinés hospitaliers. Arrête si ça descend dans la jambe.',
+    exercises: [EX.bascule, EX.genoupoitrine, EX.rouleau, EX.talons] },
   milieu: { id: 'milieu', name: 'Dos du milieu', tag: 'Mobilité douce', rest: 20, xpBase: 100,
     blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pour la marche, la balade du chien fait déjà le travail. Pont fessier et bird-dog sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
     exercises: [EX.chatvache, EX.rotation, EX.thorax, EX.gainage, EX.planche] },
@@ -584,7 +638,8 @@ const PROGRAMS = {
       cue: 'Pas besoin de bouger. Regarde le cercle se remplir. Quand il devient jaune et que ça bipe, tape : la balle part sur les boîtes.',
       tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
 };
-const PROG_ORDER = ['dos', 'milieu', 'difficile', 'boule'];
+const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'calme', 'difficile', 'solide', 'boule'];
+const SOLIDE_NEEDED = 10;
 
 const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Cœur de la fête', 'Grande roue', 'Feu d’artifice', 'Légende de la foire'];
 const LINES = {
@@ -618,7 +673,7 @@ const CHALLENGES = [
   { id: 'stars2x', name: 'Doublé', desc: '2 séances à 2 étoiles ou plus', goal: 2, prog: w => w.filter(h => h.stars >= 2).length },
   { id: 'combo12', name: 'Combo de 12', desc: 'Enchaîner 12 répétitions parfaites', goal: 12, prog: w => Math.max(0, ...w.map(h => h.combo || 0)) },
   { id: 'days3', name: 'Trois cœurs', desc: 'Remplir 3 cœurs cette semaine', goal: 3, prog: w => new Set(w.map(h => dayKey(h.d))).size },
-  { id: 'douceur', name: 'Douceur', desc: 'Faire une séance Jour difficile ou Dos du milieu', goal: 1, prog: w => w.filter(h => h.prog === 'difficile' || h.prog === 'milieu').length },
+  { id: 'douceur', name: 'Douceur', desc: 'Faire une séance douce : Jour difficile, Dos calme ou Dos du milieu', goal: 1, prog: w => w.filter(h => ['difficile', 'milieu', 'calme'].includes(h.prog)).length },
   { id: 'save1', name: 'Prudence', desc: 'Exporter ta sauvegarde cette semaine', goal: 1, prog: (w, s, now) => (s.settings.lastExport && weekKey(new Date(s.settings.lastExport)) === weekKey(now) ? 1 : 0) }
 ];
 /* Tenues de Chouquette : gagnées avec les niveaux et les badges, jamais avec le volume d'entraînement. */
@@ -663,7 +718,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -710,6 +765,7 @@ function cleanSettings(s, d) {
     sets: numOr(s.sets, 1, 3, d.sets, true), veloMin: numOr(s.veloMin, 3, 45, d.veloMin, true), weeklyGoal: numOr(s.weeklyGoal, 1, 7, d.weeklyGoal, true),
     sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
     bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
+    solideUnlocked: s.solideUnlocked === true, solideUnlockedAt: isoOr(s.solideUnlockedAt),
     lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
     outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud'
   };
@@ -761,6 +817,17 @@ function backCat(h) {
   const worst = Math.max(rank(h.pain), h.next != null ? rank(h.next) : 0);
   return ['ok', 'sensible', 'douleur'][worst];
 }
+/* Séances d’affilée, tous programmes, finies avec un dos qui va bien, y compris le lendemain.
+   Les séances sans ressenti noté ne comptent pas mais ne cassent pas la série ; un arrêt pour douleur la remet à zéro. */
+function solidStreak(s) {
+  let n = 0;
+  for (const h of s.history) {
+    if (h.pain == null && !h.stop) continue;
+    const okNext = h.next == null || h.next <= (h.painBefore ?? h.pain ?? 0) + 1;
+    if (backCat(h) === 'ok' && okNext && !(h.painEx && h.painEx.length)) n++; else break;
+  }
+  return n;
+}
 function painFreeRun(s) {
   let n = 0;
   for (const h of s.history) {
@@ -803,8 +870,8 @@ function timerMin(s, ex) { return ex.id === 'velo' ? s.settings.veloMin : (ex.mi
 function presc(s, ex, sets) {
   if (ex.prescText) return ex.prescText;
   if (ex.kind === 'timer') return ex.id === 'velo' ? s.settings.veloMin + ' min, résistance légère' : timerMin(s, ex) + ' min, à ton rythme';
-  if (ex.kind === 'hold') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' maintiens de ' + ex.hold + ' s';
   const side = ex.sides ? ' par ' + (ex.sideLabel || 'côté') : '';
+  if (ex.kind === 'hold') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' maintiens de ' + ex.hold + ' s' + side;
   if (ex.kind === 'breath') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' respirations lentes';
   if (ex.free) return 'Activation, environ ' + ex.target + side;
   const reps = ex.max ? ex.target + ' à ' + ex.max : String(ex.target);
@@ -866,6 +933,7 @@ function kineSummary(s, now = new Date()) {
   L.push(`Période : du ${from.toLocaleDateString('fr-FR')} au ${now.toLocaleDateString('fr-FR')}`);
   L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
   L.push(`Réglages actuels : ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, vélo ${st.veloMin} min`);
+  L.push(`Programme Dos solide : ${st.solideUnlocked ? 'débloqué' + (st.solideUnlockedAt ? ' le ' + new Date(st.solideUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : 'verrouillé (' + solidStreak(s) + ' / ' + SOLIDE_NEEDED + ' séances sans douleur d’affilée)'}`);
   L.push(`Programme Boule qui chamboule : ${st.bouleUnlocked ? 'débloqué' + (st.bouleUnlockedAt ? ' le ' + new Date(st.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);
   L.push('');
   L.push('Douleur de dos notée de 0 à 10 : avant la séance → juste après → le lendemain.');
@@ -971,6 +1039,64 @@ Object.assign(ILLUS, {
   marche: { labels: ['Pas souple', 'Bras relâchés'], poses: [
     { h: [81, 12], b: [[[80, 21], [80, 60]]], f: [[[80, 60], [72, 84], [62, 106], [69, 108]], [[80, 28], [72, 44], [70, 58]]], n: [[[80, 28], [88, 43], [94, 56]]], a: [[[80, 60], [90, 84], [96, 108], [104, 108]]] },
     { h: [81, 12], b: [[[80, 21], [80, 60]]], f: [[[80, 60], [90, 84], [96, 106], [103, 108]], [[80, 28], [88, 43], [94, 56]]], n: [[[80, 28], [72, 44], [70, 58]]], a: [[[80, 60], [72, 84], [62, 108], [70, 108]]] }
+  ]}
+});
+/* Dos calme, Fessiers doux et Dos solide. */
+const CHAIR_SIDE = '<path class="il-prop" d="M36 74h34v6H36z"/><path class="il-bike" d="M39 80v32M67 80v32M38 74V40"/>';
+const SIDE_LYING = { head: [30, 99], torso: [[40, 104], [84, 104]], arm: [[44, 100], [58, 94], [70, 99]] };
+const BRIDGE_UP = { torso: [[50, 106], [86, 91]], legF: [[86, 91], [104, 84], [114, 107]] };
+Object.assign(ILLUS, {
+  bascule: { labels: ['Dos neutre', 'Plaque le bas du dos'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, [[50, 106], [70, 101], [88, 106]]], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm] },
+    { h: SUP2.head, b: [SUP2.neck], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm], a: [[[50, 107], [88, 107]]], over: down(70, 84, 97) }
+  ]},
+  genoupoitrine: { labels: ['Sur le dos', 'Genou vers la poitrine'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm] },
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], a: [[[88, 106], [76, 84], [92, 80]], [[50, 106], [64, 94], [76, 87]]], over: '<text class="il-t" x="118" y="70" text-anchor="middle">15 s</text>' }
+  ]},
+  rouleau: { labels: ['Vue de dessus', 'Genoux d’un côté'], poses: [
+    { h: [24, 60], b: [[[32, 60], [86, 60]], [[40, 46], [40, 74]], [[86, 52], [86, 68]]], f: [[[40, 46], [28, 34]], [[40, 74], [28, 86]]], n: [[[86, 54], [112, 54], [122, 57]], [[86, 66], [112, 66], [122, 63]]] },
+    { h: [24, 60], b: [[[32, 60], [86, 60]], [[40, 46], [40, 74]], [[86, 52], [86, 68]]], f: [[[40, 46], [28, 34]], [[40, 74], [28, 86]]], a: [[[86, 56], [106, 76], [118, 80]], [[86, 66], [100, 84], [112, 88]]], over: '<path class="il-arrow" d="M126 50 Q138 66 126 82 M120 80 L126 82 L128 76"/>' }
+  ]},
+  talons: { labels: ['À quatre pattes', 'Fesses vers les talons'], poses: [
+    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN] },
+    { h: [92, 101], b: [[[84, 98], [86, 99]]], f: [[[82, 98], [100, 106], [118, 107]]], n: [[[60, 107], [38, 108]], [[84, 98], [102, 106], [122, 107]]], a: [[[60, 107], [46, 92], [84, 98]]], over: '<path class="il-arrow" d="M46 74 H30 M35 69 L30 74 L35 79"/>' }
+  ]},
+  coquillage: { labels: ['Sur le côté, pieds joints', 'Ouvre le genou'], poses: [
+    { h: SIDE_LYING.head, b: [SIDE_LYING.torso], f: [[[84, 106], [108, 108], [86, 109]]], n: [[[84, 101], [108, 103], [87, 105]], SIDE_LYING.arm] },
+    { h: SIDE_LYING.head, b: [SIDE_LYING.torso], f: [[[84, 106], [108, 108], [86, 109]]], n: [SIDE_LYING.arm], a: [[[84, 101], [104, 82], [87, 105]]], over: up(120, 98, 82) }
+  ]},
+  abduction: { labels: ['Sur le côté', 'Lève la jambe du dessus'], poses: [
+    { h: SIDE_LYING.head, b: [SIDE_LYING.torso], f: [[[84, 106], [136, 108]]], n: [[[84, 101], [136, 103]], SIDE_LYING.arm] },
+    { h: SIDE_LYING.head, b: [SIDE_LYING.torso], f: [[[84, 106], [136, 108]]], n: [SIDE_LYING.arm], a: [[[84, 101], [132, 80]]], over: up(146, 98, 82) }
+  ]},
+  assisdebout: { labels: ['Au bord de la chaise', 'Debout, sans les mains'], poses: [
+    { prop: CHAIR_SIDE, h: [64, 24], b: [[[58, 70], [62, 36]], [[62, 36], [63, 32]]], n: [[[58, 70], [86, 72], [88, 108], [96, 108]], [[62, 40], [74, 50], [70, 42]]] },
+    { prop: CHAIR_SIDE, h: [87, 14], b: [[[84, 62], [86, 26]], [[86, 26], [86, 22]]], n: [[[86, 30], [96, 40], [92, 32]]], a: [[[84, 62], [87, 86], [88, 108], [96, 108]]], over: up(120, 80, 60) }
+  ]},
+  gainagelat: { labels: ['Sur l’avant-bras et les genoux', 'Hanches levées, tiens'], poses: [
+    { h: [32, 82], b: [[[40, 90], [74, 105]]], n: [[[40, 90], [40, 108], [62, 108]], [[74, 105], [104, 107], [88, 96]], [[40, 90], [54, 84], [66, 98]]] },
+    { h: [32, 82], n: [[[40, 90], [40, 108], [62, 108]], [[104, 107], [88, 96]], [[40, 90], [54, 80], [70, 92]]], a: [[[40, 90], [72, 98], [104, 107]]], over: '<text class="il-t" x="80" y="72" text-anchor="middle">15 s</text>' }
+  ]},
+  birddogtenu: { labels: ['Départ, dos plat', 'Bras et jambe opposés, tiens'], poses: [
+    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN] },
+    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF], n: [Q.legN], a: [[[96, 74], [114, 71], [132, 69]], [[60, 81], [36, 79], [12, 78]]], over: '<text class="il-t" x="76" y="52" text-anchor="middle">5 s</text>' }
+  ]},
+  pontmarche: { labels: ['Pont, bassin levé', 'Un pied décolle, le bassin reste droit'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, BRIDGE_UP.torso], f: [BRIDGE_UP.legF], n: [[[86, 91], [108, 83], [118, 107]], SUP2.arm] },
+    { h: SUP2.head, b: [SUP2.neck, BRIDGE_UP.torso], f: [BRIDGE_UP.legF], n: [SUP2.arm], a: [[[86, 91], [100, 70], [114, 76]]], over: up(126, 84, 68) }
+  ]},
+  deadbug: { labels: ['Bras au plafond, genoux à 90°', 'Bras et jambe opposés s’allongent'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [[[86, 105], [84, 80], [106, 80]], [[48, 104], [48, 76]]], n: [[[88, 106], [88, 80], [110, 80]], [[52, 104], [52, 76]]] },
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [[[86, 105], [84, 80], [106, 80]], [[48, 104], [48, 76]]], a: [[[88, 106], [138, 100]], [[52, 104], [26, 96]]] }
+  ]},
+  plancheplus: { labels: ['Planche sur les genoux maîtrisée', 'Sur les pieds, corps droit'], poses: [
+    { h: [112, 85], b: [[[100, 90], [106, 87]]], n: [[[100, 90], [100, 107], [120, 107]], [[50, 105], [30, 96]]], a: [[[100, 90], [75, 97.5], [50, 105]]] },
+    { h: [112, 85], b: [[[100, 90], [106, 87]]], n: [[[100, 90], [100, 107], [120, 107]]], a: [[[100, 90], [60, 98], [20, 106]]], over: '<text class="il-t" x="60" y="80" text-anchor="middle">10 s</text>' }
+  ]},
+  squatchaise: { labels: ['Debout devant la chaise', 'Effleure la chaise, remonte'], poses: [
+    { prop: CHAIR_SIDE, h: [87, 14], b: [[[84, 62], [86, 26]], [[86, 26], [86, 22]]], n: [[[84, 62], [87, 86], [88, 108], [96, 108]], [[86, 30], [96, 40], [92, 32]]] },
+    { prop: CHAIR_SIDE, h: [82, 26], b: [[[62, 68], [78, 36]], [[78, 36], [80, 32]]], n: [[[78, 40], [96, 44], [112, 46]]], a: [[[62, 68], [88, 76], [90, 108], [98, 108]]], over: down(120, 46, 64) }
   ]}
 });
 function poseSVG(p) {
@@ -1213,7 +1339,7 @@ function legHTML(action, value) {
 }
 
 /* ---------- Écrans ---------- */
-const ui = { screen: 'home', unlockOpen: false, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set() };
+const ui = { screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set() };
 
 function renderScreen(opts = {}) {
   if (ui.screen === 'home') app.innerHTML = homeHTML();
@@ -1360,15 +1486,19 @@ function tabbarHTML() {
 
 function ticketHTML(id) {
   const p = PROGRAMS[id];
-  const locked = id === 'boule' && !state.settings.bouleUnlocked;
+  const locked = (id === 'boule' && !state.settings.bouleUnlocked) || (id === 'solide' && !state.settings.solideUnlocked);
   const n = p.exercises.length, open = n === 1 || ui.openTickets.has(id);
   const strip = p.exercises.map(ex => `<button class="ex-thumb" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}</button>`).join('');
   const toggle = n > 1 ? `<button class="link-btn ticket-toggle" data-action="ticket-toggle" data-prog="${id}" aria-expanded="${open}">${open ? 'Masquer le détail' : `Voir le détail des ${n} exercices`}</button>` : '';
   const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(state, ex, setsFor(state, p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
   let foot;
   if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
-  else if (!ui.unlockOpen) foot = `<div class="t-row"><span class="est">À débloquer avec ton kiné</span><button class="btn ghost" data-action="unlock-open">${ICON.lock} Débloquer</button></div>`;
-  else foot = unlockPanelHTML();
+  else if (id === 'solide' && solidStreak(state) < SOLIDE_NEEDED) {
+    const k = solidStreak(state);
+    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances sans douleur d’affilée, ressenti noté</span></div>`;
+  }
+  else if (ui.unlockOpen !== id) foot = `<div class="t-row"><span class="est">${id === 'solide' ? 'Ton dos va bien : prêt à débloquer' : 'À débloquer avec ton kiné'}</span><button class="btn ${id === 'solide' ? 'primary' : 'ghost'}" data-action="unlock-open" data-prog="${id}">${ICON.lock} Débloquer</button></div>`;
+  else foot = unlockPanelHTML(id);
   return `
   <article class="ticket ${id}${locked ? ' locked' : ''}">
     <div class="ticket-head">
@@ -1399,12 +1529,13 @@ function exSheetHTML(key) {
   </div></div>`;
 }
 
-function unlockPanelHTML() {
+function unlockPanelHTML(id) {
+  const solide = id === 'solide';
   return `<div class="unlock">
-    <p>Ce programme date de novembre 2025, avant les adaptations pour ton dos. Pour ta reprise, la priorité reste la routine Reprise dos.</p>
-    <label class="check"><input type="checkbox" id="unlock-check" ${ui.unlockChecked ? 'checked' : ''}> Mon kiné a validé ce programme pour ma situation actuelle</label>
+    <p>${solide ? `Ton dos va bien depuis ${solidStreak(state)} séances d’affilée. Avant de passer au niveau supérieur, demande l’accord de ton kiné.` : 'Ce programme date de novembre 2025, avant les adaptations pour ton dos. Pour ta reprise, la priorité reste la routine Reprise dos.'}</p>
+    <label class="check"><input type="checkbox" id="unlock-check" ${ui.unlockChecked ? 'checked' : ''}> ${solide ? 'Mon kiné est d’accord pour que je progresse' : 'Mon kiné a validé ce programme pour ma situation actuelle'}</label>
     <div class="t-row">
-      <button class="btn primary" id="unlock-confirm" data-action="unlock-confirm" ${ui.unlockChecked ? '' : 'disabled'}>Débloquer</button>
+      <button class="btn primary" id="unlock-confirm" data-action="unlock-confirm" data-prog="${id}" ${ui.unlockChecked ? '' : 'disabled'}>Débloquer</button>
       <button class="btn ghost" data-action="unlock-cancel">Plus tard</button>
     </div>
   </div>`;
@@ -1565,7 +1696,7 @@ function settingsHTML() {
       <h2 class="section-title">Boule qui chamboule</h2>
       ${s.bouleUnlocked
         ? `<div class="set-row"><div><b>Débloqué${s.bouleUnlockedAt ? ' le ' + esc(new Date(s.bouleUnlockedAt).toLocaleDateString('fr-FR')) : ''}</b><small>Tu as indiqué que ton kiné a validé ce programme. Arrête au moindre fourmillement ou douleur dans la jambe.</small></div><button class="btn ghost" data-action="relock">${ICON.lock} Reverrouiller</button></div>`
-        : (ui.unlockOpen ? unlockPanelHTML() : `<div class="set-row"><div><b>Verrouillé</b><small>Programme fessiers de novembre 2025, pas encore revalidé pour ton dos.</small></div><button class="btn ghost" data-action="unlock-open">${ICON.lock} Débloquer</button></div>`)}
+        : (ui.unlockOpen === 'boule' ? unlockPanelHTML('boule') : `<div class="set-row"><div><b>Verrouillé</b><small>Programme fessiers de novembre 2025, pas encore revalidé pour ton dos.</small></div><button class="btn ghost" data-action="unlock-open" data-prog="boule">${ICON.lock} Débloquer</button></div>`)}
     </section>
 
     <section class="card set-card" aria-label="Suivi et sauvegarde">
@@ -2214,7 +2345,9 @@ function finish(reason) {
   const chal = evalChallenges(state);
   persist();
   const newOutfits = OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id));
-  R = { entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
+  const relocked = reason === 'pain' && relockSolide();
+  R = { relocked, entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
+  if (relocked) persist();
   G = null;
   ui.screen = 'result';
   renderResult();
@@ -2284,6 +2417,7 @@ function renderResult() {
     ${(R.challenges || []).map(c => `<div class="notice good"><b>Défi réussi : ${esc(c.name)} · +50 XP</b><span>${esc(c.desc)}</span></div>`).join('')}
     ${(R.outfits || []).map(o => `<div class="notice good new-outfit">${mascot('wow', o.id)}<div><b>Nouvelle tenue pour Chouquette : ${esc(o.name)}</b><span>Mets-la-lui dans l’onglet Progrès.</span></div></div>`).join('')}
     ${badges}
+    ${R.relocked ? '<div class="notice warn"><b>Dos solide est reverrouillé.</b><span>La douleur est revenue dans la jambe : on revient aux programmes doux. Il se débloquera de nouveau après 10 séances sans douleur et l’accord de ton kiné.</span></div>' : ''}
     ${R.sameDay ? '<div class="notice warn"><b>Deuxième séance aujourd’hui.</b><span>Elle ne remplit pas de nouveau cœur : ton dos a aussi besoin de jours de récupération.</span></div>' : ''}
     ${painExNames.length ? `<div class="notice warn"><b>Passé pour douleur, sans perte d’étoile</b><span>${esc(painExNames.join(', '))}. À signaler à ton kiné.</span></div>` : ''}
     <button class="btn primary big" data-action="home">Retour à l’accueil</button>
@@ -2296,6 +2430,7 @@ function applyCheckin() {
   const first = R.entry.pain == null;
   objs.forEach(o => {
     o.pain = R.ci.pain; o.leg = !!R.ci.leg;
+    if (o.leg && relockSolide()) R.relocked = true;
     o.back = backCat(o);
     if (first) o.xp = (o.xp || 0) + 20;
   });
@@ -2312,6 +2447,11 @@ function applyCheckin() {
 }
 
 /* ---------- Actions ---------- */
+function relockSolide() {
+  if (!state.settings.solideUnlocked) return false;
+  state.settings.solideUnlocked = false; state.settings.solideUnlockedAt = null;
+  return true;
+}
 function goHome() { ui.screen = 'home'; ui.resetArm = false; ui.pre = null; R = null; renderScreen(); window.scrollTo(0, 0); }
 function openPrecheck(prog) { ui.pre = { prog, pain: null, leg: null, step: 'ask' }; ui.screen = 'precheck'; renderScreen(); window.scrollTo(0, 0); }
 function endPractice() {
@@ -2437,13 +2577,18 @@ const ACTIONS = {
       .then(() => toast('Résumé téléchargé.'))
       .catch(e => { if (!e || e.code !== 'declined') toast('Téléchargement impossible ici. Utilise Copier le texte.'); });
   },
-  'unlock-open'() { ui.unlockOpen = true; ui.unlockChecked = false; renderScreen({ still: true }); const c = $('#unlock-check'); if (c) c.focus(); },
-  'unlock-cancel'() { ui.unlockOpen = false; ui.unlockChecked = false; renderScreen({ still: true }); },
-  'unlock-confirm'() {
+  'unlock-open'(b) { ui.unlockOpen = b.dataset.prog || 'boule'; ui.unlockChecked = false; renderScreen({ still: true }); const c = $('#unlock-check'); if (c) c.focus(); },
+  'unlock-cancel'() { ui.unlockOpen = null; ui.unlockChecked = false; renderScreen({ still: true }); },
+  'unlock-confirm'(b) {
     if (!ui.unlockChecked) return;
-    state.settings.bouleUnlocked = true; state.settings.bouleUnlockedAt = new Date().toISOString();
-    ui.unlockOpen = false; ui.unlockChecked = false;
-    persist(); renderScreen({ still: true }); toast('Boule qui chamboule débloqué. Arrête au moindre fourmillement.');
+    const id = b.dataset.prog || 'boule';
+    if (id === 'solide') {
+      if (solidStreak(state) < SOLIDE_NEEDED) return;
+      state.settings.solideUnlocked = true; state.settings.solideUnlockedAt = new Date().toISOString();
+    } else { state.settings.bouleUnlocked = true; state.settings.bouleUnlockedAt = new Date().toISOString(); }
+    ui.unlockOpen = null; ui.unlockChecked = false;
+    persist(); renderScreen({ still: true });
+    toast(id === 'solide' ? 'Dos solide débloqué ! Au moindre retour de douleur dans la jambe, il se reverrouille.' : 'Boule qui chamboule débloqué. Arrête au moindre fourmillement.');
   },
   relock() { state.settings.bouleUnlocked = false; state.settings.bouleUnlockedAt = null; persist(); renderScreen(); },
   'hist-toggle'() { ui.historyAll = !ui.historyAll; renderScreen({ still: true }); },

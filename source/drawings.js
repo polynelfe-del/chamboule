@@ -80,6 +80,64 @@ Object.assign(ILLUS, {
     { h: [81, 12], b: [[[80, 21], [80, 60]]], f: [[[80, 60], [90, 84], [96, 106], [103, 108]], [[80, 28], [88, 43], [94, 56]]], n: [[[80, 28], [72, 44], [70, 58]]], a: [[[80, 60], [72, 84], [62, 108], [70, 108]]] }
   ]}
 });
+/* Dos calme, Fessiers doux et Dos solide. */
+const CHAIR_SIDE = '<path class="il-prop" d="M36 74h34v6H36z"/><path class="il-bike" d="M39 80v32M67 80v32M38 74V40"/>';
+const SIDE_LYING = { head: [30, 99], torso: [[40, 104], [84, 104]], arm: [[44, 100], [58, 94], [70, 99]] };
+const BRIDGE_UP = { torso: [[50, 106], [86, 91]], legF: [[86, 91], [104, 84], [114, 107]] };
+Object.assign(ILLUS, {
+  bascule: { labels: ['Dos neutre', 'Plaque le bas du dos'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, [[50, 106], [70, 101], [88, 106]]], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm] },
+    { h: SUP2.head, b: [SUP2.neck], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm], a: [[[50, 107], [88, 107]]], over: down(70, 84, 97) }
+  ]},
+  genoupoitrine: { labels: ['Sur le dos', 'Genou vers la poitrine'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm] },
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], a: [[[88, 106], [76, 84], [92, 80]], [[50, 106], [64, 94], [76, 87]]], over: '<text class="il-t" x="118" y="70" text-anchor="middle">15 s</text>' }
+  ]},
+  rouleau: { labels: ['Vue de dessus', 'Genoux d’un côté'], poses: [
+    { h: [24, 60], b: [[[32, 60], [86, 60]], [[40, 46], [40, 74]], [[86, 52], [86, 68]]], f: [[[40, 46], [28, 34]], [[40, 74], [28, 86]]], n: [[[86, 54], [112, 54], [122, 57]], [[86, 66], [112, 66], [122, 63]]] },
+    { h: [24, 60], b: [[[32, 60], [86, 60]], [[40, 46], [40, 74]], [[86, 52], [86, 68]]], f: [[[40, 46], [28, 34]], [[40, 74], [28, 86]]], a: [[[86, 56], [106, 76], [118, 80]], [[86, 66], [100, 84], [112, 88]]], over: '<path class="il-arrow" d="M126 50 Q138 66 126 82 M120 80 L126 82 L128 76"/>' }
+  ]},
+  talons: { labels: ['À quatre pattes', 'Fesses vers les talons'], poses: [
+    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN] },
+    { h: [92, 101], b: [[[84, 98], [86, 99]]], f: [[[82, 98], [100, 106], [118, 107]]], n: [[[60, 107], [38, 108]], [[84, 98], [102, 106], [122, 107]]], a: [[[60, 107], [46, 92], [84, 98]]], over: '<path class="il-arrow" d="M46 74 H30 M35 69 L30 74 L35 79"/>' }
+  ]},
+  coquillage: { labels: ['Sur le côté, pieds joints', 'Ouvre le genou'], poses: [
+    { h: SIDE_LYING.head, b: [SIDE_LYING.torso], f: [[[84, 106], [108, 108], [86, 109]]], n: [[[84, 101], [108, 103], [87, 105]], SIDE_LYING.arm] },
+    { h: SIDE_LYING.head, b: [SIDE_LYING.torso], f: [[[84, 106], [108, 108], [86, 109]]], n: [SIDE_LYING.arm], a: [[[84, 101], [104, 82], [87, 105]]], over: up(120, 98, 82) }
+  ]},
+  abduction: { labels: ['Sur le côté', 'Lève la jambe du dessus'], poses: [
+    { h: SIDE_LYING.head, b: [SIDE_LYING.torso], f: [[[84, 106], [136, 108]]], n: [[[84, 101], [136, 103]], SIDE_LYING.arm] },
+    { h: SIDE_LYING.head, b: [SIDE_LYING.torso], f: [[[84, 106], [136, 108]]], n: [SIDE_LYING.arm], a: [[[84, 101], [132, 80]]], over: up(146, 98, 82) }
+  ]},
+  assisdebout: { labels: ['Au bord de la chaise', 'Debout, sans les mains'], poses: [
+    { prop: CHAIR_SIDE, h: [64, 24], b: [[[58, 70], [62, 36]], [[62, 36], [63, 32]]], n: [[[58, 70], [86, 72], [88, 108], [96, 108]], [[62, 40], [74, 50], [70, 42]]] },
+    { prop: CHAIR_SIDE, h: [87, 14], b: [[[84, 62], [86, 26]], [[86, 26], [86, 22]]], n: [[[86, 30], [96, 40], [92, 32]]], a: [[[84, 62], [87, 86], [88, 108], [96, 108]]], over: up(120, 80, 60) }
+  ]},
+  gainagelat: { labels: ['Sur l’avant-bras et les genoux', 'Hanches levées, tiens'], poses: [
+    { h: [32, 82], b: [[[40, 90], [74, 105]]], n: [[[40, 90], [40, 108], [62, 108]], [[74, 105], [104, 107], [88, 96]], [[40, 90], [54, 84], [66, 98]]] },
+    { h: [32, 82], n: [[[40, 90], [40, 108], [62, 108]], [[104, 107], [88, 96]], [[40, 90], [54, 80], [70, 92]]], a: [[[40, 90], [72, 98], [104, 107]]], over: '<text class="il-t" x="80" y="72" text-anchor="middle">15 s</text>' }
+  ]},
+  birddogtenu: { labels: ['Départ, dos plat', 'Bras et jambe opposés, tiens'], poses: [
+    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN] },
+    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF], n: [Q.legN], a: [[[96, 74], [114, 71], [132, 69]], [[60, 81], [36, 79], [12, 78]]], over: '<text class="il-t" x="76" y="52" text-anchor="middle">5 s</text>' }
+  ]},
+  pontmarche: { labels: ['Pont, bassin levé', 'Un pied décolle, le bassin reste droit'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, BRIDGE_UP.torso], f: [BRIDGE_UP.legF], n: [[[86, 91], [108, 83], [118, 107]], SUP2.arm] },
+    { h: SUP2.head, b: [SUP2.neck, BRIDGE_UP.torso], f: [BRIDGE_UP.legF], n: [SUP2.arm], a: [[[86, 91], [100, 70], [114, 76]]], over: up(126, 84, 68) }
+  ]},
+  deadbug: { labels: ['Bras au plafond, genoux à 90°', 'Bras et jambe opposés s’allongent'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [[[86, 105], [84, 80], [106, 80]], [[48, 104], [48, 76]]], n: [[[88, 106], [88, 80], [110, 80]], [[52, 104], [52, 76]]] },
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [[[86, 105], [84, 80], [106, 80]], [[48, 104], [48, 76]]], a: [[[88, 106], [138, 100]], [[52, 104], [26, 96]]] }
+  ]},
+  plancheplus: { labels: ['Planche sur les genoux maîtrisée', 'Sur les pieds, corps droit'], poses: [
+    { h: [112, 85], b: [[[100, 90], [106, 87]]], n: [[[100, 90], [100, 107], [120, 107]], [[50, 105], [30, 96]]], a: [[[100, 90], [75, 97.5], [50, 105]]] },
+    { h: [112, 85], b: [[[100, 90], [106, 87]]], n: [[[100, 90], [100, 107], [120, 107]]], a: [[[100, 90], [60, 98], [20, 106]]], over: '<text class="il-t" x="60" y="80" text-anchor="middle">10 s</text>' }
+  ]},
+  squatchaise: { labels: ['Debout devant la chaise', 'Effleure la chaise, remonte'], poses: [
+    { prop: CHAIR_SIDE, h: [87, 14], b: [[[84, 62], [86, 26]], [[86, 26], [86, 22]]], n: [[[84, 62], [87, 86], [88, 108], [96, 108]], [[86, 30], [96, 40], [92, 32]]] },
+    { prop: CHAIR_SIDE, h: [82, 26], b: [[[62, 68], [78, 36]], [[78, 36], [80, 32]]], n: [[[78, 40], [96, 44], [112, 46]]], a: [[[62, 68], [88, 76], [90, 108], [98, 108]]], over: down(120, 46, 64) }
+  ]}
+});
 function poseSVG(p) {
   const pl = list => (list || []).map(pts => `<polyline points="${pts.map(q => q.join(',')).join(' ')}"/>`).join('');
   return `${p.prop || ''}<g class="il-far">${pl(p.f)}</g><g class="il-body">${pl(p.b)}${pl(p.n)}</g><g class="il-move">${pl(p.a)}</g><circle class="il-head" cx="${p.h[0]}" cy="${p.h[1]}" r="8"/>${p.over || ''}`;

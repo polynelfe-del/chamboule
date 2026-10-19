@@ -8,7 +8,7 @@ const NAMES = [
   'weekChallenges', 'esc', 'dayKey', 'weekKey', 'startOfWeek', 'defaultState', 'normalize', 'cleanEntry',
   'threshold', 'levelInfo', 'weekDays', 'weekStreak', 'backCat', 'painFreeRun', 'pendingNextDay', 'chalProgress',
   'evalChallenges', 'evalBadges', 'unlockedOutfits', 'setsFor', 'sideText', 'presc', 'timerMin', 'estMin',
-  'buildSteps', 'computeXP', 'computeStars', 'canRows', 'backupDue', 'kineSummary', 'illusFull', 'illusMini', 'mascotSVG'
+  'buildSteps', 'solidStreak', 'SOLIDE_NEEDED', 'computeXP', 'computeStars', 'canRows', 'backupDue', 'kineSummary', 'illusFull', 'illusMini', 'mascotSVG'
 ];
 
 module.exports = function load() {

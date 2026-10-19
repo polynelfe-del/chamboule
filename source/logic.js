@@ -47,13 +47,63 @@ const EX = {
     tip: 'Commence par 10 à 15 secondes. Arrête si le bas du dos se creuse.' },
   marche: { id: 'marche', name: 'Marche', kind: 'timer', minutes: 10,
     cue: 'Marche à ton rythme, épaules relâchées. Allonge la durée petit à petit tant que la douleur reste tolérable.',
-    tip: 'Dehors, dans le couloir ou sur place : tout compte.' }
+    tip: 'Dehors, dans le couloir ou sur place : tout compte.' },
+  /* Ajoutés après recherche : fiches de kinés hospitaliers (CUH), Hinge Health, MSD, HUG Genève. */
+  bascule: { id: 'bascule', name: 'Bascule du bassin', kind: 'reps', target: 8, tempo: 4,
+    cue: 'Sur le dos, genoux pliés. En expirant, plaque doucement le bas du dos au sol en basculant le bassin, puis relâche.',
+    tip: 'Petit mouvement, sans pousser avec les pieds ni décoller les fesses.' },
+  genoupoitrine: { id: 'genoupoitrine', name: 'Genou vers la poitrine', kind: 'hold', target: 2, hold: 15, sides: true,
+    cue: 'Sur le dos, genoux pliés. Ramène un genou vers la poitrine avec les mains et tiens en respirant calmement.',
+    tip: 'Tire doucement, sans douleur. L’autre pied reste au sol.' },
+  rouleau: { id: 'rouleau', name: 'Rotation des genoux', kind: 'reps', target: 8, tempo: 5,
+    cue: 'Sur le dos, genoux pliés et serrés. Laisse lentement tomber les genoux d’un côté puis de l’autre, les épaules restent au sol.',
+    tip: 'Seulement dans l’amplitude confortable. Un côté puis l’autre, deux répétitions.' },
+  talons: { id: 'talons', name: 'Fesses vers les talons', kind: 'reps', target: 8, tempo: 6,
+    cue: 'À quatre pattes. Recule lentement les fesses vers les talons en gardant les mains au sol, respire, puis reviens.',
+    tip: 'Ne descends pas jusqu’aux talons si tes genoux n’aiment pas.' },
+  coquillage: { id: 'coquillage', name: 'Coquillage', kind: 'reps', target: 10, sides: true, tempo: 3,
+    cue: 'Sur le côté, hanches et genoux pliés, pieds joints. Ouvre le genou du dessus sans faire rouler le bassin, puis redescends lentement.',
+    tip: 'Le bassin ne bascule pas vers l’arrière : c’est la fesse qui travaille.' },
+  abduction: { id: 'abduction', name: 'Jambe levée sur le côté', kind: 'reps', target: 10, sides: true, tempo: 3,
+    cue: 'Sur le côté, jambes tendues, tête posée sur le bras. Lève la jambe du dessus, pointe du pied vers l’avant, puis redescends lentement.',
+    tip: 'Une petite hauteur suffit. Le dos ne se creuse pas.' },
+  assisdebout: { id: 'assisdebout', name: 'Assis-debout', kind: 'reps', target: 8, tempo: 4,
+    cue: 'Au bord d’une chaise calée contre un mur. Pousse dans les talons pour te lever, puis rassieds-toi en reculant les fesses.',
+    tip: 'Buste droit, genoux dans l’axe des pieds. Mains sur les cuisses au début si besoin.' },
+  gainagelat: { id: 'gainagelat', name: 'Gainage latéral sur genoux', kind: 'hold', target: 2, hold: 15, sides: true,
+    cue: 'Sur le côté, coude sous l’épaule, genoux pliés. Soulève les hanches pour aligner épaules, hanches et genoux, et tiens.',
+    tip: 'Commence par 10 à 15 secondes. Arrête si le bas du dos tire.' },
+  /* Dos solide : les mêmes muscles, un cran plus fort. Verrouillé tant que le dos n’est pas stable. */
+  birddogtenu: { id: 'birddogtenu', name: 'Bird-dog tenu', kind: 'hold', target: 3, hold: 5, sides: true,
+    cue: 'À quatre pattes, dos neutre. Tends un bras et la jambe opposée et tiens 5 secondes sans bouger le bassin.',
+    tip: 'Si le bassin tourne, raccourcis le bras ou la jambe.' },
+  pontmarche: { id: 'pontmarche', name: 'Pont marché', kind: 'reps', target: 6, tempo: 4,
+    cue: 'En pont, bassin levé. Décolle lentement un pied de quelques centimètres, repose-le, puis l’autre, sans que le bassin penche.',
+    tip: 'Si le bassin bascule, garde les deux pieds au sol : le pont simple suffit encore.' },
+  deadbug: { id: 'deadbug', name: 'Dead bug', kind: 'reps', target: 6, tempo: 5,
+    cue: 'Sur le dos, bras tendus vers le plafond, genoux pliés à 90° au-dessus des hanches. Allonge lentement un bras et la jambe opposée, reviens, change de côté.',
+    tip: 'Le bas du dos reste plaqué au sol. Plus la jambe descend, plus c’est dur : garde-la haute au début.' },
+  squatchaise: { id: 'squatchaise', name: 'Squat à la chaise', kind: 'reps', target: 8, tempo: 4,
+    cue: 'Debout devant une chaise, pieds écartés de la largeur des hanches. Recule les fesses jusqu’à effleurer la chaise, puis remonte en poussant dans les talons.',
+    tip: 'Buste droit, genoux dans l’axe des pieds. Tu effleures la chaise sans t’asseoir.' },
+  plancheplus: { id: 'plancheplus', name: 'Planche sur les pieds', kind: 'hold', target: 3, hold: 10,
+    cue: 'Sur les avant-bras, coudes sous les épaules, jambes tendues sur la pointe des pieds. Corps droit, ventre rentré.',
+    tip: 'Dès que le bas du dos se creuse, repose les genoux.' }
 };
 
 const PROGRAMS = {
   dos: { id: 'dos', name: 'Reprise dos', tag: 'Routine du 11 oct. 2026', rest: 30, xpBase: 100,
     blurb: 'Gainage doux, fessiers et cardio léger, adaptés à ton dos. À faire valider par ton kiné.',
     exercises: [EX.transverse, EX.birddog, EX.pont, EX.velo] },
+  solide: { id: 'solide', name: 'Dos solide', tag: 'Niveau supérieur', rest: 30, xpBase: 100,
+    blurb: 'La suite quand ton dos va bien : les mêmes muscles, un cran plus fort. Se débloque après 10 séances sans douleur d’affilée et l’accord de ton kiné. Se reverrouille si la douleur revient dans la jambe.',
+    exercises: [EX.birddogtenu, EX.pontmarche, EX.deadbug, EX.squatchaise, EX.plancheplus] },
+  fessiers: { id: 'fessiers', name: 'Fessiers doux', tag: 'Sans charger le dos', rest: 30, xpBase: 100,
+    blurb: 'Les fessiers travaillent sur le côté ou depuis une chaise, sans pression sur les disques. Une alternative douce à Boule qui chamboule. À faire valider par ton kiné.',
+    exercises: [EX.coquillage, EX.abduction, EX.assisdebout, EX.gainagelat] },
+  calme: { id: 'calme', name: 'Dos calme', tag: 'Mobilité · 5 min', rest: 20, xpBase: 80,
+    blurb: 'Des mouvements doux pour dérouiller le dos, même les jours un peu raides. Inspirés de fiches de kinés hospitaliers. Arrête si ça descend dans la jambe.',
+    exercises: [EX.bascule, EX.genoupoitrine, EX.rouleau, EX.talons] },
   milieu: { id: 'milieu', name: 'Dos du milieu', tag: 'Mobilité douce', rest: 20, xpBase: 100,
     blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pour la marche, la balade du chien fait déjà le travail. Pont fessier et bird-dog sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
     exercises: [EX.chatvache, EX.rotation, EX.thorax, EX.gainage, EX.planche] },
@@ -68,7 +118,8 @@ const PROGRAMS = {
       cue: 'Pas besoin de bouger. Regarde le cercle se remplir. Quand il devient jaune et que ça bipe, tape : la balle part sur les boîtes.',
       tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
 };
-const PROG_ORDER = ['dos', 'milieu', 'difficile', 'boule'];
+const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'calme', 'difficile', 'solide', 'boule'];
+const SOLIDE_NEEDED = 10;
 
 const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Cœur de la fête', 'Grande roue', 'Feu d’artifice', 'Légende de la foire'];
 const LINES = {
@@ -102,7 +153,7 @@ const CHALLENGES = [
   { id: 'stars2x', name: 'Doublé', desc: '2 séances à 2 étoiles ou plus', goal: 2, prog: w => w.filter(h => h.stars >= 2).length },
   { id: 'combo12', name: 'Combo de 12', desc: 'Enchaîner 12 répétitions parfaites', goal: 12, prog: w => Math.max(0, ...w.map(h => h.combo || 0)) },
   { id: 'days3', name: 'Trois cœurs', desc: 'Remplir 3 cœurs cette semaine', goal: 3, prog: w => new Set(w.map(h => dayKey(h.d))).size },
-  { id: 'douceur', name: 'Douceur', desc: 'Faire une séance Jour difficile ou Dos du milieu', goal: 1, prog: w => w.filter(h => h.prog === 'difficile' || h.prog === 'milieu').length },
+  { id: 'douceur', name: 'Douceur', desc: 'Faire une séance douce : Jour difficile, Dos calme ou Dos du milieu', goal: 1, prog: w => w.filter(h => ['difficile', 'milieu', 'calme'].includes(h.prog)).length },
   { id: 'save1', name: 'Prudence', desc: 'Exporter ta sauvegarde cette semaine', goal: 1, prog: (w, s, now) => (s.settings.lastExport && weekKey(new Date(s.settings.lastExport)) === weekKey(now) ? 1 : 0) }
 ];
 /* Tenues de Chouquette : gagnées avec les niveaux et les badges, jamais avec le volume d'entraînement. */
@@ -147,7 +198,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -194,6 +245,7 @@ function cleanSettings(s, d) {
     sets: numOr(s.sets, 1, 3, d.sets, true), veloMin: numOr(s.veloMin, 3, 45, d.veloMin, true), weeklyGoal: numOr(s.weeklyGoal, 1, 7, d.weeklyGoal, true),
     sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
     bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
+    solideUnlocked: s.solideUnlocked === true, solideUnlockedAt: isoOr(s.solideUnlockedAt),
     lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
     outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud'
   };
@@ -245,6 +297,17 @@ function backCat(h) {
   const worst = Math.max(rank(h.pain), h.next != null ? rank(h.next) : 0);
   return ['ok', 'sensible', 'douleur'][worst];
 }
+/* Séances d’affilée, tous programmes, finies avec un dos qui va bien, y compris le lendemain.
+   Les séances sans ressenti noté ne comptent pas mais ne cassent pas la série ; un arrêt pour douleur la remet à zéro. */
+function solidStreak(s) {
+  let n = 0;
+  for (const h of s.history) {
+    if (h.pain == null && !h.stop) continue;
+    const okNext = h.next == null || h.next <= (h.painBefore ?? h.pain ?? 0) + 1;
+    if (backCat(h) === 'ok' && okNext && !(h.painEx && h.painEx.length)) n++; else break;
+  }
+  return n;
+}
 function painFreeRun(s) {
   let n = 0;
   for (const h of s.history) {
@@ -287,8 +350,8 @@ function timerMin(s, ex) { return ex.id === 'velo' ? s.settings.veloMin : (ex.mi
 function presc(s, ex, sets) {
   if (ex.prescText) return ex.prescText;
   if (ex.kind === 'timer') return ex.id === 'velo' ? s.settings.veloMin + ' min, résistance légère' : timerMin(s, ex) + ' min, à ton rythme';
-  if (ex.kind === 'hold') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' maintiens de ' + ex.hold + ' s';
   const side = ex.sides ? ' par ' + (ex.sideLabel || 'côté') : '';
+  if (ex.kind === 'hold') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' maintiens de ' + ex.hold + ' s' + side;
   if (ex.kind === 'breath') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' respirations lentes';
   if (ex.free) return 'Activation, environ ' + ex.target + side;
   const reps = ex.max ? ex.target + ' à ' + ex.max : String(ex.target);
@@ -350,6 +413,7 @@ function kineSummary(s, now = new Date()) {
   L.push(`Période : du ${from.toLocaleDateString('fr-FR')} au ${now.toLocaleDateString('fr-FR')}`);
   L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
   L.push(`Réglages actuels : ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, vélo ${st.veloMin} min`);
+  L.push(`Programme Dos solide : ${st.solideUnlocked ? 'débloqué' + (st.solideUnlockedAt ? ' le ' + new Date(st.solideUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : 'verrouillé (' + solidStreak(s) + ' / ' + SOLIDE_NEEDED + ' séances sans douleur d’affilée)'}`);
   L.push(`Programme Boule qui chamboule : ${st.bouleUnlocked ? 'débloqué' + (st.bouleUnlockedAt ? ' le ' + new Date(st.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);
   L.push('');
   L.push('Douleur de dos notée de 0 à 10 : avant la séance → juste après → le lendemain.');

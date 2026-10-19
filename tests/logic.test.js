@@ -129,6 +129,9 @@ test('déroulé des séances', () => {
   assert.equal(api.buildSteps(s, api.PROGRAMS.boule).length, 21);
   assert.equal(api.buildSteps(s, api.PROGRAMS.milieu).length, 6);
   assert.equal(api.buildSteps(s, api.PROGRAMS.difficile).length, 2);
+  assert.equal(api.buildSteps(s, api.PROGRAMS.calme).length, 5, 'Dos calme');
+  assert.equal(api.buildSteps(s, api.PROGRAMS.fessiers).length, 7, 'Fessiers doux');
+  assert.equal(api.buildSteps(s, api.PROGRAMS.solide).length, 6, 'Dos solide');
   const sides = api.buildSteps(s, api.PROGRAMS.dos).filter(st => st.ex.id === 'birddog').map(st => st.side);
   same(sides, ['droit', 'gauche', 'droit', 'gauche']);
 });
@@ -154,6 +157,8 @@ test('prescriptions affichées', () => {
   assert.equal(api.presc(s, E.fentes, 3), '3 × 10 par jambe');
   assert.equal(api.presc(s, E.hydrant, 1), 'Activation, environ 10 par côté');
   assert.equal(api.sideText(E.fentes, 'droit'), 'jambe droite');
+  assert.equal(api.presc(s, E.gainagelat, 1), '2 maintiens de 15 s par côté');
+  assert.equal(api.presc(s, E.birddogtenu, 1), '3 maintiens de 5 s par côté');
 });
 
 test('sécurité : une sauvegarde piégée est neutralisée', () => {
@@ -201,6 +206,18 @@ test('suivi du lendemain', () => {
   assert.equal(api.pendingNextDay(state({ history: [entry({ d: iso(2026, 10, 13) })] }), NOW), null, 'trop ancien');
   const today = entry({ d: iso(2026, 10, 18, 9) });
   assert.equal(api.pendingNextDay(state({ history: [today, yesterday] }), NOW).id, yesterday.id, 'la séance du jour est ignorée');
+});
+
+test('Dos solide : série de séances sans douleur pour le débloquer', () => {
+  const ok = o => entry(Object.assign({ painBefore: 3, pain: 2 }, o));
+  assert.equal(api.SOLIDE_NEEDED, 10);
+  assert.equal(api.solidStreak(state({ history: [ok(), ok({ prog: 'boule' }), ok({ prog: 'milieu' })] })), 3, 'tous les programmes comptent');
+  assert.equal(api.solidStreak(state({ history: [ok(), entry({ pain: null }), ok()] })), 2, 'sans ressenti noté : ignorée, pas cassée');
+  assert.equal(api.solidStreak(state({ history: [ok(), ok({ pain: 6 }), ok(), ok()] })), 1, 'une séance douloureuse remet à zéro');
+  assert.equal(api.solidStreak(state({ history: [ok(), ok({ stop: true, pain: null }), ok()] })), 1, 'un arrêt pour la jambe remet à zéro');
+  assert.equal(api.solidStreak(state({ history: [ok({ next: 6 }), ok()] })), 0, 'le lendemain douloureux compte');
+  assert.equal(api.solidStreak(state({ history: [ok({ painEx: ['pont'], skipped: ['pont'] })] })), 0, 'exercice passé pour douleur');
+  assert.equal(api.normalize({ settings: { solideUnlocked: 'true' } }).settings.solideUnlocked, false, 'seul true débloque');
 });
 
 test('séances de suite sans douleur', () => {

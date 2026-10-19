@@ -177,7 +177,7 @@ function legHTML(action, value) {
 }
 
 /* ---------- Écrans ---------- */
-const ui = { screen: 'home', unlockOpen: false, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set() };
+const ui = { screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set() };
 
 function renderScreen(opts = {}) {
   if (ui.screen === 'home') app.innerHTML = homeHTML();
@@ -324,15 +324,19 @@ function tabbarHTML() {
 
 function ticketHTML(id) {
   const p = PROGRAMS[id];
-  const locked = id === 'boule' && !state.settings.bouleUnlocked;
+  const locked = (id === 'boule' && !state.settings.bouleUnlocked) || (id === 'solide' && !state.settings.solideUnlocked);
   const n = p.exercises.length, open = n === 1 || ui.openTickets.has(id);
   const strip = p.exercises.map(ex => `<button class="ex-thumb" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}</button>`).join('');
   const toggle = n > 1 ? `<button class="link-btn ticket-toggle" data-action="ticket-toggle" data-prog="${id}" aria-expanded="${open}">${open ? 'Masquer le détail' : `Voir le détail des ${n} exercices`}</button>` : '';
   const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(state, ex, setsFor(state, p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
   let foot;
   if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
-  else if (!ui.unlockOpen) foot = `<div class="t-row"><span class="est">À débloquer avec ton kiné</span><button class="btn ghost" data-action="unlock-open">${ICON.lock} Débloquer</button></div>`;
-  else foot = unlockPanelHTML();
+  else if (id === 'solide' && solidStreak(state) < SOLIDE_NEEDED) {
+    const k = solidStreak(state);
+    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances sans douleur d’affilée, ressenti noté</span></div>`;
+  }
+  else if (ui.unlockOpen !== id) foot = `<div class="t-row"><span class="est">${id === 'solide' ? 'Ton dos va bien : prêt à débloquer' : 'À débloquer avec ton kiné'}</span><button class="btn ${id === 'solide' ? 'primary' : 'ghost'}" data-action="unlock-open" data-prog="${id}">${ICON.lock} Débloquer</button></div>`;
+  else foot = unlockPanelHTML(id);
   return `
   <article class="ticket ${id}${locked ? ' locked' : ''}">
     <div class="ticket-head">
@@ -363,12 +367,13 @@ function exSheetHTML(key) {
   </div></div>`;
 }
 
-function unlockPanelHTML() {
+function unlockPanelHTML(id) {
+  const solide = id === 'solide';
   return `<div class="unlock">
-    <p>Ce programme date de novembre 2025, avant les adaptations pour ton dos. Pour ta reprise, la priorité reste la routine Reprise dos.</p>
-    <label class="check"><input type="checkbox" id="unlock-check" ${ui.unlockChecked ? 'checked' : ''}> Mon kiné a validé ce programme pour ma situation actuelle</label>
+    <p>${solide ? `Ton dos va bien depuis ${solidStreak(state)} séances d’affilée. Avant de passer au niveau supérieur, demande l’accord de ton kiné.` : 'Ce programme date de novembre 2025, avant les adaptations pour ton dos. Pour ta reprise, la priorité reste la routine Reprise dos.'}</p>
+    <label class="check"><input type="checkbox" id="unlock-check" ${ui.unlockChecked ? 'checked' : ''}> ${solide ? 'Mon kiné est d’accord pour que je progresse' : 'Mon kiné a validé ce programme pour ma situation actuelle'}</label>
     <div class="t-row">
-      <button class="btn primary" id="unlock-confirm" data-action="unlock-confirm" ${ui.unlockChecked ? '' : 'disabled'}>Débloquer</button>
+      <button class="btn primary" id="unlock-confirm" data-action="unlock-confirm" data-prog="${id}" ${ui.unlockChecked ? '' : 'disabled'}>Débloquer</button>
       <button class="btn ghost" data-action="unlock-cancel">Plus tard</button>
     </div>
   </div>`;
@@ -529,7 +534,7 @@ function settingsHTML() {
       <h2 class="section-title">Boule qui chamboule</h2>
       ${s.bouleUnlocked
         ? `<div class="set-row"><div><b>Débloqué${s.bouleUnlockedAt ? ' le ' + esc(new Date(s.bouleUnlockedAt).toLocaleDateString('fr-FR')) : ''}</b><small>Tu as indiqué que ton kiné a validé ce programme. Arrête au moindre fourmillement ou douleur dans la jambe.</small></div><button class="btn ghost" data-action="relock">${ICON.lock} Reverrouiller</button></div>`
-        : (ui.unlockOpen ? unlockPanelHTML() : `<div class="set-row"><div><b>Verrouillé</b><small>Programme fessiers de novembre 2025, pas encore revalidé pour ton dos.</small></div><button class="btn ghost" data-action="unlock-open">${ICON.lock} Débloquer</button></div>`)}
+        : (ui.unlockOpen === 'boule' ? unlockPanelHTML('boule') : `<div class="set-row"><div><b>Verrouillé</b><small>Programme fessiers de novembre 2025, pas encore revalidé pour ton dos.</small></div><button class="btn ghost" data-action="unlock-open" data-prog="boule">${ICON.lock} Débloquer</button></div>`)}
     </section>
 
     <section class="card set-card" aria-label="Suivi et sauvegarde">
@@ -1178,7 +1183,9 @@ function finish(reason) {
   const chal = evalChallenges(state);
   persist();
   const newOutfits = OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id));
-  R = { entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
+  const relocked = reason === 'pain' && relockSolide();
+  R = { relocked, entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
+  if (relocked) persist();
   G = null;
   ui.screen = 'result';
   renderResult();
@@ -1248,6 +1255,7 @@ function renderResult() {
     ${(R.challenges || []).map(c => `<div class="notice good"><b>Défi réussi : ${esc(c.name)} · +50 XP</b><span>${esc(c.desc)}</span></div>`).join('')}
     ${(R.outfits || []).map(o => `<div class="notice good new-outfit">${mascot('wow', o.id)}<div><b>Nouvelle tenue pour Chouquette : ${esc(o.name)}</b><span>Mets-la-lui dans l’onglet Progrès.</span></div></div>`).join('')}
     ${badges}
+    ${R.relocked ? '<div class="notice warn"><b>Dos solide est reverrouillé.</b><span>La douleur est revenue dans la jambe : on revient aux programmes doux. Il se débloquera de nouveau après 10 séances sans douleur et l’accord de ton kiné.</span></div>' : ''}
     ${R.sameDay ? '<div class="notice warn"><b>Deuxième séance aujourd’hui.</b><span>Elle ne remplit pas de nouveau cœur : ton dos a aussi besoin de jours de récupération.</span></div>' : ''}
     ${painExNames.length ? `<div class="notice warn"><b>Passé pour douleur, sans perte d’étoile</b><span>${esc(painExNames.join(', '))}. À signaler à ton kiné.</span></div>` : ''}
     <button class="btn primary big" data-action="home">Retour à l’accueil</button>
@@ -1260,6 +1268,7 @@ function applyCheckin() {
   const first = R.entry.pain == null;
   objs.forEach(o => {
     o.pain = R.ci.pain; o.leg = !!R.ci.leg;
+    if (o.leg && relockSolide()) R.relocked = true;
     o.back = backCat(o);
     if (first) o.xp = (o.xp || 0) + 20;
   });
@@ -1276,6 +1285,11 @@ function applyCheckin() {
 }
 
 /* ---------- Actions ---------- */
+function relockSolide() {
+  if (!state.settings.solideUnlocked) return false;
+  state.settings.solideUnlocked = false; state.settings.solideUnlockedAt = null;
+  return true;
+}
 function goHome() { ui.screen = 'home'; ui.resetArm = false; ui.pre = null; R = null; renderScreen(); window.scrollTo(0, 0); }
 function openPrecheck(prog) { ui.pre = { prog, pain: null, leg: null, step: 'ask' }; ui.screen = 'precheck'; renderScreen(); window.scrollTo(0, 0); }
 function endPractice() {
@@ -1401,13 +1415,18 @@ const ACTIONS = {
       .then(() => toast('Résumé téléchargé.'))
       .catch(e => { if (!e || e.code !== 'declined') toast('Téléchargement impossible ici. Utilise Copier le texte.'); });
   },
-  'unlock-open'() { ui.unlockOpen = true; ui.unlockChecked = false; renderScreen({ still: true }); const c = $('#unlock-check'); if (c) c.focus(); },
-  'unlock-cancel'() { ui.unlockOpen = false; ui.unlockChecked = false; renderScreen({ still: true }); },
-  'unlock-confirm'() {
+  'unlock-open'(b) { ui.unlockOpen = b.dataset.prog || 'boule'; ui.unlockChecked = false; renderScreen({ still: true }); const c = $('#unlock-check'); if (c) c.focus(); },
+  'unlock-cancel'() { ui.unlockOpen = null; ui.unlockChecked = false; renderScreen({ still: true }); },
+  'unlock-confirm'(b) {
     if (!ui.unlockChecked) return;
-    state.settings.bouleUnlocked = true; state.settings.bouleUnlockedAt = new Date().toISOString();
-    ui.unlockOpen = false; ui.unlockChecked = false;
-    persist(); renderScreen({ still: true }); toast('Boule qui chamboule débloqué. Arrête au moindre fourmillement.');
+    const id = b.dataset.prog || 'boule';
+    if (id === 'solide') {
+      if (solidStreak(state) < SOLIDE_NEEDED) return;
+      state.settings.solideUnlocked = true; state.settings.solideUnlockedAt = new Date().toISOString();
+    } else { state.settings.bouleUnlocked = true; state.settings.bouleUnlockedAt = new Date().toISOString(); }
+    ui.unlockOpen = null; ui.unlockChecked = false;
+    persist(); renderScreen({ still: true });
+    toast(id === 'solide' ? 'Dos solide débloqué ! Au moindre retour de douleur dans la jambe, il se reverrouille.' : 'Boule qui chamboule débloqué. Arrête au moindre fourmillement.');
   },
   relock() { state.settings.bouleUnlocked = false; state.settings.bouleUnlockedAt = null; persist(); renderScreen(); },
   'hist-toggle'() { ui.historyAll = !ui.historyAll; renderScreen({ still: true }); },
