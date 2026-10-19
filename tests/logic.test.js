@@ -218,6 +218,44 @@ test('Dos solide : série de séances sans douleur pour le débloquer', () => {
   assert.equal(api.solidStreak(state({ history: [ok({ next: 6 }), ok()] })), 0, 'le lendemain douloureux compte');
   assert.equal(api.solidStreak(state({ history: [ok({ painEx: ['pont'], skipped: ['pont'] })] })), 0, 'exercice passé pour douleur');
   assert.equal(api.normalize({ settings: { solideUnlocked: 'true' } }).settings.solideUnlocked, false, 'seul true débloque');
+  const breath = Array.from({ length: 10 }, () => ok({ prog: 'difficile' }));
+  assert.equal(api.solidStreak(state({ history: breath })), 0, '10 séances de respiration ne débloquent rien');
+  assert.equal(api.solidStreak(state({ history: [ok(), ok({ prog: 'calme' }), ok({ prog: 'fessiers' })] })), 2, 'une séance douce sans douleur ne casse pas la série');
+  assert.equal(api.solidStreak(state({ history: [ok(), ok({ prog: 'calme', pain: 7 }), ok()] })), 1, 'une séance douce douloureuse la casse');
+});
+
+test('vélo d’appartement optionnel', () => {
+  const s = state();
+  assert.equal(s.settings.bike, true, 'inclus par défaut');
+  assert.ok(api.progFor(s, 'dos').exercises.some(e => e.id === 'velo'));
+  s.settings.bike = false;
+  const dos = api.progFor(s, 'dos');
+  assert.deepEqual(Array.from(dos.exercises, e => e.id), ['transverse', 'birddog', 'pont']);
+  assert.ok(api.PROGRAMS.dos.exercises.some(e => e.id === 'velo'), 'le programme d’origine reste intact');
+  assert.ok(!api.buildSteps(s, dos).some(st => st.ex && st.ex.id === 'velo'), 'aucune étape vélo');
+  assert.ok(api.estMin(s, dos) < api.estMin(state(), api.PROGRAMS.dos), 'séance plus courte');
+  assert.equal(api.progFor(s, 'fessiers'), api.PROGRAMS.fessiers, 'les autres programmes ne changent pas');
+  assert.equal(api.normalize({ settings: { bike: false } }).settings.bike, false, 'le choix est gardé');
+  assert.equal(api.normalize({ settings: {} }).settings.bike, true);
+  assert.match(api.kineSummary(s, NOW), /vélo mis de côté/);
+});
+
+test('séance du jour proposée par Chouquette', () => {
+  const day = n => iso(2026, 10, 18 - n);
+  const ok = (prog, n, o) => entry(Object.assign({ prog, d: day(n), painBefore: 3, pain: 2 }, o));
+  assert.equal(api.suggestToday(state(), NOW).prog, 'dos', 'première fois : routine de base');
+  const today = api.suggestToday(state({ history: [entry({ d: iso(2026, 10, 18, 9) })] }), NOW);
+  assert.equal(today.prog, 'calme'); assert.equal(today.rest, true, 'séance déjà faite aujourd’hui');
+  assert.equal(api.suggestToday(state({ history: [ok('dos', 1, { pain: 7 })] }), NOW).prog, 'difficile', 'douleur récente');
+  assert.equal(api.suggestToday(state({ history: [ok('dos', 1, { stop: true })] }), NOW).prog, 'difficile', 'arrêt pour la jambe');
+  assert.equal(api.suggestToday(state({ history: [ok('dos', 1, { pain: 4 })] }), NOW).prog, 'calme', 'dos sensible');
+  assert.equal(api.suggestToday(state({ history: [ok('dos', 5, { pain: 8 })] }), NOW).prog, 'fessiers', 'vieille douleur : rotation normale');
+  assert.equal(api.suggestToday(state({ history: [ok('dos', 1), ok('fessiers', 3)] }), NOW).prog, 'milieu', 'jamais fait passe en premier');
+  assert.equal(api.suggestToday(state({ history: [ok('dos', 1), ok('milieu', 2), ok('fessiers', 4)] }), NOW).prog, 'fessiers', 'le moins récent');
+  const s = state({ history: [ok('dos', 1), ok('milieu', 2), ok('fessiers', 3)] });
+  s.settings.solideUnlocked = true;
+  assert.equal(api.suggestToday(s, NOW).prog, 'solide', 'Dos solide entre dans la rotation une fois débloqué');
+  for (const p of api.SUGGEST_ROTATION || []) assert.ok(api.PROGRAMS[p]);
 });
 
 test('séances de suite sans douleur', () => {

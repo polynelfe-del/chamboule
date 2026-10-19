@@ -177,7 +177,7 @@ function legHTML(action, value) {
 }
 
 /* ---------- Écrans ---------- */
-const ui = { screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set() };
+const ui = { screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set(), allProgs: false };
 
 function renderScreen(opts = {}) {
   if (ui.screen === 'home') app.innerHTML = homeHTML();
@@ -273,10 +273,10 @@ function homeHTML() {
       ${gear}
     </header>
 
-    ${buddyHTML(buddyLine(), 'happy')}
-
     ${notices}
     ${backupReminderHTML()}
+
+    ${todayCardHTML()}
 
     <section class="card player" aria-label="Ta progression">
       <div class="player-top">
@@ -300,11 +300,12 @@ function homeHTML() {
       <div class="bulbs" aria-hidden="true">${bulbs}</div>
       <p class="week-meta">${wk >= goal ? 'Objectif atteint. Profite aussi des jours de repos, ils font partie du programme.' : `Chaque jour d’entraînement remplit un cœur, un seul par jour. Encore ${goal - wk} pour l’objectif.`}</p>
       <button class="link-row" data-action="tab" data-tab="progress"><span>Défis de la semaine : <b>${chalWon} / 3</b> gagnés</span>${ICON.chev}</button>
+      ${state.settings.solideUnlocked ? '' : `<button class="link-row" data-action="show-solide"><span>Dos solide : <b>${Math.min(solidStreak(state), SOLIDE_NEEDED)} / ${SOLIDE_NEEDED}</b> séances de renfo sans douleur</span>${ICON.chev}</button>`}
     </section>
 
-    <section class="programs" aria-label="Tes programmes">
-      <h2 class="section-title">Tes programmes</h2>
-      ${PROG_ORDER.map(ticketHTML).join('')}
+    <section class="programs" aria-label="Tous les programmes">
+      <button class="link-row big" data-action="all-progs" aria-expanded="${ui.allProgs}"><span>${ui.allProgs ? 'Masquer les programmes' : `Tous les programmes (${PROG_ORDER.length})`}</span>${ICON.chev}</button>
+      ${ui.allProgs ? PROG_ORDER.map(ticketHTML).join('') : ''}
     </section>
 
     ${redFlagsHTML(false)}`;
@@ -322,8 +323,25 @@ function tabbarHTML() {
   return `<nav class="tabbar" aria-label="Sections"><div class="tabbar-in">${t('play', 'Jouer', ICON.tPlay)}${t('progress', 'Progrès', ICON.tTrophy)}${t('log', 'Carnet', ICON.tBook)}</div></nav>`;
 }
 
+function bikeChipHTML(id) {
+  if (!hasBike(PROGRAMS[id])) return '';
+  const on = state.settings.bike;
+  return `<button class="bike-chip" role="switch" aria-checked="${on}" data-action="bike-toggle" aria-label="Inclure le vélo d’appartement">${ICON.bike(false)}<span>${on ? 'Avec vélo' : 'Sans vélo'}</span></button>`;
+}
+function todayCardHTML() {
+  const sug = suggestToday(state);
+  const p = progFor(state, sug.prog);
+  const strip = p.exercises.map(ex => `<button class="ex-thumb" data-action="ex-open" data-ex="${ex.id}" data-prog="${p.id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}</button>`).join('');
+  return `<section class="card today" aria-label="Séance du jour">
+    <p class="eyebrow">${sug.rest ? 'Si tu en as envie' : 'Séance du jour'}</p>
+    ${buddyHTML(sug.why, sug.prog === 'difficile' || sug.rest ? 'calm' : 'happy', 'sm')}
+    <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span>${bikeChipHTML(p.id)}</div>
+    <div class="ex-strip">${strip}</div>
+    <button class="btn play big" data-action="play" data-prog="${p.id}">${ICON.play} Jouer</button>
+  </section>`;
+}
 function ticketHTML(id) {
-  const p = PROGRAMS[id];
+  const p = progFor(state, id);
   const locked = (id === 'boule' && !state.settings.bouleUnlocked) || (id === 'solide' && !state.settings.solideUnlocked);
   const n = p.exercises.length, open = n === 1 || ui.openTickets.has(id);
   const strip = p.exercises.map(ex => `<button class="ex-thumb" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}</button>`).join('');
@@ -333,7 +351,7 @@ function ticketHTML(id) {
   if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
   else if (id === 'solide' && solidStreak(state) < SOLIDE_NEEDED) {
     const k = solidStreak(state);
-    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances sans douleur d’affilée, ressenti noté</span></div>`;
+    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances de renforcement sans douleur d’affilée (Reprise dos, Dos du milieu, Fessiers doux)</span></div>`;
   }
   else if (ui.unlockOpen !== id) foot = `<div class="t-row"><span class="est">${id === 'solide' ? 'Ton dos va bien : prêt à débloquer' : 'À débloquer avec ton kiné'}</span><button class="btn ${id === 'solide' ? 'primary' : 'ghost'}" data-action="unlock-open" data-prog="${id}">${ICON.lock} Débloquer</button></div>`;
   else foot = unlockPanelHTML(id);
@@ -348,6 +366,7 @@ function ticketHTML(id) {
       <p${open ? '' : ' class="clamp"'}>${esc(p.blurb)}</p>
       ${open ? `<ul class="ex-list">${list}</ul>` : `<div class="ex-strip">${strip}</div>`}
       ${toggle}
+      ${locked ? '' : bikeChipHTML(id)}
       ${foot}
     </div>
   </article>`;
@@ -370,7 +389,7 @@ function exSheetHTML(key) {
 function unlockPanelHTML(id) {
   const solide = id === 'solide';
   return `<div class="unlock">
-    <p>${solide ? `Ton dos va bien depuis ${solidStreak(state)} séances d’affilée. Avant de passer au niveau supérieur, demande l’accord de ton kiné.` : 'Ce programme date de novembre 2025, avant les adaptations pour ton dos. Pour ta reprise, la priorité reste la routine Reprise dos.'}</p>
+    <p>${solide ? `Ton dos va bien depuis ${solidStreak(state)} séances de renforcement d’affilée. Avant de passer au niveau supérieur, demande l’accord de ton kiné.` : 'Ce programme date de novembre 2025, avant les adaptations pour ton dos. Pour ta reprise, la priorité reste la routine Reprise dos.'}</p>
     <label class="check"><input type="checkbox" id="unlock-check" ${ui.unlockChecked ? 'checked' : ''}> ${solide ? 'Mon kiné est d’accord pour que je progresse' : 'Mon kiné a validé ce programme pour ma situation actuelle'}</label>
     <div class="t-row">
       <button class="btn primary" id="unlock-confirm" data-action="unlock-confirm" data-prog="${id}" ${ui.unlockChecked ? '' : 'disabled'}>Débloquer</button>
@@ -394,14 +413,6 @@ function wardrobeHTML() {
 }
 function buddyHTML(text, mood, size) {
   return `<div class="buddy ${size || ''}">${mascot(mood)}<p class="bubble"><b>Chouquette</b>${esc(text)}</p></div>`;
-}
-function buddyLine() {
-  const today = dayKey(new Date()), day = new Date().getDate();
-  const pickDay = arr => arr[day % arr.length];
-  if (!state.history.length) return 'Coucou, moi c’est Chouquette ! Fais tomber mes copines les boîtes… tout doucement.';
-  if (pendingNextDay(state)) return 'Coucou ! Dis-moi d’abord comment va ton dos ce matin.';
-  if (state.history.some(h => dayKey(h.d) === today)) return pickDay(['Bravo pour aujourd’hui ! Maintenant, repos et chouchoutage.', 'Séance faite, cœur rempli. Tu gères !', 'Ton dos te dit merci. À demain peut-être ?']);
-  return pickDay(['Une petite partie aujourd’hui ? Lentement, c’est comme ça qu’on gagne.', 'Je t’attends sur le stand, mes boîtes sont prêtes à tomber !', 'Même 3 minutes de respiration, ça compte.', 'Un cœur à remplir aujourd’hui ?']);
 }
 
 function lvlToken(n) {
@@ -505,6 +516,10 @@ function settingsHTML() {
         <div class="seg" role="group" aria-label="Nombre de séries">${seg}</div>
       </div>
       <div class="set-row">
+        <div><b>Vélo d’appartement</b><small>Désactive-le si tu n’as pas de vélo sous la main : il disparaît des séances jusqu’à ce que tu le remettes.</small></div>
+        <button class="toggle" role="switch" aria-checked="${s.bike}" aria-label="Inclure le vélo d’appartement" data-action="bike-toggle"></button>
+      </div>
+      <div class="set-row"${s.bike ? '' : ' hidden'}>
         <div><b>Durée du vélo</b><small>Progression graduelle : une minute de plus de temps en temps.</small></div>
         <div class="stepper"><button data-action="velo-dec" aria-label="Moins une minute">−</button><output>${s.veloMin} min</output><button data-action="velo-inc" aria-label="Plus une minute">+</button></div>
       </div>
@@ -579,6 +594,12 @@ function precheckHTML() {
       <h2 class="section-title">Douleur ou fourmillements dans la jambe ?</h2>
       ${legHTML('pre-leg', pre.leg)}
     </section>
+    ${hasBike(p) && !outcome ? `<section class="card set-card" aria-label="Vélo d’appartement">
+      <div class="set-row">
+        <div><b>Vélo d’appartement aujourd’hui ?</b><small>${state.settings.bike ? 'Inclus à la fin de la séance.' : 'Mis de côté : la séance s’arrête après le pont. Remets-le quand tu auras un vélo.'}</small></div>
+        <button class="toggle" role="switch" aria-checked="${state.settings.bike}" aria-label="Inclure le vélo d’appartement" data-action="bike-toggle"></button>
+      </div>
+    </section>` : ''}
     ${outcome || `<button class="btn primary big" data-action="pre-go" ${ready ? '' : 'disabled'}>${ICON.play} Commencer</button>`}
   </main>`;
 }
@@ -608,7 +629,7 @@ function stopLoop() { cancelAnimationFrame(rafId); clearInterval(tickIv); }
 
 function startGame(progId, pre) {
   audio();
-  const prog = PROGRAMS[progId];
+  const prog = progFor(state, progId);
   const steps = buildSteps(state, prog);
   G = {
     prog, steps, i: 0, phase: 'intro', line: pick(LINES.intro), hf: prog.practice ? false : !!state.settings.handsFree,
@@ -1255,7 +1276,7 @@ function renderResult() {
     ${(R.challenges || []).map(c => `<div class="notice good"><b>Défi réussi : ${esc(c.name)} · +50 XP</b><span>${esc(c.desc)}</span></div>`).join('')}
     ${(R.outfits || []).map(o => `<div class="notice good new-outfit">${mascot('wow', o.id)}<div><b>Nouvelle tenue pour Chouquette : ${esc(o.name)}</b><span>Mets-la-lui dans l’onglet Progrès.</span></div></div>`).join('')}
     ${badges}
-    ${R.relocked ? '<div class="notice warn"><b>Dos solide est reverrouillé.</b><span>La douleur est revenue dans la jambe : on revient aux programmes doux. Il se débloquera de nouveau après 10 séances sans douleur et l’accord de ton kiné.</span></div>' : ''}
+    ${R.relocked ? '<div class="notice warn"><b>Dos solide est reverrouillé.</b><span>La douleur est revenue dans la jambe : on revient aux programmes doux. Il se débloquera de nouveau après 10 séances de renforcement sans douleur et l’accord de ton kiné.</span></div>' : ''}
     ${R.sameDay ? '<div class="notice warn"><b>Deuxième séance aujourd’hui.</b><span>Elle ne remplit pas de nouveau cœur : ton dos a aussi besoin de jours de récupération.</span></div>' : ''}
     ${painExNames.length ? `<div class="notice warn"><b>Passé pour douleur, sans perte d’étoile</b><span>${esc(painExNames.join(', '))}. À signaler à ton kiné.</span></div>` : ''}
     <button class="btn primary big" data-action="home">Retour à l’accueil</button>
@@ -1353,6 +1374,11 @@ const ACTIONS = {
     const o = OUTFITS.find(x => x.id === b.dataset.id); if (!o || !o.test(state)) return;
     state.settings.outfit = o.id; persist(); renderScreen({ still: true }); toast(`Chouquette porte : ${o.name}`);
   },
+  'all-progs'() { ui.allProgs = !ui.allProgs; renderScreen({ still: true }); },
+  'show-solide'() {
+    ui.allProgs = true; renderScreen({ still: true });
+    const t = $('.ticket.solide'); if (t) t.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
+  },
   'ticket-toggle'(b) {
     const id = b.dataset.prog;
     if (ui.openTickets.has(id)) ui.openTickets.delete(id); else ui.openTickets.add(id);
@@ -1436,6 +1462,10 @@ const ACTIONS = {
   'goal-dec'() { state.settings.weeklyGoal = clamp(state.settings.weeklyGoal - 1, 1, 7); persistSoon(); renderScreen(); },
   'goal-inc'() { state.settings.weeklyGoal = clamp(state.settings.weeklyGoal + 1, 1, 7); persistSoon(); renderScreen(); },
   'sound-toggle'() { state.settings.sound = !state.settings.sound; persist(); renderScreen(); if (state.settings.sound) SFX.perfect(); else hush(); },
+  'bike-toggle'() {
+    state.settings.bike = !state.settings.bike; persist(); renderScreen({ still: true });
+    toast(state.settings.bike ? 'Vélo remis dans la Reprise dos' : 'Vélo mis de côté jusqu’à ce que tu le remettes');
+  },
   'hf-toggle'() { state.settings.handsFree = !state.settings.handsFree; persist(); renderScreen(); },
   'reset-arm'() { ui.resetArm = true; renderScreen(); },
   'reset-cancel'() { ui.resetArm = false; renderScreen(); },
