@@ -25,8 +25,9 @@ const script = ['logic.js', 'drawings.js', 'app.js'].map(read).join('\n');
 const scriptBlock = `(() => {\n'use strict';\n\n${script}})();\n`;
 try { new vm.Script(scriptBlock, { filename: 'chamboule-coach.js' }); } catch (e) { fail('Erreur de syntaxe dans le code : ' + e.message); }
 if (/<\/script/i.test(scriptBlock)) fail('Le code contient « </script> », ce qui casserait la page.');
-const html = `${read('page-head.html').trimEnd()}\n<style>\n${read('styles.css').trimEnd()}\n</style>\n\n${read('page-body.html').trimEnd()}\n\n<script>\n${scriptBlock}</script>\n`;
+const html = `${read('page-head.html').replace('<!--FONTS-->', () => '<style id="fonts">\n' + require('./fonts.js').css('inline') + '\n</style>').trimEnd()}\n<style>\n${read('styles.css').trimEnd()}\n</style>\n\n${read('page-body.html').trimEnd()}\n\n<script>\n${scriptBlock}</script>\n`;
 if (require('./privacy.js')(html).length) fail('Un diagnostic apparaît dans le code de la page.');
+if (/fonts\.(googleapis|gstatic)\.com/.test(html)) fail('La page charge encore des polices chez Google.');
 const kb = Buffer.byteLength(html) / 1024;
 if (kb > 1024) fail(`Page trop lourde : ${Math.round(kb)} Ko.`);
 fs.mkdirSync(BUILD, { recursive: true });

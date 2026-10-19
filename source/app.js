@@ -333,9 +333,9 @@ function todayCardHTML() {
   const p = progFor(state, sug.prog);
   const strip = p.exercises.map(ex => `<button class="ex-thumb" data-action="ex-open" data-ex="${ex.id}" data-prog="${p.id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}</button>`).join('');
   return `<section class="card today" aria-label="Séance du jour">
-    <p class="eyebrow">${sug.rest ? 'Si tu en as envie' : 'Séance du jour'}</p>
+    <p class="eyebrow">${sug.rest ? 'Si tu en as envie' : `Séance du jour · +${SUGGEST_BONUS} XP bonus`}</p>
     ${buddyHTML(sug.why, sug.prog === 'difficile' || sug.rest ? 'calm' : 'happy', 'sm')}
-    <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span>${bikeChipHTML(p.id)}</div>
+    <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · cran ${p.level}/${STEP_MAX}` : ''}</span>${bikeChipHTML(p.id)}</div>
     <div class="ex-strip">${strip}</div>
     <button class="btn play big" data-action="play" data-prog="${p.id}">${ICON.play} Jouer</button>
   </section>`;
@@ -349,7 +349,7 @@ function ticketHTML(id) {
   const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(state, ex, setsFor(state, p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
   let foot;
   if (id === 'milieu' && !state.settings.milieuOk) foot = `<div class="unlock-progress"><span class="est">Avant ce programme, fais vérifier par un médecin l’origine de ta douleur au milieu du dos, surtout si elle s’accompagne de douleurs au ventre.</span><button class="btn ghost" data-action="milieu-ok">Un médecin a vérifié</button></div>`;
-  else if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
+  else if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · cran ${p.level}/${STEP_MAX}` : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
   else if (id === 'solide' && solidStreak(state) < SOLIDE_NEEDED) {
     const k = solidStreak(state);
     foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances de renforcement d’affilée à 3/10 au plus, lendemain compris (Reprise dos, Dos du milieu, Fessiers doux)</span></div>`;
@@ -375,7 +375,7 @@ function ticketHTML(id) {
 
 function exSheetHTML(key) {
   const [progId, exId] = key.split(':');
-  const p = PROGRAMS[progId], ex = p && p.exercises.find(e => e.id === exId);
+  const p = progFor(state, progId), ex = p && (p.exercises.find(e => e.id === exId) || PROGRAMS[progId].exercises.find(e => e.id === exId));
   if (!ex) return '';
   return `<div class="sheet-wrap" data-action="ex-close-bg"><div class="ex-sheet" role="dialog" aria-modal="true" aria-labelledby="ex-t">
     <div class="ex-sheet-top"><div><p class="eyebrow">${esc(p.name)}</p><h2 id="ex-t">${esc(ex.name)}</h2></div><button class="icon-btn" data-action="ex-close" aria-label="Fermer">${ICON.close}</button></div>
@@ -526,6 +526,28 @@ function settingsHTML() {
       </div>
     </section>
 
+    <section class="card set-card" aria-label="Fessiers doux">
+      <h2 class="section-title">Fessiers doux</h2>
+      <div class="set-row">
+        <div><b>Séries par exercice</b><small>1 série au départ. Passe à 2 seulement avec l’accord de ton kiné.</small></div>
+        <div class="seg" role="group" aria-label="Séries Fessiers doux">${[1, 2].map(n => `<button data-action="set-fsets" data-v="${n}" aria-pressed="${s.fessiersSets === n}">${n}</button>`).join('')}</div>
+      </div>
+    </section>
+
+    <section class="card set-card" aria-label="Progression automatique">
+      <h2 class="section-title">Progression automatique</h2>
+      <p class="muted">Toutes les ${STEP_EVERY} séances calmes et complètes d’un programme, suivi du lendemain compris, Chouquette monte d’un cran : une répétition de plus ou quelques secondes de maintien, ${STEP_MAX} crans au plus. Une séance au-dessus de 3/10 fait redescendre d’un cran. Reprise dos reste dans la fourchette donnée par ton kiné.</p>
+      <ul class="step-list">${STEP_PROGS.map(id => `<li><span>${esc(PROGRAMS[id].name)}</span><b>cran ${stepLevel(state, id)}/${STEP_MAX}</b></li>`).join('')}</ul>
+    </section>
+
+    <section class="card set-card" aria-label="Rappels">
+      <h2 class="section-title">Rappels</h2>
+      <div class="set-row"><div><b>Jours</b><small>Les jours où tu veux un rappel de séance.</small></div></div>
+      <div class="day-chips" role="group" aria-label="Jours de rappel">${[[1, 'L', 'Lundi'], [2, 'M', 'Mardi'], [3, 'M', 'Mercredi'], [4, 'J', 'Jeudi'], [5, 'V', 'Vendredi'], [6, 'S', 'Samedi'], [0, 'D', 'Dimanche']].map(([d, l, n]) => `<button data-action="rem-day" data-v="${d}" aria-pressed="${s.reminderDays.includes(d)}" aria-label="${n}">${l}</button>`).join('')}</div>
+      <div class="set-row"><div><b>Heure</b></div><input type="time" id="rem-time" class="time-in" value="${esc(s.reminderTime)}" aria-label="Heure du rappel"></div>
+      ${canSave() ? `<div class="set-row"><div><b>Ajouter à mon agenda</b><small>Un rappel répété chaque semaine dans l’agenda du téléphone. Sur Android, ouvre ensuite le fichier téléchargé. À refaire si tu changes les jours ou l’heure.</small></div><button class="btn ghost" data-action="reminders"${s.reminderDays.length ? '' : ' disabled'}>Ajouter</button></div>` : ''}
+    </section>
+
     <section class="card set-card" aria-label="Jeu">
       <h2 class="section-title">Jeu</h2>
       <div class="set-row">
@@ -572,7 +594,8 @@ function settingsHTML() {
 /* ---------- Avant la séance ---------- */
 function precheckHTML() {
   const pre = ui.pre, p = PROGRAMS[pre.prog];
-  const ready = pre.pain != null && pre.leg != null;
+  const pend = pendingNextDay(state);
+  const ready = pre.pain != null && pre.leg != null && !pend;
   let outcome = '';
   if (pre.step === 'leg') {
     outcome = `<div class="notice danger"><b>Pas de renforcement aujourd’hui.</b><span>Des symptômes dans la jambe avant même de commencer, c’est à montrer à ton kiné ou à ton médecin. La respiration du transverse reste possible si elle ne réveille rien.</span></div>
@@ -587,6 +610,12 @@ function precheckHTML() {
       <button class="icon-btn" data-action="home" aria-label="Retour à l’accueil">${ICON.back}</button>
       <div><p class="eyebrow">${esc(p.name)}</p><h1>Avant de jouer</h1></div>
     </header>
+    ${ui.nextMsg ? `<div class="notice warn"><b>${esc(ui.nextMsg.title)}</b><span>${esc(ui.nextMsg.text)}</span></div>` : ''}
+    ${pend ? `<section class="card set-card next-card" aria-label="Suivi du lendemain">
+      <p class="eyebrow">D’abord, le suivi · +20 XP</p>
+      <h2 class="section-title">Ton dos aujourd’hui, après ta séance de ${esc(fmtDate(pend.d))} ?</h2>
+      ${scaleHTML('next', null, `data-id="${esc(pend.id)}"`)}
+    </section>` : ''}
     <section class="card set-card" aria-label="Douleur avant la séance">
       <h2 class="section-title">Ton dos, là, maintenant ?</h2>
       ${scaleHTML('pre-pain', pre.pain)}
@@ -602,6 +631,7 @@ function precheckHTML() {
       </div>
     </section>` : ''}
     ${outcome || `<button class="btn primary big" data-action="pre-go" ${ready ? '' : 'disabled'}>${ICON.play} Commencer</button>`}
+    ${pend && !outcome ? '<p class="muted center-note">Réponds d’abord au suivi de ta dernière séance : sans lui, elle ne compte ni pour Dos solide ni pour la progression.</p>' : ''}
   </main>`;
 }
 
@@ -636,6 +666,7 @@ function startGame(progId, pre) {
     prog, steps, i: 0, phase: 'intro', line: pick(LINES.intro), hf: prog.practice ? false : !!state.settings.handsFree,
     setPerfect: 0, nCans: 0, pyramids: 0, canGeo: null, litL: -1,
     painBefore: pre ? pre.pain : null, legBefore: pre ? !!pre.leg : false,
+    sugg: prog.practice ? null : suggestToday(state),
     count: 0, taps: [], lastTap: 0, combo: 0, bestCombo: 0, score: 0, perfect: 0, fast: 0, reps: 0,
     skipped: [], painEx: [], veloSec: 0, walkSec: 0, t0: Date.now(), holdStart: null,
     restEnd: 0, switchEnd: 0, flashUntil: 0, lastRem: -1, overlay: null, pausedAt: 0,
@@ -719,7 +750,7 @@ function introHTML(st) {
   </div>`;
 }
 
-function targetLabel(ex) { return (G && G.hf) || ex.kind === 'hold' ? String(ex.target) : ex.free ? 'env. ' + ex.target : ex.max ? ex.target + '–' + ex.max : String(ex.target); }
+function targetLabel(ex) { return (G && G.hf) || ex.kind === 'hold' ? String(ex.target) : ex.free ? 'env. ' + ex.target : ex.max && ex.max > ex.target ? ex.target + '–' + ex.max : String(ex.target); }
 function showSetDone(ex) { return !G.hf && ((ex.max && G.count >= ex.target) || (ex.free && G.count > 0)); }
 
 function playHTML(st) {
@@ -1187,7 +1218,8 @@ function finish(reason) {
   const stars = computeStars(reason, G);
   const sameDay = state.history.some(h => dayKey(h.d) === dayKey(new Date()));
   const minutes = Math.min(estMin(state, G.prog), Math.max(1, Math.round((Date.now() - G.t0) / 60000)));
-  const xp = computeXP(G.prog, G, minutes, sameDay);
+  const bonus = suggestBonus(G.sugg, G.prog.id, reason);
+  const xp = computeXP(G.prog, G, minutes, sameDay) + bonus;
   const entry = {
     id: 's' + Date.now().toString(36), d: new Date().toISOString(), prog: G.prog.id,
     score: G.score, xp, stars, perfect: G.perfect, reps: G.reps, combo: G.bestCombo,
@@ -1207,7 +1239,7 @@ function finish(reason) {
   persist();
   const newOutfits = OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id));
   const relocked = reason === 'pain' && relockSolide();
-  R = { relocked, entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
+  R = { bonus, relocked, entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
   if (relocked) persist();
   G = null;
   ui.screen = 'result';
@@ -1275,6 +1307,7 @@ function renderResult() {
       </div>
     </section>
     ${lvUp}
+    ${R.bonus ? `<div class="notice good"><b>Bonus Chouquette · +${R.bonus} XP</b><span>Tu as suivi la séance du jour jusqu’au bout.</span></div>` : ''}
     ${(R.challenges || []).map(c => `<div class="notice good"><b>Défi réussi : ${esc(c.name)} · +50 XP</b><span>${esc(c.desc)}</span></div>`).join('')}
     ${(R.outfits || []).map(o => `<div class="notice good new-outfit">${mascot('wow', o.id)}<div><b>Nouvelle tenue pour Chouquette : ${esc(o.name)}</b><span>Mets-la-lui dans l’onglet Progrès.</span></div></div>`).join('')}
     ${badges}
@@ -1327,12 +1360,12 @@ function endPractice() {
 /* Dans Claude, un fichier passe par la capacité de téléchargement.
    Dans l’appli du téléphone, par le menu de partage (Fichiers, Mail...), sinon par un lien classique. */
 function canSave() { return !!downloadsApi || !window.claude; }
-function saveFile(name, text, type) {
+function saveFile(name, text, type, noShare) {
   if (downloadsApi) return downloadsApi.save({ filename: name, data: text });
   if (window.claude) return Promise.reject({ code: 'unavailable' });
   try {
     const file = new File([text], name, { type });
-    if (navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+    if (!noShare && navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
       return navigator.share({ files: [file], title: name }).then(
         () => ({ status: 'shared' }),
         e => { throw { code: e && e.name === 'AbortError' ? 'declined' : 'unavailable' }; });
@@ -1404,7 +1437,7 @@ const ACTIONS = {
   'pre-pain'(b) { ui.pre.pain = Number(b.dataset.v); ui.pre.step = 'ask'; renderScreen(); },
   'pre-leg'(b) { ui.pre.leg = b.dataset.v === '1'; ui.pre.step = 'ask'; renderScreen(); },
   'pre-go'() {
-    const pre = ui.pre; if (pre.pain == null || pre.leg == null) return;
+    const pre = ui.pre; if (pre.pain == null || pre.leg == null || pendingNextDay(state)) return;
     if (pre.leg) { pre.step = 'leg'; renderScreen(); return; }
     if (pre.pain >= 7 && pre.prog !== 'difficile') { pre.step = 'high'; renderScreen(); return; }
     startGame(pre.prog, pre);
@@ -1415,19 +1448,21 @@ const ACTIONS = {
   'ex-close'() { ui.sheet = null; renderScreen({ still: true }); },
   'ex-close-bg'(b, e) { if (e.target === b) ACTIONS['ex-close'](); },
   next(b) {
-    const h = state.history.find(x => x.id === b.dataset.id); if (!h || h.next != null) return;
-    const v = Number(b.dataset.v);
+    const levels = STEP_PROGS.map(id => stepLevel(state, id));
     const outfitsBefore = unlockedOutfits(state);
-    h.next = v; h.nextAt = new Date().toISOString(); h.xp = (h.xp || 0) + 20; state.xp += 20;
+    const v = Number(b.dataset.v);
+    const h = applyNext(state, b.dataset.id, v); if (!h) return;
     const base = h.painBefore ?? h.pain ?? 0;
     ui.nextMsg = (v >= 7 || v >= base + 3) ? { title: `Plus douloureux qu’avant la séance (${base} → ${v}).`, text: 'Prends un jour de repos ou fais Jour difficile, et parles-en à ton kiné.' } : null;
-    h.back = backCat(h);
     evalBadges(state);
     const ch = evalChallenges(state);
     persist(); renderScreen({ still: true });
     const newOutfit = OUTFITS.find(o => o.test(state) && !outfitsBefore.includes(o.id));
     if (newOutfit) { setTimeout(() => toast(`Nouvelle tenue pour Chouquette : ${newOutfit.name} ! Va voir dans Progrès.`), 4300); }
-    toast(ch.length > 1 ? `+20 XP. ${ch.length} défis réussis, +${ch.length * 50} XP !` : ch.length ? `+20 XP. Défi réussi : ${ch[0].name}, +50 XP !` : '+20 XP. Noté pour ton kiné.');
+    const moved = dir => STEP_PROGS.filter((id, i) => Math.sign(stepLevel(state, id) - levels[i]) === dir).map(id => PROGRAMS[id].name).join(', ');
+    const up = moved(1), down = moved(-1);
+    toast((ch.length > 1 ? `+20 XP. ${ch.length} défis réussis, +${ch.length * 50} XP !` : ch.length ? `+20 XP. Défi réussi : ${ch[0].name}, +50 XP !` : '+20 XP. Noté pour ton kiné.')
+      + (up ? ` Chouquette monte d’un cran : ${up}.` : '') + (down ? ` On redescend d’un cran : ${down}.` : ''));
   },
   summary() { ui.summaryBack = ui.screen; ui.screen = 'summary'; renderScreen(); window.scrollTo(0, 0); },
   'summary-back'() { ui.screen = ui.summaryBack === 'settings' ? 'settings' : 'home'; renderScreen(); window.scrollTo(0, 0); },
@@ -1468,6 +1503,18 @@ const ACTIONS = {
   },
   relock() { state.settings.bouleUnlocked = false; state.settings.bouleUnlockedAt = null; persist(); renderScreen(); },
   'hist-toggle'() { ui.historyAll = !ui.historyAll; renderScreen({ still: true }); },
+  'set-fsets'(b) { state.settings.fessiersSets = clamp(Number(b.dataset.v) || 1, 1, 2); persist(); renderScreen({ still: true }); },
+  'rem-day'(b) {
+    const d = Number(b.dataset.v), days = state.settings.reminderDays;
+    state.settings.reminderDays = days.includes(d) ? days.filter(x => x !== d) : days.concat(d).sort((a, c) => a - c);
+    persist(); renderScreen({ still: true });
+  },
+  reminders() {
+    const s = state.settings; if (!s.reminderDays.length) return;
+    saveFile('chamboule-rappels.ics', reminderICS(s.reminderDays, s.reminderTime), 'text/calendar', true)
+      .then(() => toast('Ajoute le rappel à ton agenda quand le téléphone te le propose.'))
+      .catch(e => { if (!e || e.code !== 'declined') toast('Impossible de créer le rappel ici.'); });
+  },
   'set-sets'(b) { state.settings.sets = clamp(Number(b.dataset.v) || 1, 1, 3); persist(); renderScreen(); },
   'velo-dec'() { state.settings.veloMin = clamp(state.settings.veloMin - 1, 3, 45); persistSoon(); renderScreen(); },
   'velo-inc'() { state.settings.veloMin = clamp(state.settings.veloMin + 1, 3, 45); persistSoon(); renderScreen(); },
@@ -1527,6 +1574,10 @@ app.addEventListener('click', e => {
   if (fn) fn(b, e);
 });
 app.addEventListener('change', e => {
+  if (e.target.id === 'rem-time') {
+    if (/^([01]\d|2[0-3]):[0-5]\d$/.test(e.target.value)) { state.settings.reminderTime = e.target.value; persist(); }
+    return;
+  }
   if (e.target.id === 'unlock-check') {
     ui.unlockChecked = e.target.checked;
     const btn = $('#unlock-confirm'); if (btn) btn.disabled = !ui.unlockChecked;

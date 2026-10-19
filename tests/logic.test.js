@@ -270,10 +270,73 @@ test('séance du jour proposée par Chouquette', () => {
   assert.equal(api.suggestToday(checked({ history: [ok('dos', 1), ok('milieu', 2), ok('fessiers', 4)] }), NOW).prog, 'fessiers', 'le moins récent');
   assert.equal(api.normalize({ settings: { milieuOk: 'oui' } }).settings.milieuOk, false, 'seul true ouvre Dos du milieu');
   assert.match(api.kineSummary(state(), NOW), /Dos du milieu : en attente d’une vérification médicale/);
-  const s = checked({ history: [ok('dos', 1), ok('milieu', 2), ok('fessiers', 3)] });
+  const s = checked({ history: [ok('dos', 1), ok('milieu', 2), ok('fessiers', 4)] });
   s.settings.solideUnlocked = true;
   assert.equal(api.suggestToday(s, NOW).prog, 'solide', 'Dos solide entre dans la rotation une fois débloqué');
   for (const p of api.SUGGEST_ROTATION || []) assert.ok(api.PROGRAMS[p]);
+});
+
+test('suivi du lendemain : toutes les séances du même jour', () => {
+  const a = entry({ d: iso(2026, 10, 17, 19) }), b = entry({ d: iso(2026, 10, 17, 9) }), c = entry({ d: iso(2026, 10, 16) });
+  const s = state({ history: [a, b, c], xp: 1000 });
+  assert.equal(api.applyNext(s, a.id, 2, NOW).id, a.id);
+  assert.equal(a.next, 2);
+  assert.equal(b.next, 2, 'la séance du matin est suivie aussi');
+  assert.equal(c.next, null, 'pas celle de la veille');
+  assert.equal(s.xp, 1020, '+20 XP une seule fois');
+  assert.equal(api.applyNext(s, a.id, 5, NOW), null, 'déjà répondu');
+});
+
+test('progression automatique', () => {
+  const day = n => iso(2026, 10, 18 - n);
+  const calm = (prog, n, o) => entry(Object.assign({ prog, d: day(n), painBefore: 2, pain: 2, next: 2 }, o));
+  const runs = (prog, k, from = 1, o) => Array.from({ length: k }, (_, i) => calm(prog, from + i, o));
+  assert.equal(api.stepLevel(state({ history: runs('fessiers', 2) }), 'fessiers'), 0);
+  assert.equal(api.stepLevel(state({ history: runs('fessiers', 3) }), 'fessiers'), 1, '3 séances calmes : un cran');
+  assert.equal(api.stepLevel(state({ history: runs('fessiers', 9) }), 'fessiers'), 2, 'deux crans au plus');
+  assert.equal(api.stepLevel(state({ history: runs('fessiers', 3, 1, { next: null }) }), 'fessiers'), 0, 'sans suivi du lendemain');
+  assert.equal(api.stepLevel(state({ history: runs('fessiers', 3, 1, { skipped: ['coquillage'] }) }), 'fessiers'), 0, 'séance incomplète');
+  assert.equal(api.stepLevel(state({ history: [calm('dos', 1, { painBefore: 5, pain: 5, next: 5 })].concat(runs('fessiers', 6, 2)) }), 'fessiers'), 1, 'une séance à 5/10 fait redescendre d’un cran');
+  assert.equal(api.stepLevel(state({ history: runs('calme', 9) }), 'calme'), 0, 'pas de progression sur la mobilité');
+  const s = state({ history: runs('fessiers', 3) });
+  const f = api.progFor(s, 'fessiers'), by = id => f.exercises.find(e => e.id === id);
+  assert.equal(f.level, 1);
+  assert.equal(by('coquillage').target, 11, 'une répétition de plus');
+  assert.equal(by('gainagelat').hold, 18, 'quelques secondes de maintien en plus');
+  assert.equal(api.PROGRAMS.fessiers.exercises[0].target, 10, 'le programme d’origine reste intact');
+  const d = api.progFor(state({ history: runs('dos', 9) }), 'dos'), ex = id => d.exercises.find(e => e.id === id);
+  assert.equal(ex('pont').target, 8, 'pont : jamais au-delà de la fourchette du kiné');
+  assert.equal(ex('birddog').target, 5, 'bras-jambe opposés : prescription du kiné inchangée');
+  assert.equal(api.presc(state(), ex('pont'), 1), '8 répétitions');
+  s.settings.fessiersSets = 2;
+  assert.equal(api.setsFor(s, api.PROGRAMS.fessiers, api.EX.coquillage), 2, '2e série Fessiers doux');
+  assert.equal(api.normalize({ settings: { fessiersSets: 5 } }).settings.fessiersSets, 2);
+  assert.match(api.kineSummary(s, NOW), /Fessiers doux cran 1\/2/);
+});
+
+test('repos et bonus de Chouquette', () => {
+  const e = (n, prog = 'dos') => entry({ d: iso(2026, 10, 18 - n, 18), prog, painBefore: 2, pain: 2, next: 2 });
+  assert.equal(api.suggestToday(state({ history: [e(1), e(2, 'fessiers'), e(3)] }), NOW).rest, true, 'trois jours d’affilée : repos');
+  assert.notEqual(api.suggestToday(state({ history: [e(1), e(2, 'fessiers')] }), NOW).rest, true, 'deux jours : pas encore');
+  assert.notEqual(api.suggestToday(state({ history: [e(1), e(3, 'fessiers'), e(4)] }), NOW).rest, true, 'avec un jour de pause : pas de repos imposé');
+  assert.equal(api.suggestBonus({ prog: 'fessiers' }, 'fessiers', 'done'), api.SUGGEST_BONUS);
+  assert.equal(api.suggestBonus({ prog: 'fessiers' }, 'dos', 'done'), 0, 'autre programme');
+  assert.equal(api.suggestBonus({ prog: 'calme', rest: true }, 'calme', 'done'), 0, 'pas de bonus un jour de repos');
+  assert.equal(api.suggestBonus({ prog: 'fessiers' }, 'fessiers', 'early'), 0, 'séance écourtée');
+});
+
+test('rappels pour l’agenda', () => {
+  const ics = api.reminderICS([5, 1, 3], '18:00', NOW);
+  assert.match(ics, /^BEGIN:VCALENDAR\r\n/);
+  assert.match(ics, /\r\nRRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR\r\n/);
+  assert.match(ics, /\r\nDTSTART:20261019T180000\r\n/, 'premier rappel : lundi 19 à 18 h');
+  assert.match(ics, /END:VCALENDAR\r\n$/);
+  for (const line of ics.split('\r\n')) assert.ok(Buffer.byteLength(line) <= 75, 'ligne trop longue : ' + line);
+  assert.equal(api.reminderICS([], '18:00', NOW), '');
+  assert.match(api.reminderICS([0], '20:30', NOW), /DTSTART:20261018T203000/, 'aujourd’hui si l’heure n’est pas passée');
+  assert.match(api.reminderICS([0], '09:00', NOW), /DTSTART:20261025T090000/, 'sinon la semaine suivante');
+  same(api.normalize({ settings: { reminderDays: [9, 1, 1, 'x', 3] } }).settings.reminderDays, [1, 3]);
+  assert.equal(api.normalize({ settings: { reminderTime: '25:00' } }).settings.reminderTime, '18:00');
 });
 
 test('séances de suite sans douleur', () => {

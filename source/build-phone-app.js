@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
+const fonts = require('./fonts.js');
 
 const SRC = path.join(__dirname, '..', 'build', 'chamboule-coach.html');
 const OUT = path.resolve(__dirname, '..');
@@ -14,7 +15,9 @@ fs.mkdirSync(OUT, { recursive: true });
 const src = fs.readFileSync(SRC, 'utf8');
 const cut = src.indexOf('<div id="app"');
 if (cut < 0) throw new Error('chamboule-coach.html : <div id="app"> introuvable');
-const headPart = src.slice(0, cut).replace(/<meta name="claude:viewport-fit-sides"[^>]*>\s*/, '');
+const headPart = src.slice(0, cut).replace(/<meta name="claude:viewport-fit-sides"[^>]*>\s*/, '')
+  .replace(/<style id="fonts">[\s\S]*?<\/style>/, () => '<style id="fonts">\n' + fonts.css('files') + '\n</style>');
+if (!headPart.includes('url(fonts/')) throw new Error('chamboule-coach.html : bloc des polices introuvable');
 const bodyPart = src.slice(cut);
 
 const html = `<!doctype html>
@@ -32,6 +35,7 @@ const html = `<!doctype html>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="fonts/nunito.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0;font:14px system-ui,-apple-system,sans-serif;overscroll-behavior-y:none}
@@ -140,12 +144,12 @@ fs.writeFileSync(path.join(OUT, 'manifest.webmanifest'), JSON.stringify({
 // Le numéro de version change dès qu'un fichier publié ou ce script change : l'appli du téléphone se met à jour.
 const hash = crypto.createHash('sha1').update(html);
 for (const f of ['manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'apple-touch-icon.png']) hash.update(fs.readFileSync(path.join(OUT, f)));
+for (const f of fonts.FACES) hash.update(fs.readFileSync(path.join(fonts.DIR, f.file)));
 hash.update(fs.readFileSync(__filename));
 const version = hash.digest('hex').slice(0, 10);
 fs.writeFileSync(path.join(OUT, 'sw.js'), `// Généré par build-phone-app.js
 const CACHE = 'chamboule-${version}';
-const FONTS = 'chamboule-fonts';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-512-maskable.png', './apple-touch-icon.png'];
+const SHELL = ${JSON.stringify(['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-512-maskable.png', './apple-touch-icon.png'].concat(fonts.FACES.map(f => './fonts/' + f.file)))};
 
 // cache: 'reload' : on prend toujours la version fraîche sur GitHub, jamais une copie gardée par le navigateur.
 self.addEventListener('install', e => {
@@ -153,7 +157,7 @@ self.addEventListener('install', e => {
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
-    .then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== FONTS).map(k => caches.delete(k))))
+    .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', e => {
@@ -169,10 +173,6 @@ self.addEventListener('fetch', e => {
       return;
     }
     e.respondWith(caches.match(req).then(hit => hit || fetch(req)));
-    return;
-  }
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    e.respondWith(caches.open(FONTS).then(c => c.match(req).then(hit => hit || fetch(req).then(r => { c.put(req, r.clone()); return r; }))));
   }
 });
 `);

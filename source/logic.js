@@ -6,7 +6,7 @@ const EX = {
   transverse: { id: 'transverse', name: 'Respiration du transverse', kind: 'breath', target: 5, tempo: 8,
     cue: 'Sur le dos, genoux pliés, pieds à plat. Inspire par le nez, puis expire longuement en rentrant doucement le bas du ventre.',
     tip: 'Suis le cercle : il grossit quand tu inspires, rapetisse quand tu expires.' },
-  birddog: { id: 'birddog', name: 'Bird-dog', kind: 'reps', target: 5, sides: true, tempo: 5,
+  birddog: { id: 'birddog', name: 'Bras-jambe opposés (bird-dog)', kind: 'reps', target: 5, sides: true, tempo: 5,
     cue: 'À quatre pattes, dos neutre. Tends lentement un bras et la jambe opposée, tiens 2 secondes, puis reviens.',
     tip: 'Le bassin ne bouge pas, comme si un verre d’eau était posé sur ton dos.' },
   pont: { id: 'pont', name: 'Pont fessier', kind: 'reps', target: 6, max: 8, tempo: 4,
@@ -15,19 +15,19 @@ const EX = {
   velo: { id: 'velo', name: 'Vélo d’appartement', kind: 'timer',
     cue: 'Résistance légère, buste peu penché. Tu dois pouvoir parler en pédalant.',
     tip: 'Allonge la durée petit à petit, d’une séance à l’autre, dans les réglages.' },
-  hipthrust: { id: 'hipthrust', name: 'Hip thrust', kind: 'reps', target: 12, sets: 4, tempo: 3,
+  hipthrust: { id: 'hipthrust', name: 'Poussée de hanches (hip thrust)', kind: 'reps', target: 12, sets: 4, tempo: 3,
     cue: 'Haut du dos appuyé sur un banc ou le canapé. Pousse le bassin vers le haut en serrant les fessiers.',
     tip: 'Menton rentré, côtes basses : pas de cambrure en haut du mouvement.' },
   fentes: { id: 'fentes', name: 'Fentes arrière', kind: 'reps', target: 10, sides: true, sideLabel: 'jambe', sets: 3, tempo: 3,
     cue: 'Recule une jambe, descends le genou arrière vers le sol, remonte en poussant sur le talon avant.',
     tip: 'Buste droit, genou avant au-dessus de la cheville.' },
-  donkey: { id: 'donkey', name: 'Donkey kicks', kind: 'reps', target: 15, sides: true, sets: 3, tempo: 2,
+  donkey: { id: 'donkey', name: 'Ruade à quatre pattes (donkey kick)', kind: 'reps', target: 15, sides: true, sets: 3, tempo: 2,
     cue: 'À quatre pattes, pousse un talon vers le plafond, genou plié à 90°.',
     tip: 'Le dos reste plat : le mouvement vient de la fesse, pas des lombaires.' },
   sumo: { id: 'sumo', name: 'Squats sumo', kind: 'reps', target: 12, sets: 3, tempo: 3,
     cue: 'Pieds écartés, pointes vers l’extérieur. Descends buste droit, genoux dans l’axe des pieds.',
     tip: 'Descends seulement tant que ton dos reste neutre.' },
-  hydrant: { id: 'hydrant', name: 'Fire hydrant', kind: 'reps', target: 10, sides: true, free: true, sets: 1, tempo: 2,
+  hydrant: { id: 'hydrant', name: 'Genou sur le côté (fire hydrant)', kind: 'reps', target: 10, sides: true, free: true, sets: 1, tempo: 2,
     cue: 'À quatre pattes, ouvre le genou sur le côté sans faire pivoter le bassin.',
     tip: 'Activation : arrête quand tu sens bien la fesse travailler.' },
   chatvache: { id: 'chatvache', name: 'Chat-vache', kind: 'reps', target: 6, tempo: 6,
@@ -74,13 +74,13 @@ const EX = {
     cue: 'Sur le côté, coude sous l’épaule, genoux pliés. Soulève les hanches pour aligner épaules, hanches et genoux, et tiens.',
     tip: 'Commence par 10 à 15 secondes. Arrête si le bas du dos tire.' },
   /* Dos solide : les mêmes muscles, un cran plus fort. Verrouillé tant que le dos n’est pas stable. */
-  birddogtenu: { id: 'birddogtenu', name: 'Bird-dog tenu', kind: 'hold', target: 3, hold: 5, sides: true,
+  birddogtenu: { id: 'birddogtenu', name: 'Bras-jambe opposés tenu (bird-dog)', kind: 'hold', target: 3, hold: 5, sides: true,
     cue: 'À quatre pattes, dos neutre. Tends un bras et la jambe opposée et tiens 5 secondes sans bouger le bassin.',
     tip: 'Si le bassin tourne, raccourcis le bras ou la jambe.' },
   pontmarche: { id: 'pontmarche', name: 'Pont marché', kind: 'reps', target: 6, tempo: 4,
     cue: 'En pont, bassin levé. Décolle lentement un pied de quelques centimètres, repose-le, puis l’autre, sans que le bassin penche.',
     tip: 'Si le bassin bascule, garde les deux pieds au sol : le pont simple suffit encore.' },
-  deadbug: { id: 'deadbug', name: 'Dead bug', kind: 'reps', target: 6, tempo: 5,
+  deadbug: { id: 'deadbug', name: 'Bras-jambe opposés sur le dos (dead bug)', kind: 'reps', target: 6, tempo: 5,
     cue: 'Sur le dos, bras tendus vers le plafond, genoux pliés à 90° au-dessus des hanches. Allonge lentement un bras et la jambe opposée, reviens, change de côté.',
     tip: 'Le bas du dos reste plaqué au sol. Plus la jambe descend, plus c’est dur : garde-la haute au début.' },
   squatchaise: { id: 'squatchaise', name: 'Squat à la chaise', kind: 'reps', target: 8, tempo: 4,
@@ -105,7 +105,7 @@ const PROGRAMS = {
     blurb: 'Des mouvements doux pour dérouiller le dos, même les jours un peu raides. Inspirés de fiches de kinés hospitaliers. Arrête si ça descend dans la jambe.',
     exercises: [EX.bascule, EX.genoupoitrine, EX.rouleau, EX.talons] },
   milieu: { id: 'milieu', name: 'Dos du milieu', tag: 'Mobilité douce', rest: 20,
-    blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pour la marche, la balade du chien fait déjà le travail. Pont fessier et bird-dog sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
+    blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pour la marche, la balade du chien fait déjà le travail. Pont fessier et bras-jambe opposés sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
     exercises: [EX.chatvache, EX.rotation, EX.thorax, EX.gainage, EX.planche] },
   difficile: { id: 'difficile', name: 'Jour difficile', tag: 'Séance douce · 3 min', rest: 30,
     blurb: 'Juste la respiration, pour garder le rythme sans rien forcer. Pour les jours où le dos est sensible.',
@@ -202,7 +202,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, bike: true, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -246,12 +246,14 @@ function cleanEntry(h) {
 function cleanSettings(s, d) {
   s = s && typeof s === 'object' ? s : {};
   return {
-    sets: numOr(s.sets, 1, 3, d.sets, true), veloMin: numOr(s.veloMin, 3, 45, d.veloMin, true), bike: s.bike !== false, weeklyGoal: numOr(s.weeklyGoal, 1, 7, d.weeklyGoal, true),
+    sets: numOr(s.sets, 1, 3, d.sets, true), fessiersSets: numOr(s.fessiersSets, 1, 2, d.fessiersSets, true), veloMin: numOr(s.veloMin, 3, 45, d.veloMin, true), bike: s.bike !== false, weeklyGoal: numOr(s.weeklyGoal, 1, 7, d.weeklyGoal, true),
     sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
     bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
     solideUnlocked: s.solideUnlocked === true, solideUnlockedAt: isoOr(s.solideUnlockedAt),
     milieuOk: s.milieuOk === true, milieuOkAt: isoOr(s.milieuOkAt),
     lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
+    reminderDays: Array.isArray(s.reminderDays) ? [...new Set(s.reminderDays.filter(x => Number.isInteger(x) && x >= 0 && x <= 6))].sort((a, b) => a - b) : d.reminderDays.slice(),
+    reminderTime: typeof s.reminderTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s.reminderTime) ? s.reminderTime : d.reminderTime,
     outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud'
   };
 }
@@ -339,18 +341,25 @@ function suggestToday(s, now = new Date()) {
     return { prog: 'difficile', why: 'Ton dos a été douloureux à la dernière séance. Aujourd’hui, juste la respiration, et on voit demain.' };
   }
   if (recent && cat === 'sensible') return { prog: 'calme', why: 'Ton dos était un peu sensible la dernière fois : place aux mouvements doux.' };
+  const dayBefore = n => { const d = new Date(now); d.setDate(d.getDate() - n); return dayKey(d); };
+  if ([1, 2, 3].every(n => s.history.some(h => dayKey(h.d) === dayBefore(n)))) {
+    return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : aujourd’hui, je te conseille le repos. La balade du chien suffit, et si le dos est raide, quelques minutes de Dos calme.' };
+  }
   /* Dos du milieu n’est proposé qu’une fois l’avis médical déclaré. */
   const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : []);
   const lastDone = id => { const h = s.history.find(x => x.prog === id); return h ? new Date(h.d).getTime() : -Infinity; };
   const prog = pool.slice().sort((a, b) => lastDone(a) - lastDone(b))[0];
   const why = {
-    dos: s.settings.bike ? 'Ta routine de base : respiration, bird-dog, pont et vélo.' : 'Ta routine de base : respiration, bird-dog et pont, sans le vélo.',
+    dos: s.settings.bike ? 'Ta routine de base : respiration, bras-jambe opposés, pont et vélo.' : 'Ta routine de base : respiration, bras-jambe opposés et pont, sans le vélo.',
     fessiers: 'Au tour des fessiers, sans charger le dos.',
     milieu: 'Un peu de mobilité et de gainage pour le dos du milieu.',
     solide: 'Ton dos va bien : on passe un cran au-dessus.'
   }[prog];
   return { prog, why: why + ' C’est celui que tu as fait le moins récemment.' };
 }
+/* Bonus quand on suit jusqu’au bout la séance proposée par Chouquette (jamais un jour de repos). */
+const SUGGEST_BONUS = 15;
+function suggestBonus(sug, progId, reason) { return sug && !sug.rest && sug.prog === progId && reason === 'done' ? SUGGEST_BONUS : 0; }
 function painFreeRun(s) {
   let n = 0;
   for (const h of s.history) {
@@ -366,6 +375,15 @@ function pendingNextDay(s, now = new Date()) {
   const h = s.history.find(x => dayKey(x.d) !== today);
   if (!h || h.next != null) return null;
   if (now.getTime() - new Date(h.d).getTime() > 3 * 86400000) return null;
+  return h;
+}
+/* Note le suivi du lendemain sur la séance et sur les autres séances du même jour encore sans suivi (+20 XP une fois). */
+function applyNext(s, id, v, now = new Date()) {
+  const h = s.history.find(x => x.id === id);
+  if (!h || h.next != null) return null;
+  const day = dayKey(h.d), at = now.toISOString();
+  s.history.filter(x => x.next == null && dayKey(x.d) === day).forEach(x => { x.next = v; x.nextAt = at; x.back = backCat(x); });
+  h.xp = (h.xp || 0) + 20; s.xp += 20;
   return h;
 }
 function weekEntries(s, now = new Date()) { const k = weekKey(now); return s.history.filter(h => weekKey(new Date(h.d)) === k); }
@@ -388,14 +406,40 @@ function evalBadges(s, now = new Date()) {
   return fresh;
 }
 function unlockedOutfits(s) { return OUTFITS.filter(o => o.test(s)).map(o => o.id); }
-function setsFor(s, prog, ex) { return prog.id === 'dos' ? s.settings.sets : (ex.sets || 1); }
+function setsFor(s, prog, ex) { return prog.id === 'dos' ? s.settings.sets : prog.id === 'fessiers' ? s.settings.fessiersSets : (ex.sets || 1); }
 function sideText(ex, side) { return ex.sideLabel === 'jambe' ? 'jambe ' + (side === 'droit' ? 'droite' : 'gauche') : 'côté ' + side; }
 /* Le programme tel qu’il sera joué : sans le vélo quand il est mis de côté dans les réglages. */
 function hasBike(p) { return !!p && p.exercises.some(ex => ex.id === 'velo'); }
+/* Progression automatique : un cran de plus toutes les 3 séances calmes et complètes du programme (2 crans au plus),
+   un cran de moins dès qu’une séance, quel que soit le programme, dépasse 3/10. Dans Reprise dos, la routine du kiné
+   ne progresse que dans la fourchette qu’il a donnée (pont : 6 à 8). La mobilité et la respiration ne progressent pas. */
+const STEP_PROGS = ['dos', 'fessiers', 'milieu', 'solide'];
+const STEP_EVERY = 3, STEP_MAX = 2;
+function stepLevel(s, progId) {
+  if (!STEP_PROGS.includes(progId)) return 0;
+  let lvl = 0, run = 0;
+  for (let i = s.history.length - 1; i >= 0; i--) {
+    const h = s.history[i], q = quietState(h);
+    if (q === 'break') { lvl = Math.max(0, lvl - 1); run = 0; continue; }
+    if (q !== 'count' || h.prog !== progId || (h.skipped && h.skipped.length)) continue;
+    if (++run >= STEP_EVERY) { lvl = Math.min(STEP_MAX, lvl + 1); run = 0; }
+  }
+  return lvl;
+}
+function stepped(ex, progId, lvl) {
+  if (!lvl || ex.free || ex.kind === 'breath' || ex.kind === 'timer' || (progId === 'dos' && !ex.max)) return ex;
+  if (ex.kind === 'hold') return Object.assign({}, ex, { hold: ex.hold + Math.max(1, Math.round(ex.hold * 0.2)) * lvl });
+  return Object.assign({}, ex, { target: ex.max ? Math.min(ex.max, ex.target + lvl) : ex.target + lvl });
+}
+/* Le programme tel qu’il sera joué : progression comprise, et sans le vélo quand il est mis de côté. */
 function progFor(s, id) {
   const p = PROGRAMS[id];
-  if (!hasBike(p) || s.settings.bike) return p;
-  return Object.assign({}, p, { exercises: p.exercises.filter(ex => ex.id !== 'velo') });
+  if (!p) return p;
+  const lvl = stepLevel(s, id);
+  let exercises = p.exercises;
+  if (hasBike(p) && !s.settings.bike) exercises = exercises.filter(ex => ex.id !== 'velo');
+  if (lvl) exercises = exercises.map(ex => stepped(ex, id, lvl));
+  return exercises === p.exercises ? p : Object.assign({}, p, { exercises, level: lvl });
 }
 function timerMin(s, ex) { return ex.id === 'velo' ? s.settings.veloMin : (ex.minutes || 10); }
 function presc(s, ex, sets) {
@@ -405,7 +449,7 @@ function presc(s, ex, sets) {
   if (ex.kind === 'hold') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' maintiens de ' + ex.hold + ' s' + side;
   if (ex.kind === 'breath') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' respirations lentes';
   if (ex.free) return 'Activation, environ ' + ex.target + side;
-  const reps = ex.max ? ex.target + ' à ' + ex.max : String(ex.target);
+  const reps = ex.max && ex.max > ex.target ? ex.target + ' à ' + ex.max : String(ex.target);
   return sets > 1 ? sets + ' × ' + reps + side : reps + ' répétitions' + side;
 }
 function estMin(s, p) {
@@ -451,6 +495,25 @@ function canRows(n) {
   while (left > 0) { const k = Math.min(b, left); rows.push(k); left -= k; b = Math.max(1, b - 1); }
   return rows;
 }
+/* Fichier agenda (.ics) : un rappel répété chaque semaine aux jours et à l’heure choisis, à l’heure locale du téléphone. */
+const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+function reminderICS(days, time, now = new Date()) {
+  if (!days.length) return '';
+  const [hh, mm] = time.split(':').map(Number);
+  const start = new Date(now); start.setHours(hh, mm, 0, 0);
+  for (let k = 0; k < 8 && (!days.includes(start.getDay()) || start <= now); k++) start.setDate(start.getDate() + 1);
+  const end = new Date(start.getTime() + 20 * 60000);
+  const local = d => '' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
+  const utc = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const sorted = days.slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Chamboule Coach//FR', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+    'UID:chamboule-rappel-' + sorted.join('') + '-' + time.replace(':', '') + '@chamboule',
+    'DTSTAMP:' + utc(now), 'DTSTART:' + local(start), 'DTEND:' + local(end),
+    'RRULE:FREQ=WEEKLY;BYDAY=' + sorted.map(d => DAY_CODES[d]).join(','),
+    'SUMMARY:Séance Chamboule Coach', 'DESCRIPTION:Chouquette t’attend', 'URL:https://polynelfe-del.github.io/chamboule/',
+    'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Séance Chamboule Coach', 'TRIGGER:PT0S', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR', ''].join('\r\n');
+}
 function backupDue(s, now, inClaude) {
   if (inClaude || s.history.length < 3) return false;
   const st = s.settings;
@@ -467,7 +530,8 @@ function kineSummary(s, now = new Date()) {
   L.push('Suivi Chamboule Coach');
   L.push(`Période : du ${from.toLocaleDateString('fr-FR')} au ${now.toLocaleDateString('fr-FR')}`);
   L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
-  L.push(`Réglages actuels : ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, ${st.bike ? 'vélo ' + st.veloMin + ' min' : 'vélo mis de côté pour le moment'}`);
+  L.push(`Réglages actuels : Reprise dos ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, Fessiers doux ${st.fessiersSets} série${st.fessiersSets > 1 ? 's' : ''}, ${st.bike ? 'vélo ' + st.veloMin + ' min' : 'vélo mis de côté pour le moment'}`);
+  L.push('Progression automatique : ' + STEP_PROGS.map(id => PROGRAMS[id].name + ' cran ' + stepLevel(s, id) + '/' + STEP_MAX).join(', '));
   L.push(`Programme Dos solide : ${st.solideUnlocked ? 'débloqué' + (st.solideUnlockedAt ? ' le ' + new Date(st.solideUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : 'verrouillé (' + solidStreak(s) + ' / ' + SOLIDE_NEEDED + ' séances de renforcement d’affilée à 3/10 au plus, lendemain compris)'}`);
   L.push(`Programme Dos du milieu : ${st.milieuOk ? 'ouvert après vérification médicale déclarée' + (st.milieuOkAt ? ' le ' + new Date(st.milieuOkAt).toLocaleDateString('fr-FR') : '') : 'en attente d’une vérification médicale'}`);
   L.push(`Programme Boule qui chamboule : ${st.bouleUnlocked ? 'débloqué' + (st.bouleUnlockedAt ? ' le ' + new Date(st.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);

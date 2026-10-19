@@ -475,6 +475,14 @@ button{font:inherit;color:inherit}
 .link-row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:var(--surface-2);border:0;border-radius:12px;padding:10px 12px;font-weight:700;color:var(--ink);cursor:pointer;min-height:44px;text-align:left}
 .link-row b{font-weight:900;color:var(--prize)}
 .notice .row-btns{margin-top:6px}
+.day-chips{display:flex;gap:6px;flex-wrap:wrap}
+.day-chips button{min-width:44px;min-height:44px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:800;cursor:pointer}
+.day-chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.time-in{font:inherit;font-weight:800;min-height:44px;padding:6px 10px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.step-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.step-list li{display:flex;justify-content:space-between;gap:10px;background:var(--surface-2);border-radius:12px;padding:8px 12px}
+.step-list b{color:var(--prize)}
+.center-note{text-align:center;margin:0}
 .today{display:flex;flex-direction:column;gap:12px;border:2px solid var(--ticket)}
 .today-prog{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .today-prog .section-title{font-size:22px;color:var(--accent)}

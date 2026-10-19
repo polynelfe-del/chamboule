@@ -13,6 +13,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="fonts/nunito.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0;font:14px system-ui,-apple-system,sans-serif;overscroll-behavior-y:none}
@@ -20,9 +21,12 @@ img{max-width:100%}
 [hidden]{display:none!important}
 </style>
 <title>Chamboule Coach</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Pacifico&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&display=swap">
+<style id="fonts">
+@font-face{font-family:'Fredoka';font-style:normal;font-weight:600 700;font-display:swap;src:url(fonts/fredoka.woff2) format('woff2')}
+@font-face{font-family:'Pacifico';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/pacifico.woff2) format('woff2')}
+@font-face{font-family:'Nunito';font-style:normal;font-weight:400 900;font-display:swap;src:url(fonts/nunito.woff2) format('woff2')}
+@font-face{font-family:'Nunito';font-style:italic;font-weight:700;font-display:swap;src:url(fonts/nunito-italic.woff2) format('woff2')}
+</style>
 <style>
 /* Layout: one phone-width column under a candy-pink fairground awning on a polka-dot ground; programs are admission tickets; the game takes the whole screen with one giant tap target. */
 :root{
@@ -501,6 +505,14 @@ button{font:inherit;color:inherit}
 .link-row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:var(--surface-2);border:0;border-radius:12px;padding:10px 12px;font-weight:700;color:var(--ink);cursor:pointer;min-height:44px;text-align:left}
 .link-row b{font-weight:900;color:var(--prize)}
 .notice .row-btns{margin-top:6px}
+.day-chips{display:flex;gap:6px;flex-wrap:wrap}
+.day-chips button{min-width:44px;min-height:44px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:800;cursor:pointer}
+.day-chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.time-in{font:inherit;font-weight:800;min-height:44px;padding:6px 10px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.step-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.step-list li{display:flex;justify-content:space-between;gap:10px;background:var(--surface-2);border-radius:12px;padding:8px 12px}
+.step-list b{color:var(--prize)}
+.center-note{text-align:center;margin:0}
 .today{display:flex;flex-direction:column;gap:12px;border:2px solid var(--ticket)}
 .today-prog{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .today-prog .section-title{font-size:22px;color:var(--accent)}
@@ -537,7 +549,7 @@ const EX = {
   transverse: { id: 'transverse', name: 'Respiration du transverse', kind: 'breath', target: 5, tempo: 8,
     cue: 'Sur le dos, genoux pliés, pieds à plat. Inspire par le nez, puis expire longuement en rentrant doucement le bas du ventre.',
     tip: 'Suis le cercle : il grossit quand tu inspires, rapetisse quand tu expires.' },
-  birddog: { id: 'birddog', name: 'Bird-dog', kind: 'reps', target: 5, sides: true, tempo: 5,
+  birddog: { id: 'birddog', name: 'Bras-jambe opposés (bird-dog)', kind: 'reps', target: 5, sides: true, tempo: 5,
     cue: 'À quatre pattes, dos neutre. Tends lentement un bras et la jambe opposée, tiens 2 secondes, puis reviens.',
     tip: 'Le bassin ne bouge pas, comme si un verre d’eau était posé sur ton dos.' },
   pont: { id: 'pont', name: 'Pont fessier', kind: 'reps', target: 6, max: 8, tempo: 4,
@@ -546,19 +558,19 @@ const EX = {
   velo: { id: 'velo', name: 'Vélo d’appartement', kind: 'timer',
     cue: 'Résistance légère, buste peu penché. Tu dois pouvoir parler en pédalant.',
     tip: 'Allonge la durée petit à petit, d’une séance à l’autre, dans les réglages.' },
-  hipthrust: { id: 'hipthrust', name: 'Hip thrust', kind: 'reps', target: 12, sets: 4, tempo: 3,
+  hipthrust: { id: 'hipthrust', name: 'Poussée de hanches (hip thrust)', kind: 'reps', target: 12, sets: 4, tempo: 3,
     cue: 'Haut du dos appuyé sur un banc ou le canapé. Pousse le bassin vers le haut en serrant les fessiers.',
     tip: 'Menton rentré, côtes basses : pas de cambrure en haut du mouvement.' },
   fentes: { id: 'fentes', name: 'Fentes arrière', kind: 'reps', target: 10, sides: true, sideLabel: 'jambe', sets: 3, tempo: 3,
     cue: 'Recule une jambe, descends le genou arrière vers le sol, remonte en poussant sur le talon avant.',
     tip: 'Buste droit, genou avant au-dessus de la cheville.' },
-  donkey: { id: 'donkey', name: 'Donkey kicks', kind: 'reps', target: 15, sides: true, sets: 3, tempo: 2,
+  donkey: { id: 'donkey', name: 'Ruade à quatre pattes (donkey kick)', kind: 'reps', target: 15, sides: true, sets: 3, tempo: 2,
     cue: 'À quatre pattes, pousse un talon vers le plafond, genou plié à 90°.',
     tip: 'Le dos reste plat : le mouvement vient de la fesse, pas des lombaires.' },
   sumo: { id: 'sumo', name: 'Squats sumo', kind: 'reps', target: 12, sets: 3, tempo: 3,
     cue: 'Pieds écartés, pointes vers l’extérieur. Descends buste droit, genoux dans l’axe des pieds.',
     tip: 'Descends seulement tant que ton dos reste neutre.' },
-  hydrant: { id: 'hydrant', name: 'Fire hydrant', kind: 'reps', target: 10, sides: true, free: true, sets: 1, tempo: 2,
+  hydrant: { id: 'hydrant', name: 'Genou sur le côté (fire hydrant)', kind: 'reps', target: 10, sides: true, free: true, sets: 1, tempo: 2,
     cue: 'À quatre pattes, ouvre le genou sur le côté sans faire pivoter le bassin.',
     tip: 'Activation : arrête quand tu sens bien la fesse travailler.' },
   chatvache: { id: 'chatvache', name: 'Chat-vache', kind: 'reps', target: 6, tempo: 6,
@@ -605,13 +617,13 @@ const EX = {
     cue: 'Sur le côté, coude sous l’épaule, genoux pliés. Soulève les hanches pour aligner épaules, hanches et genoux, et tiens.',
     tip: 'Commence par 10 à 15 secondes. Arrête si le bas du dos tire.' },
   /* Dos solide : les mêmes muscles, un cran plus fort. Verrouillé tant que le dos n’est pas stable. */
-  birddogtenu: { id: 'birddogtenu', name: 'Bird-dog tenu', kind: 'hold', target: 3, hold: 5, sides: true,
+  birddogtenu: { id: 'birddogtenu', name: 'Bras-jambe opposés tenu (bird-dog)', kind: 'hold', target: 3, hold: 5, sides: true,
     cue: 'À quatre pattes, dos neutre. Tends un bras et la jambe opposée et tiens 5 secondes sans bouger le bassin.',
     tip: 'Si le bassin tourne, raccourcis le bras ou la jambe.' },
   pontmarche: { id: 'pontmarche', name: 'Pont marché', kind: 'reps', target: 6, tempo: 4,
     cue: 'En pont, bassin levé. Décolle lentement un pied de quelques centimètres, repose-le, puis l’autre, sans que le bassin penche.',
     tip: 'Si le bassin bascule, garde les deux pieds au sol : le pont simple suffit encore.' },
-  deadbug: { id: 'deadbug', name: 'Dead bug', kind: 'reps', target: 6, tempo: 5,
+  deadbug: { id: 'deadbug', name: 'Bras-jambe opposés sur le dos (dead bug)', kind: 'reps', target: 6, tempo: 5,
     cue: 'Sur le dos, bras tendus vers le plafond, genoux pliés à 90° au-dessus des hanches. Allonge lentement un bras et la jambe opposée, reviens, change de côté.',
     tip: 'Le bas du dos reste plaqué au sol. Plus la jambe descend, plus c’est dur : garde-la haute au début.' },
   squatchaise: { id: 'squatchaise', name: 'Squat à la chaise', kind: 'reps', target: 8, tempo: 4,
@@ -636,7 +648,7 @@ const PROGRAMS = {
     blurb: 'Des mouvements doux pour dérouiller le dos, même les jours un peu raides. Inspirés de fiches de kinés hospitaliers. Arrête si ça descend dans la jambe.',
     exercises: [EX.bascule, EX.genoupoitrine, EX.rouleau, EX.talons] },
   milieu: { id: 'milieu', name: 'Dos du milieu', tag: 'Mobilité douce', rest: 20,
-    blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pour la marche, la balade du chien fait déjà le travail. Pont fessier et bird-dog sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
+    blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pour la marche, la balade du chien fait déjà le travail. Pont fessier et bras-jambe opposés sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
     exercises: [EX.chatvache, EX.rotation, EX.thorax, EX.gainage, EX.planche] },
   difficile: { id: 'difficile', name: 'Jour difficile', tag: 'Séance douce · 3 min', rest: 30,
     blurb: 'Juste la respiration, pour garder le rythme sans rien forcer. Pour les jours où le dos est sensible.',
@@ -733,7 +745,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, bike: true, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -777,12 +789,14 @@ function cleanEntry(h) {
 function cleanSettings(s, d) {
   s = s && typeof s === 'object' ? s : {};
   return {
-    sets: numOr(s.sets, 1, 3, d.sets, true), veloMin: numOr(s.veloMin, 3, 45, d.veloMin, true), bike: s.bike !== false, weeklyGoal: numOr(s.weeklyGoal, 1, 7, d.weeklyGoal, true),
+    sets: numOr(s.sets, 1, 3, d.sets, true), fessiersSets: numOr(s.fessiersSets, 1, 2, d.fessiersSets, true), veloMin: numOr(s.veloMin, 3, 45, d.veloMin, true), bike: s.bike !== false, weeklyGoal: numOr(s.weeklyGoal, 1, 7, d.weeklyGoal, true),
     sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
     bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
     solideUnlocked: s.solideUnlocked === true, solideUnlockedAt: isoOr(s.solideUnlockedAt),
     milieuOk: s.milieuOk === true, milieuOkAt: isoOr(s.milieuOkAt),
     lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
+    reminderDays: Array.isArray(s.reminderDays) ? [...new Set(s.reminderDays.filter(x => Number.isInteger(x) && x >= 0 && x <= 6))].sort((a, b) => a - b) : d.reminderDays.slice(),
+    reminderTime: typeof s.reminderTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s.reminderTime) ? s.reminderTime : d.reminderTime,
     outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud'
   };
 }
@@ -870,18 +884,25 @@ function suggestToday(s, now = new Date()) {
     return { prog: 'difficile', why: 'Ton dos a été douloureux à la dernière séance. Aujourd’hui, juste la respiration, et on voit demain.' };
   }
   if (recent && cat === 'sensible') return { prog: 'calme', why: 'Ton dos était un peu sensible la dernière fois : place aux mouvements doux.' };
+  const dayBefore = n => { const d = new Date(now); d.setDate(d.getDate() - n); return dayKey(d); };
+  if ([1, 2, 3].every(n => s.history.some(h => dayKey(h.d) === dayBefore(n)))) {
+    return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : aujourd’hui, je te conseille le repos. La balade du chien suffit, et si le dos est raide, quelques minutes de Dos calme.' };
+  }
   /* Dos du milieu n’est proposé qu’une fois l’avis médical déclaré. */
   const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : []);
   const lastDone = id => { const h = s.history.find(x => x.prog === id); return h ? new Date(h.d).getTime() : -Infinity; };
   const prog = pool.slice().sort((a, b) => lastDone(a) - lastDone(b))[0];
   const why = {
-    dos: s.settings.bike ? 'Ta routine de base : respiration, bird-dog, pont et vélo.' : 'Ta routine de base : respiration, bird-dog et pont, sans le vélo.',
+    dos: s.settings.bike ? 'Ta routine de base : respiration, bras-jambe opposés, pont et vélo.' : 'Ta routine de base : respiration, bras-jambe opposés et pont, sans le vélo.',
     fessiers: 'Au tour des fessiers, sans charger le dos.',
     milieu: 'Un peu de mobilité et de gainage pour le dos du milieu.',
     solide: 'Ton dos va bien : on passe un cran au-dessus.'
   }[prog];
   return { prog, why: why + ' C’est celui que tu as fait le moins récemment.' };
 }
+/* Bonus quand on suit jusqu’au bout la séance proposée par Chouquette (jamais un jour de repos). */
+const SUGGEST_BONUS = 15;
+function suggestBonus(sug, progId, reason) { return sug && !sug.rest && sug.prog === progId && reason === 'done' ? SUGGEST_BONUS : 0; }
 function painFreeRun(s) {
   let n = 0;
   for (const h of s.history) {
@@ -897,6 +918,15 @@ function pendingNextDay(s, now = new Date()) {
   const h = s.history.find(x => dayKey(x.d) !== today);
   if (!h || h.next != null) return null;
   if (now.getTime() - new Date(h.d).getTime() > 3 * 86400000) return null;
+  return h;
+}
+/* Note le suivi du lendemain sur la séance et sur les autres séances du même jour encore sans suivi (+20 XP une fois). */
+function applyNext(s, id, v, now = new Date()) {
+  const h = s.history.find(x => x.id === id);
+  if (!h || h.next != null) return null;
+  const day = dayKey(h.d), at = now.toISOString();
+  s.history.filter(x => x.next == null && dayKey(x.d) === day).forEach(x => { x.next = v; x.nextAt = at; x.back = backCat(x); });
+  h.xp = (h.xp || 0) + 20; s.xp += 20;
   return h;
 }
 function weekEntries(s, now = new Date()) { const k = weekKey(now); return s.history.filter(h => weekKey(new Date(h.d)) === k); }
@@ -919,14 +949,40 @@ function evalBadges(s, now = new Date()) {
   return fresh;
 }
 function unlockedOutfits(s) { return OUTFITS.filter(o => o.test(s)).map(o => o.id); }
-function setsFor(s, prog, ex) { return prog.id === 'dos' ? s.settings.sets : (ex.sets || 1); }
+function setsFor(s, prog, ex) { return prog.id === 'dos' ? s.settings.sets : prog.id === 'fessiers' ? s.settings.fessiersSets : (ex.sets || 1); }
 function sideText(ex, side) { return ex.sideLabel === 'jambe' ? 'jambe ' + (side === 'droit' ? 'droite' : 'gauche') : 'côté ' + side; }
 /* Le programme tel qu’il sera joué : sans le vélo quand il est mis de côté dans les réglages. */
 function hasBike(p) { return !!p && p.exercises.some(ex => ex.id === 'velo'); }
+/* Progression automatique : un cran de plus toutes les 3 séances calmes et complètes du programme (2 crans au plus),
+   un cran de moins dès qu’une séance, quel que soit le programme, dépasse 3/10. Dans Reprise dos, la routine du kiné
+   ne progresse que dans la fourchette qu’il a donnée (pont : 6 à 8). La mobilité et la respiration ne progressent pas. */
+const STEP_PROGS = ['dos', 'fessiers', 'milieu', 'solide'];
+const STEP_EVERY = 3, STEP_MAX = 2;
+function stepLevel(s, progId) {
+  if (!STEP_PROGS.includes(progId)) return 0;
+  let lvl = 0, run = 0;
+  for (let i = s.history.length - 1; i >= 0; i--) {
+    const h = s.history[i], q = quietState(h);
+    if (q === 'break') { lvl = Math.max(0, lvl - 1); run = 0; continue; }
+    if (q !== 'count' || h.prog !== progId || (h.skipped && h.skipped.length)) continue;
+    if (++run >= STEP_EVERY) { lvl = Math.min(STEP_MAX, lvl + 1); run = 0; }
+  }
+  return lvl;
+}
+function stepped(ex, progId, lvl) {
+  if (!lvl || ex.free || ex.kind === 'breath' || ex.kind === 'timer' || (progId === 'dos' && !ex.max)) return ex;
+  if (ex.kind === 'hold') return Object.assign({}, ex, { hold: ex.hold + Math.max(1, Math.round(ex.hold * 0.2)) * lvl });
+  return Object.assign({}, ex, { target: ex.max ? Math.min(ex.max, ex.target + lvl) : ex.target + lvl });
+}
+/* Le programme tel qu’il sera joué : progression comprise, et sans le vélo quand il est mis de côté. */
 function progFor(s, id) {
   const p = PROGRAMS[id];
-  if (!hasBike(p) || s.settings.bike) return p;
-  return Object.assign({}, p, { exercises: p.exercises.filter(ex => ex.id !== 'velo') });
+  if (!p) return p;
+  const lvl = stepLevel(s, id);
+  let exercises = p.exercises;
+  if (hasBike(p) && !s.settings.bike) exercises = exercises.filter(ex => ex.id !== 'velo');
+  if (lvl) exercises = exercises.map(ex => stepped(ex, id, lvl));
+  return exercises === p.exercises ? p : Object.assign({}, p, { exercises, level: lvl });
 }
 function timerMin(s, ex) { return ex.id === 'velo' ? s.settings.veloMin : (ex.minutes || 10); }
 function presc(s, ex, sets) {
@@ -936,7 +992,7 @@ function presc(s, ex, sets) {
   if (ex.kind === 'hold') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' maintiens de ' + ex.hold + ' s' + side;
   if (ex.kind === 'breath') return (sets > 1 ? sets + ' × ' : '') + ex.target + ' respirations lentes';
   if (ex.free) return 'Activation, environ ' + ex.target + side;
-  const reps = ex.max ? ex.target + ' à ' + ex.max : String(ex.target);
+  const reps = ex.max && ex.max > ex.target ? ex.target + ' à ' + ex.max : String(ex.target);
   return sets > 1 ? sets + ' × ' + reps + side : reps + ' répétitions' + side;
 }
 function estMin(s, p) {
@@ -982,6 +1038,25 @@ function canRows(n) {
   while (left > 0) { const k = Math.min(b, left); rows.push(k); left -= k; b = Math.max(1, b - 1); }
   return rows;
 }
+/* Fichier agenda (.ics) : un rappel répété chaque semaine aux jours et à l’heure choisis, à l’heure locale du téléphone. */
+const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+function reminderICS(days, time, now = new Date()) {
+  if (!days.length) return '';
+  const [hh, mm] = time.split(':').map(Number);
+  const start = new Date(now); start.setHours(hh, mm, 0, 0);
+  for (let k = 0; k < 8 && (!days.includes(start.getDay()) || start <= now); k++) start.setDate(start.getDate() + 1);
+  const end = new Date(start.getTime() + 20 * 60000);
+  const local = d => '' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
+  const utc = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const sorted = days.slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Chamboule Coach//FR', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+    'UID:chamboule-rappel-' + sorted.join('') + '-' + time.replace(':', '') + '@chamboule',
+    'DTSTAMP:' + utc(now), 'DTSTART:' + local(start), 'DTEND:' + local(end),
+    'RRULE:FREQ=WEEKLY;BYDAY=' + sorted.map(d => DAY_CODES[d]).join(','),
+    'SUMMARY:Séance Chamboule Coach', 'DESCRIPTION:Chouquette t’attend', 'URL:https://polynelfe-del.github.io/chamboule/',
+    'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Séance Chamboule Coach', 'TRIGGER:PT0S', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR', ''].join('\r\n');
+}
 function backupDue(s, now, inClaude) {
   if (inClaude || s.history.length < 3) return false;
   const st = s.settings;
@@ -998,7 +1073,8 @@ function kineSummary(s, now = new Date()) {
   L.push('Suivi Chamboule Coach');
   L.push(`Période : du ${from.toLocaleDateString('fr-FR')} au ${now.toLocaleDateString('fr-FR')}`);
   L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
-  L.push(`Réglages actuels : ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, ${st.bike ? 'vélo ' + st.veloMin + ' min' : 'vélo mis de côté pour le moment'}`);
+  L.push(`Réglages actuels : Reprise dos ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, Fessiers doux ${st.fessiersSets} série${st.fessiersSets > 1 ? 's' : ''}, ${st.bike ? 'vélo ' + st.veloMin + ' min' : 'vélo mis de côté pour le moment'}`);
+  L.push('Progression automatique : ' + STEP_PROGS.map(id => PROGRAMS[id].name + ' cran ' + stepLevel(s, id) + '/' + STEP_MAX).join(', '));
   L.push(`Programme Dos solide : ${st.solideUnlocked ? 'débloqué' + (st.solideUnlockedAt ? ' le ' + new Date(st.solideUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : 'verrouillé (' + solidStreak(s) + ' / ' + SOLIDE_NEEDED + ' séances de renforcement d’affilée à 3/10 au plus, lendemain compris)'}`);
   L.push(`Programme Dos du milieu : ${st.milieuOk ? 'ouvert après vérification médicale déclarée' + (st.milieuOkAt ? ' le ' + new Date(st.milieuOkAt).toLocaleDateString('fr-FR') : '') : 'en attente d’une vérification médicale'}`);
   L.push(`Programme Boule qui chamboule : ${st.bouleUnlocked ? 'débloqué' + (st.bouleUnlockedAt ? ' le ' + new Date(st.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);
@@ -1562,9 +1638,9 @@ function todayCardHTML() {
   const p = progFor(state, sug.prog);
   const strip = p.exercises.map(ex => `<button class="ex-thumb" data-action="ex-open" data-ex="${ex.id}" data-prog="${p.id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}</button>`).join('');
   return `<section class="card today" aria-label="Séance du jour">
-    <p class="eyebrow">${sug.rest ? 'Si tu en as envie' : 'Séance du jour'}</p>
+    <p class="eyebrow">${sug.rest ? 'Si tu en as envie' : `Séance du jour · +${SUGGEST_BONUS} XP bonus`}</p>
     ${buddyHTML(sug.why, sug.prog === 'difficile' || sug.rest ? 'calm' : 'happy', 'sm')}
-    <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span>${bikeChipHTML(p.id)}</div>
+    <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · cran ${p.level}/${STEP_MAX}` : ''}</span>${bikeChipHTML(p.id)}</div>
     <div class="ex-strip">${strip}</div>
     <button class="btn play big" data-action="play" data-prog="${p.id}">${ICON.play} Jouer</button>
   </section>`;
@@ -1578,7 +1654,7 @@ function ticketHTML(id) {
   const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(state, ex, setsFor(state, p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
   let foot;
   if (id === 'milieu' && !state.settings.milieuOk) foot = `<div class="unlock-progress"><span class="est">Avant ce programme, fais vérifier par un médecin l’origine de ta douleur au milieu du dos, surtout si elle s’accompagne de douleurs au ventre.</span><button class="btn ghost" data-action="milieu-ok">Un médecin a vérifié</button></div>`;
-  else if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
+  else if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · cran ${p.level}/${STEP_MAX}` : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
   else if (id === 'solide' && solidStreak(state) < SOLIDE_NEEDED) {
     const k = solidStreak(state);
     foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances de renforcement d’affilée à 3/10 au plus, lendemain compris (Reprise dos, Dos du milieu, Fessiers doux)</span></div>`;
@@ -1604,7 +1680,7 @@ function ticketHTML(id) {
 
 function exSheetHTML(key) {
   const [progId, exId] = key.split(':');
-  const p = PROGRAMS[progId], ex = p && p.exercises.find(e => e.id === exId);
+  const p = progFor(state, progId), ex = p && (p.exercises.find(e => e.id === exId) || PROGRAMS[progId].exercises.find(e => e.id === exId));
   if (!ex) return '';
   return `<div class="sheet-wrap" data-action="ex-close-bg"><div class="ex-sheet" role="dialog" aria-modal="true" aria-labelledby="ex-t">
     <div class="ex-sheet-top"><div><p class="eyebrow">${esc(p.name)}</p><h2 id="ex-t">${esc(ex.name)}</h2></div><button class="icon-btn" data-action="ex-close" aria-label="Fermer">${ICON.close}</button></div>
@@ -1755,6 +1831,28 @@ function settingsHTML() {
       </div>
     </section>
 
+    <section class="card set-card" aria-label="Fessiers doux">
+      <h2 class="section-title">Fessiers doux</h2>
+      <div class="set-row">
+        <div><b>Séries par exercice</b><small>1 série au départ. Passe à 2 seulement avec l’accord de ton kiné.</small></div>
+        <div class="seg" role="group" aria-label="Séries Fessiers doux">${[1, 2].map(n => `<button data-action="set-fsets" data-v="${n}" aria-pressed="${s.fessiersSets === n}">${n}</button>`).join('')}</div>
+      </div>
+    </section>
+
+    <section class="card set-card" aria-label="Progression automatique">
+      <h2 class="section-title">Progression automatique</h2>
+      <p class="muted">Toutes les ${STEP_EVERY} séances calmes et complètes d’un programme, suivi du lendemain compris, Chouquette monte d’un cran : une répétition de plus ou quelques secondes de maintien, ${STEP_MAX} crans au plus. Une séance au-dessus de 3/10 fait redescendre d’un cran. Reprise dos reste dans la fourchette donnée par ton kiné.</p>
+      <ul class="step-list">${STEP_PROGS.map(id => `<li><span>${esc(PROGRAMS[id].name)}</span><b>cran ${stepLevel(state, id)}/${STEP_MAX}</b></li>`).join('')}</ul>
+    </section>
+
+    <section class="card set-card" aria-label="Rappels">
+      <h2 class="section-title">Rappels</h2>
+      <div class="set-row"><div><b>Jours</b><small>Les jours où tu veux un rappel de séance.</small></div></div>
+      <div class="day-chips" role="group" aria-label="Jours de rappel">${[[1, 'L', 'Lundi'], [2, 'M', 'Mardi'], [3, 'M', 'Mercredi'], [4, 'J', 'Jeudi'], [5, 'V', 'Vendredi'], [6, 'S', 'Samedi'], [0, 'D', 'Dimanche']].map(([d, l, n]) => `<button data-action="rem-day" data-v="${d}" aria-pressed="${s.reminderDays.includes(d)}" aria-label="${n}">${l}</button>`).join('')}</div>
+      <div class="set-row"><div><b>Heure</b></div><input type="time" id="rem-time" class="time-in" value="${esc(s.reminderTime)}" aria-label="Heure du rappel"></div>
+      ${canSave() ? `<div class="set-row"><div><b>Ajouter à mon agenda</b><small>Un rappel répété chaque semaine dans l’agenda du téléphone. Sur Android, ouvre ensuite le fichier téléchargé. À refaire si tu changes les jours ou l’heure.</small></div><button class="btn ghost" data-action="reminders"${s.reminderDays.length ? '' : ' disabled'}>Ajouter</button></div>` : ''}
+    </section>
+
     <section class="card set-card" aria-label="Jeu">
       <h2 class="section-title">Jeu</h2>
       <div class="set-row">
@@ -1801,7 +1899,8 @@ function settingsHTML() {
 /* ---------- Avant la séance ---------- */
 function precheckHTML() {
   const pre = ui.pre, p = PROGRAMS[pre.prog];
-  const ready = pre.pain != null && pre.leg != null;
+  const pend = pendingNextDay(state);
+  const ready = pre.pain != null && pre.leg != null && !pend;
   let outcome = '';
   if (pre.step === 'leg') {
     outcome = `<div class="notice danger"><b>Pas de renforcement aujourd’hui.</b><span>Des symptômes dans la jambe avant même de commencer, c’est à montrer à ton kiné ou à ton médecin. La respiration du transverse reste possible si elle ne réveille rien.</span></div>
@@ -1816,6 +1915,12 @@ function precheckHTML() {
       <button class="icon-btn" data-action="home" aria-label="Retour à l’accueil">${ICON.back}</button>
       <div><p class="eyebrow">${esc(p.name)}</p><h1>Avant de jouer</h1></div>
     </header>
+    ${ui.nextMsg ? `<div class="notice warn"><b>${esc(ui.nextMsg.title)}</b><span>${esc(ui.nextMsg.text)}</span></div>` : ''}
+    ${pend ? `<section class="card set-card next-card" aria-label="Suivi du lendemain">
+      <p class="eyebrow">D’abord, le suivi · +20 XP</p>
+      <h2 class="section-title">Ton dos aujourd’hui, après ta séance de ${esc(fmtDate(pend.d))} ?</h2>
+      ${scaleHTML('next', null, `data-id="${esc(pend.id)}"`)}
+    </section>` : ''}
     <section class="card set-card" aria-label="Douleur avant la séance">
       <h2 class="section-title">Ton dos, là, maintenant ?</h2>
       ${scaleHTML('pre-pain', pre.pain)}
@@ -1831,6 +1936,7 @@ function precheckHTML() {
       </div>
     </section>` : ''}
     ${outcome || `<button class="btn primary big" data-action="pre-go" ${ready ? '' : 'disabled'}>${ICON.play} Commencer</button>`}
+    ${pend && !outcome ? '<p class="muted center-note">Réponds d’abord au suivi de ta dernière séance : sans lui, elle ne compte ni pour Dos solide ni pour la progression.</p>' : ''}
   </main>`;
 }
 
@@ -1865,6 +1971,7 @@ function startGame(progId, pre) {
     prog, steps, i: 0, phase: 'intro', line: pick(LINES.intro), hf: prog.practice ? false : !!state.settings.handsFree,
     setPerfect: 0, nCans: 0, pyramids: 0, canGeo: null, litL: -1,
     painBefore: pre ? pre.pain : null, legBefore: pre ? !!pre.leg : false,
+    sugg: prog.practice ? null : suggestToday(state),
     count: 0, taps: [], lastTap: 0, combo: 0, bestCombo: 0, score: 0, perfect: 0, fast: 0, reps: 0,
     skipped: [], painEx: [], veloSec: 0, walkSec: 0, t0: Date.now(), holdStart: null,
     restEnd: 0, switchEnd: 0, flashUntil: 0, lastRem: -1, overlay: null, pausedAt: 0,
@@ -1948,7 +2055,7 @@ function introHTML(st) {
   </div>`;
 }
 
-function targetLabel(ex) { return (G && G.hf) || ex.kind === 'hold' ? String(ex.target) : ex.free ? 'env. ' + ex.target : ex.max ? ex.target + '–' + ex.max : String(ex.target); }
+function targetLabel(ex) { return (G && G.hf) || ex.kind === 'hold' ? String(ex.target) : ex.free ? 'env. ' + ex.target : ex.max && ex.max > ex.target ? ex.target + '–' + ex.max : String(ex.target); }
 function showSetDone(ex) { return !G.hf && ((ex.max && G.count >= ex.target) || (ex.free && G.count > 0)); }
 
 function playHTML(st) {
@@ -2416,7 +2523,8 @@ function finish(reason) {
   const stars = computeStars(reason, G);
   const sameDay = state.history.some(h => dayKey(h.d) === dayKey(new Date()));
   const minutes = Math.min(estMin(state, G.prog), Math.max(1, Math.round((Date.now() - G.t0) / 60000)));
-  const xp = computeXP(G.prog, G, minutes, sameDay);
+  const bonus = suggestBonus(G.sugg, G.prog.id, reason);
+  const xp = computeXP(G.prog, G, minutes, sameDay) + bonus;
   const entry = {
     id: 's' + Date.now().toString(36), d: new Date().toISOString(), prog: G.prog.id,
     score: G.score, xp, stars, perfect: G.perfect, reps: G.reps, combo: G.bestCombo,
@@ -2436,7 +2544,7 @@ function finish(reason) {
   persist();
   const newOutfits = OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id));
   const relocked = reason === 'pain' && relockSolide();
-  R = { relocked, entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
+  R = { bonus, relocked, entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
   if (relocked) persist();
   G = null;
   ui.screen = 'result';
@@ -2504,6 +2612,7 @@ function renderResult() {
       </div>
     </section>
     ${lvUp}
+    ${R.bonus ? `<div class="notice good"><b>Bonus Chouquette · +${R.bonus} XP</b><span>Tu as suivi la séance du jour jusqu’au bout.</span></div>` : ''}
     ${(R.challenges || []).map(c => `<div class="notice good"><b>Défi réussi : ${esc(c.name)} · +50 XP</b><span>${esc(c.desc)}</span></div>`).join('')}
     ${(R.outfits || []).map(o => `<div class="notice good new-outfit">${mascot('wow', o.id)}<div><b>Nouvelle tenue pour Chouquette : ${esc(o.name)}</b><span>Mets-la-lui dans l’onglet Progrès.</span></div></div>`).join('')}
     ${badges}
@@ -2556,12 +2665,12 @@ function endPractice() {
 /* Dans Claude, un fichier passe par la capacité de téléchargement.
    Dans l’appli du téléphone, par le menu de partage (Fichiers, Mail...), sinon par un lien classique. */
 function canSave() { return !!downloadsApi || !window.claude; }
-function saveFile(name, text, type) {
+function saveFile(name, text, type, noShare) {
   if (downloadsApi) return downloadsApi.save({ filename: name, data: text });
   if (window.claude) return Promise.reject({ code: 'unavailable' });
   try {
     const file = new File([text], name, { type });
-    if (navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+    if (!noShare && navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
       return navigator.share({ files: [file], title: name }).then(
         () => ({ status: 'shared' }),
         e => { throw { code: e && e.name === 'AbortError' ? 'declined' : 'unavailable' }; });
@@ -2633,7 +2742,7 @@ const ACTIONS = {
   'pre-pain'(b) { ui.pre.pain = Number(b.dataset.v); ui.pre.step = 'ask'; renderScreen(); },
   'pre-leg'(b) { ui.pre.leg = b.dataset.v === '1'; ui.pre.step = 'ask'; renderScreen(); },
   'pre-go'() {
-    const pre = ui.pre; if (pre.pain == null || pre.leg == null) return;
+    const pre = ui.pre; if (pre.pain == null || pre.leg == null || pendingNextDay(state)) return;
     if (pre.leg) { pre.step = 'leg'; renderScreen(); return; }
     if (pre.pain >= 7 && pre.prog !== 'difficile') { pre.step = 'high'; renderScreen(); return; }
     startGame(pre.prog, pre);
@@ -2644,19 +2753,21 @@ const ACTIONS = {
   'ex-close'() { ui.sheet = null; renderScreen({ still: true }); },
   'ex-close-bg'(b, e) { if (e.target === b) ACTIONS['ex-close'](); },
   next(b) {
-    const h = state.history.find(x => x.id === b.dataset.id); if (!h || h.next != null) return;
-    const v = Number(b.dataset.v);
+    const levels = STEP_PROGS.map(id => stepLevel(state, id));
     const outfitsBefore = unlockedOutfits(state);
-    h.next = v; h.nextAt = new Date().toISOString(); h.xp = (h.xp || 0) + 20; state.xp += 20;
+    const v = Number(b.dataset.v);
+    const h = applyNext(state, b.dataset.id, v); if (!h) return;
     const base = h.painBefore ?? h.pain ?? 0;
     ui.nextMsg = (v >= 7 || v >= base + 3) ? { title: `Plus douloureux qu’avant la séance (${base} → ${v}).`, text: 'Prends un jour de repos ou fais Jour difficile, et parles-en à ton kiné.' } : null;
-    h.back = backCat(h);
     evalBadges(state);
     const ch = evalChallenges(state);
     persist(); renderScreen({ still: true });
     const newOutfit = OUTFITS.find(o => o.test(state) && !outfitsBefore.includes(o.id));
     if (newOutfit) { setTimeout(() => toast(`Nouvelle tenue pour Chouquette : ${newOutfit.name} ! Va voir dans Progrès.`), 4300); }
-    toast(ch.length > 1 ? `+20 XP. ${ch.length} défis réussis, +${ch.length * 50} XP !` : ch.length ? `+20 XP. Défi réussi : ${ch[0].name}, +50 XP !` : '+20 XP. Noté pour ton kiné.');
+    const moved = dir => STEP_PROGS.filter((id, i) => Math.sign(stepLevel(state, id) - levels[i]) === dir).map(id => PROGRAMS[id].name).join(', ');
+    const up = moved(1), down = moved(-1);
+    toast((ch.length > 1 ? `+20 XP. ${ch.length} défis réussis, +${ch.length * 50} XP !` : ch.length ? `+20 XP. Défi réussi : ${ch[0].name}, +50 XP !` : '+20 XP. Noté pour ton kiné.')
+      + (up ? ` Chouquette monte d’un cran : ${up}.` : '') + (down ? ` On redescend d’un cran : ${down}.` : ''));
   },
   summary() { ui.summaryBack = ui.screen; ui.screen = 'summary'; renderScreen(); window.scrollTo(0, 0); },
   'summary-back'() { ui.screen = ui.summaryBack === 'settings' ? 'settings' : 'home'; renderScreen(); window.scrollTo(0, 0); },
@@ -2697,6 +2808,18 @@ const ACTIONS = {
   },
   relock() { state.settings.bouleUnlocked = false; state.settings.bouleUnlockedAt = null; persist(); renderScreen(); },
   'hist-toggle'() { ui.historyAll = !ui.historyAll; renderScreen({ still: true }); },
+  'set-fsets'(b) { state.settings.fessiersSets = clamp(Number(b.dataset.v) || 1, 1, 2); persist(); renderScreen({ still: true }); },
+  'rem-day'(b) {
+    const d = Number(b.dataset.v), days = state.settings.reminderDays;
+    state.settings.reminderDays = days.includes(d) ? days.filter(x => x !== d) : days.concat(d).sort((a, c) => a - c);
+    persist(); renderScreen({ still: true });
+  },
+  reminders() {
+    const s = state.settings; if (!s.reminderDays.length) return;
+    saveFile('chamboule-rappels.ics', reminderICS(s.reminderDays, s.reminderTime), 'text/calendar', true)
+      .then(() => toast('Ajoute le rappel à ton agenda quand le téléphone te le propose.'))
+      .catch(e => { if (!e || e.code !== 'declined') toast('Impossible de créer le rappel ici.'); });
+  },
   'set-sets'(b) { state.settings.sets = clamp(Number(b.dataset.v) || 1, 1, 3); persist(); renderScreen(); },
   'velo-dec'() { state.settings.veloMin = clamp(state.settings.veloMin - 1, 3, 45); persistSoon(); renderScreen(); },
   'velo-inc'() { state.settings.veloMin = clamp(state.settings.veloMin + 1, 3, 45); persistSoon(); renderScreen(); },
@@ -2756,6 +2879,10 @@ app.addEventListener('click', e => {
   if (fn) fn(b, e);
 });
 app.addEventListener('change', e => {
+  if (e.target.id === 'rem-time') {
+    if (/^([01]\d|2[0-3]):[0-5]\d$/.test(e.target.value)) { state.settings.reminderTime = e.target.value; persist(); }
+    return;
+  }
   if (e.target.id === 'unlock-check') {
     ui.unlockChecked = e.target.checked;
     const btn = $('#unlock-confirm'); if (btn) btn.disabled = !ui.unlockChecked;
