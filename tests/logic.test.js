@@ -41,14 +41,17 @@ test('catégorie du dos après la séance', () => {
   assert.equal(api.backCat(entry({ pain: null, back: 'sensible' })), 'sensible', 'anciennes séances');
 });
 
-test('XP : la qualité compte, pas le volume', () => {
+test('XP : au temps joué, la qualité compte, enchaîner ne paie pas', () => {
   const { dos, boule, difficile } = api.PROGRAMS;
-  assert.equal(api.computeXP(dos, run()), 130, 'séance complète et parfaite');
-  assert.equal(api.computeXP(dos, run({ skipped: ['pont'], painEx: ['pont'] })), 130, 'passé pour douleur : aucune pénalité');
-  assert.equal(api.computeXP(dos, run({ skipped: ['velo'] })), 105, 'un exercice non fait sur 4');
-  assert.equal(api.computeXP(dos, run({ perfect: 5 })), 110, 'moitié des reps trop rapides');
-  assert.equal(api.computeXP(boule, run()), api.computeXP(dos, run()), 'Boule qui chamboule ne rapporte pas plus');
-  assert.ok(api.computeXP(difficile, run()) < api.computeXP(dos, run()), 'Jour difficile rapporte moins');
+  assert.equal(api.computeXP(dos, run(), 14), 160, 'séance complète et parfaite');
+  assert.equal(api.computeXP(dos, run({ skipped: ['pont'], painEx: ['pont'] }), 14), 160, 'passé pour douleur : aucune pénalité');
+  assert.equal(api.computeXP(dos, run({ skipped: ['velo'] }), 14), 125, 'un exercice non fait sur 4');
+  assert.equal(api.computeXP(dos, run({ perfect: 5 }), 14), 132, 'moitié des reps trop rapides');
+  assert.equal(api.computeXP(boule, run(), 20), api.computeXP(dos, run(), 15), 'au-delà de 15 min, le volume ne rapporte plus');
+  assert.equal(api.computeXP(difficile, run(), 2), 40);
+  assert.equal(api.computeXP(difficile, run(), 2, true), 10, 'deuxième séance du jour : moitié, sans bonus');
+  const perMin = (p, m) => api.computeXP(p, run(), m) / m;
+  assert.ok(perMin(difficile, 2) < 2 * perMin(dos, 14), 'la séance la plus courte n’écrase plus les autres à la minute');
 });
 
 test('étoiles', () => {
@@ -75,6 +78,11 @@ test('défis de la semaine : tirage stable, +50 XP une seule fois, vieux défis 
   assert.equal(picked.length, 3);
   assert.equal(new Set(picked.map(c => c.id)).size, 3, 'trois défis différents');
   same(api.weekChallenges(D(2026, 10, 13)).map(c => c.id), picked.map(c => c.id), 'même tirage toute la semaine');
+  const withBike = api.weekChallenges(D(2026, 10, 19)).map(c => c.id), noBike = api.weekChallenges(D(2026, 10, 19), true).map(c => c.id);
+  assert.ok(withBike.includes('velo15'), 'semaine du 19 octobre : défi vélo tiré');
+  assert.ok(!noBike.includes('velo15'), 'sans vélo, il est remplacé');
+  assert.equal(new Set(noBike).size, 3);
+  same(noBike.filter(id => withBike.includes(id)), withBike.filter(id => id !== 'velo15'), 'les deux autres défis ne changent pas');
 
   // Une semaine qui remplit tous les défis possibles.
   const days = [12, 13, 14].map(d => iso(2026, 10, d));
@@ -209,7 +217,13 @@ test('suivi du lendemain', () => {
 });
 
 test('Dos solide : série de séances sans douleur pour le débloquer', () => {
-  const ok = o => entry(Object.assign({ painBefore: 3, pain: 2 }, o));
+  const ok = o => entry(Object.assign({ painBefore: 3, pain: 2, next: 2 }, o));
+  const ten = o => Array.from({ length: 10 }, () => ok(o));
+  assert.equal(api.solidStreak(state({ history: ten() })), 10);
+  assert.equal(api.solidStreak(state({ history: ten({ painBefore: 6, pain: 6, next: 6 }) })), 0, 'douleur constante à 6/10 : ce n’est pas « sans douleur »');
+  assert.equal(api.solidStreak(state({ history: ten({ next: null }) })), 0, 'sans suivi du lendemain, rien ne compte');
+  assert.equal(api.solidStreak(state({ history: [ok({ next: null }), ok(), ok()] })), 2, 'le lendemain pas encore noté : la série attend');
+  assert.equal(api.solidStreak(state({ history: [ok(), ok({ painBefore: 4, pain: 4, next: 4 }), ok()] })), 1, '4/10 casse la série');
   assert.equal(api.SOLIDE_NEEDED, 10);
   assert.equal(api.solidStreak(state({ history: [ok(), ok({ prog: 'boule' }), ok({ prog: 'milieu' })] })), 3, 'tous les programmes comptent');
   assert.equal(api.solidStreak(state({ history: [ok(), entry({ pain: null }), ok()] })), 2, 'sans ressenti noté : ignorée, pas cassée');
@@ -250,16 +264,20 @@ test('séance du jour proposée par Chouquette', () => {
   assert.equal(api.suggestToday(state({ history: [ok('dos', 1, { stop: true })] }), NOW).prog, 'difficile', 'arrêt pour la jambe');
   assert.equal(api.suggestToday(state({ history: [ok('dos', 1, { pain: 4 })] }), NOW).prog, 'calme', 'dos sensible');
   assert.equal(api.suggestToday(state({ history: [ok('dos', 5, { pain: 8 })] }), NOW).prog, 'fessiers', 'vieille douleur : rotation normale');
-  assert.equal(api.suggestToday(state({ history: [ok('dos', 1), ok('fessiers', 3)] }), NOW).prog, 'milieu', 'jamais fait passe en premier');
-  assert.equal(api.suggestToday(state({ history: [ok('dos', 1), ok('milieu', 2), ok('fessiers', 4)] }), NOW).prog, 'fessiers', 'le moins récent');
-  const s = state({ history: [ok('dos', 1), ok('milieu', 2), ok('fessiers', 3)] });
+  const checked = o => { const x = state(o); x.settings.milieuOk = true; return x; };
+  assert.equal(api.suggestToday(state({ history: [ok('dos', 1), ok('fessiers', 3)] }), NOW).prog, 'fessiers', 'Dos du milieu jamais proposé sans avis médical');
+  assert.equal(api.suggestToday(checked({ history: [ok('dos', 1), ok('fessiers', 3)] }), NOW).prog, 'milieu', 'jamais fait passe en premier');
+  assert.equal(api.suggestToday(checked({ history: [ok('dos', 1), ok('milieu', 2), ok('fessiers', 4)] }), NOW).prog, 'fessiers', 'le moins récent');
+  assert.equal(api.normalize({ settings: { milieuOk: 'oui' } }).settings.milieuOk, false, 'seul true ouvre Dos du milieu');
+  assert.match(api.kineSummary(state(), NOW), /Dos du milieu : en attente d’une vérification médicale/);
+  const s = checked({ history: [ok('dos', 1), ok('milieu', 2), ok('fessiers', 3)] });
   s.settings.solideUnlocked = true;
   assert.equal(api.suggestToday(s, NOW).prog, 'solide', 'Dos solide entre dans la rotation une fois débloqué');
   for (const p of api.SUGGEST_ROTATION || []) assert.ok(api.PROGRAMS[p]);
 });
 
 test('séances de suite sans douleur', () => {
-  const s = state({ history: [entry({ pain: 2 }), entry({ pain: 3, prog: 'boule' }), entry({ pain: 2 }), entry({ pain: 7 }), entry({ pain: 1 })] });
+  const s = state({ history: [entry({ pain: 2, next: 2 }), entry({ pain: 3, prog: 'boule', next: 2 }), entry({ pain: 2, next: 2 }), entry({ pain: 7, next: 2 }), entry({ pain: 1, next: 1 })] });
   assert.equal(api.painFreeRun(s), 2, 's’arrête à la première séance douloureuse ; les autres programmes ne comptent pas');
 });
 
@@ -287,7 +305,7 @@ test('résumé pour le kiné', () => {
   assert.match(txt, /Passé pour douleur : Pont fessier/);
   assert.match(txt, /Séances : 1, sur 1 jour/);
   assert.doesNotMatch(txt, /9 → 9/, 'seulement les 30 derniers jours');
-  assert.doesNotMatch(txt, /mot-retire/i, 'pas de diagnostic');
+  same(require('../source/privacy.js')(txt), [], 'pas de diagnostic');
 });
 
 test('cohérence des données', () => {
@@ -299,7 +317,7 @@ test('cohérence des données', () => {
   for (const p of Object.values(api.PROGRAMS)) {
     assert.ok(p.exercises.length > 0, `${p.id} vide`);
     if (p.practice) continue;
-    assert.ok(p.xpBase > 0 && p.rest >= 0, `${p.id} : XP et repos`);
+    assert.ok(p.rest >= 0, `${p.id} : repos`);
     for (const ex of p.exercises) {
       const il = api.ILLUS[ex.id];
       assert.ok(il, `dessin manquant pour ${ex.id}`);

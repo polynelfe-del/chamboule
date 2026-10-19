@@ -26,7 +26,7 @@ const scriptBlock = `(() => {\n'use strict';\n\n${script}})();\n`;
 try { new vm.Script(scriptBlock, { filename: 'chamboule-coach.js' }); } catch (e) { fail('Erreur de syntaxe dans le code : ' + e.message); }
 if (/<\/script/i.test(scriptBlock)) fail('Le code contient « </script> », ce qui casserait la page.');
 const html = `${read('page-head.html').trimEnd()}\n<style>\n${read('styles.css').trimEnd()}\n</style>\n\n${read('page-body.html').trimEnd()}\n\n<script>\n${scriptBlock}</script>\n`;
-if (/mot-retire/i.test(html)) fail('Un diagnostic apparaît dans le code de la page.');
+if (require('./privacy.js')(html).length) fail('Un diagnostic apparaît dans le code de la page.');
 const kb = Buffer.byteLength(html) / 1024;
 if (kb > 1024) fail(`Page trop lourde : ${Math.round(kb)} Ko.`);
 fs.mkdirSync(BUILD, { recursive: true });

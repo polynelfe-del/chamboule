@@ -4,8 +4,8 @@
   --accent:#C93B7B; --accent-deep:#93245A; --accent-ink:#FFFFFF;
   --awning-a:#FF8DBA; --awning-b:#FFFFFF;
   --ticket:#FFD25E; --ticket-deep:#D9A21E; --ticket-ink:#3A2600;
-  --prize:#8455E8; --prize-ink:#FFFFFF;
-  --ok:#1A7D60; --ok-ink:#FFFFFF; --warn:#A35D00; --danger:#B3261E;
+  --prize:#7444DE; --prize-ink:#FFFFFF;
+  --ok:#1A7D60; --ok-ink:#FFFFFF; --warn:#8F5100; --danger:#B3261E;
   --bulb-off:#F8D3E3;
   --face:#FFFFFF; --face-ink:#3A1238; --blush:#FF9EC2;
   --shadow:0 1px 0 rgba(147,36,90,.06),0 12px 28px -14px rgba(147,36,90,.40);
@@ -158,7 +158,7 @@ button{font:inherit;color:inherit}
 .ticket.locked .ex-list,.ticket.locked .ex-strip{opacity:.6}
 .ticket-body > p.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ex-strip{display:flex;gap:8px;flex-wrap:wrap}
-.ex-thumb{border:0;padding:0;background:none;cursor:pointer;border-radius:12px;width:52px}
+.ex-thumb{border:0;padding:0;background:none;cursor:pointer;border-radius:12px;width:52px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .ex-thumb .il-mini{width:52px}
 .ticket-toggle{align-self:flex-start;padding:0}
 .t-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}

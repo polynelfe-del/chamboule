@@ -207,7 +207,7 @@ function homeHTML() {
   if (pend) {
     notices += `<section class="card next-card" aria-label="Suivi du lendemain">
       <p class="eyebrow">Suivi du lendemain · +20 XP</p>
-      <h2 class="section-title">Ton dos ce matin, après ta séance de ${esc(fmtDate(pend.d))} ?</h2>
+      <h2 class="section-title">Ton dos aujourd’hui, après ta séance de ${esc(fmtDate(pend.d))} ?</h2>
       ${scaleHTML('next', null, `data-id="${esc(pend.id)}"`)}
     </section>`;
   }
@@ -219,7 +219,7 @@ function homeHTML() {
   const earned = BADGES.filter(b => state.badges[b.id]).length;
   const gear = `<button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button>`;
   const wkDone = (state.challenges || {})[weekKey(new Date())] || {};
-  const chalWon = weekChallenges(new Date()).filter(c => wkDone[c.id]).length;
+  const chalWon = weekChallenges(new Date(), !state.settings.bike).filter(c => wkDone[c.id]).length;
   let main;
   if (ui.tab === 'progress') {
     main = `
@@ -273,10 +273,10 @@ function homeHTML() {
       ${gear}
     </header>
 
+    ${todayCardHTML()}
+
     ${notices}
     ${backupReminderHTML()}
-
-    ${todayCardHTML()}
 
     <section class="card player" aria-label="Ta progression">
       <div class="player-top">
@@ -348,10 +348,11 @@ function ticketHTML(id) {
   const toggle = n > 1 ? `<button class="link-btn ticket-toggle" data-action="ticket-toggle" data-prog="${id}" aria-expanded="${open}">${open ? 'Masquer le détail' : `Voir le détail des ${n} exercices`}</button>` : '';
   const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(state, ex, setsFor(state, p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
   let foot;
-  if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
+  if (id === 'milieu' && !state.settings.milieuOk) foot = `<div class="unlock-progress"><span class="est">Avant ce programme, fais vérifier par un médecin l’origine de ta douleur au milieu du dos, surtout si elle s’accompagne de douleurs au ventre.</span><button class="btn ghost" data-action="milieu-ok">Un médecin a vérifié</button></div>`;
+  else if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
   else if (id === 'solide' && solidStreak(state) < SOLIDE_NEEDED) {
     const k = solidStreak(state);
-    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances de renforcement sans douleur d’affilée (Reprise dos, Dos du milieu, Fessiers doux)</span></div>`;
+    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances de renforcement d’affilée à 3/10 au plus, lendemain compris (Reprise dos, Dos du milieu, Fessiers doux)</span></div>`;
   }
   else if (ui.unlockOpen !== id) foot = `<div class="t-row"><span class="est">${id === 'solide' ? 'Ton dos va bien : prêt à débloquer' : 'À débloquer avec ton kiné'}</span><button class="btn ${id === 'solide' ? 'primary' : 'ghost'}" data-action="unlock-open" data-prog="${id}">${ICON.lock} Débloquer</button></div>`;
   else foot = unlockPanelHTML(id);
@@ -422,7 +423,7 @@ function lvlToken(n) {
 
 function challengesHTML() {
   const done = (state.challenges || {})[weekKey(new Date())] || {};
-  const items = weekChallenges(new Date()).map(c => {
+  const items = weekChallenges(new Date(), !state.settings.bike).map(c => {
     const p = chalProgress(state, c), won = !!done[c.id];
     return `<li class="chal${won ? ' won' : ''}">
       <div class="chal-txt"><b>${esc(c.name)}</b><span>${esc(c.desc)}</span>
@@ -1184,8 +1185,9 @@ function finish(reason) {
     return;
   }
   const stars = computeStars(reason, G);
-  const xp = computeXP(G.prog, G);
   const sameDay = state.history.some(h => dayKey(h.d) === dayKey(new Date()));
+  const minutes = Math.min(estMin(state, G.prog), Math.max(1, Math.round((Date.now() - G.t0) / 60000)));
+  const xp = computeXP(G.prog, G, minutes, sameDay);
   const entry = {
     id: 's' + Date.now().toString(36), d: new Date().toISOString(), prog: G.prog.id,
     score: G.score, xp, stars, perfect: G.perfect, reps: G.reps, combo: G.bestCombo,
@@ -1354,6 +1356,11 @@ const ACTIONS = {
   home() { goHome(); },
   play(b) {
     ui.nextMsg = null;
+    if (b.dataset.prog === 'milieu' && !state.settings.milieuOk) {
+      ui.screen = 'home'; ui.tab = 'play'; ui.allProgs = true; renderScreen({ still: true });
+      const t = $('.ticket.milieu'); if (t) t.scrollIntoView({ block: 'start' });
+      return;
+    }
     if (!state.settings.tutorialDone) { ui.afterPractice = b.dataset.prog; startGame('essai', null); return; }
     openPrecheck(b.dataset.prog);
   },
@@ -1453,6 +1460,11 @@ const ACTIONS = {
     ui.unlockOpen = null; ui.unlockChecked = false;
     persist(); renderScreen({ still: true });
     toast(id === 'solide' ? 'Dos solide débloqué ! Au moindre retour de douleur dans la jambe, il se reverrouille.' : 'Boule qui chamboule débloqué. Arrête au moindre fourmillement.');
+  },
+  'milieu-ok'() {
+    state.settings.milieuOk = true; state.settings.milieuOkAt = new Date().toISOString();
+    persist(); renderScreen({ still: true });
+    toast('Dos du milieu ouvert. Arrête si la douleur change de place ou si le ventre se manifeste.');
   },
   relock() { state.settings.bouleUnlocked = false; state.settings.bouleUnlockedAt = null; persist(); renderScreen(); },
   'hist-toggle'() { ui.historyAll = !ui.historyAll; renderScreen({ still: true }); },

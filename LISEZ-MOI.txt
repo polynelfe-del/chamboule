@@ -44,6 +44,7 @@ OPTION B : L'APPLI DE CE DOSSIER SUR GITHUB PAGES (gratuit, marche hors ligne)
        drawings.js     les dessins : exercices, icônes, Chouquette, boîtes
        app.js          les écrans, la séance de jeu et la sauvegarde
        page-head.html / page-body.html   le début de la page
+       privacy.js      les mots qui ne doivent jamais apparaître dans la page (rangés sous forme d'empreintes)
    Les tests automatiques sont dans tests/logic.test.js.
 
    Après une modification, depuis la racine du dépôt :

@@ -92,28 +92,28 @@ const EX = {
 };
 
 const PROGRAMS = {
-  dos: { id: 'dos', name: 'Reprise dos', tag: 'Routine du 11 oct. 2026', rest: 30, xpBase: 100,
+  dos: { id: 'dos', name: 'Reprise dos', tag: 'Routine du 11 oct. 2026', rest: 30,
     blurb: 'Gainage doux, fessiers et cardio léger, adaptés à ton dos. À faire valider par ton kiné.',
     exercises: [EX.transverse, EX.birddog, EX.pont, EX.velo] },
-  solide: { id: 'solide', name: 'Dos solide', tag: 'Niveau supérieur', rest: 30, xpBase: 100,
-    blurb: 'La suite quand ton dos va bien : les mêmes muscles, un cran plus fort. Se débloque après 10 séances de renforcement sans douleur d’affilée et l’accord de ton kiné. Se reverrouille si la douleur revient dans la jambe.',
+  solide: { id: 'solide', name: 'Dos solide', tag: 'Niveau supérieur', rest: 30,
+    blurb: 'La suite quand ton dos va bien : les mêmes muscles, un cran plus fort. Se débloque après 10 séances de renforcement d’affilée à 3/10 de douleur au plus (avant, après et le lendemain), puis l’accord de ton kiné. Se reverrouille si la douleur revient dans la jambe.',
     exercises: [EX.birddogtenu, EX.pontmarche, EX.deadbug, EX.squatchaise, EX.plancheplus] },
-  fessiers: { id: 'fessiers', name: 'Fessiers doux', tag: 'Sans charger le dos', rest: 30, xpBase: 100,
+  fessiers: { id: 'fessiers', name: 'Fessiers doux', tag: 'Sans charger le dos', rest: 30,
     blurb: 'Les fessiers travaillent sur le côté ou depuis une chaise, sans pression sur les disques. Une alternative douce à Boule qui chamboule. À faire valider par ton kiné.',
     exercises: [EX.coquillage, EX.abduction, EX.assisdebout, EX.gainagelat] },
-  calme: { id: 'calme', name: 'Dos calme', tag: 'Mobilité · 5 min', rest: 20, xpBase: 80,
+  calme: { id: 'calme', name: 'Dos calme', tag: 'Mobilité · 5 min', rest: 20,
     blurb: 'Des mouvements doux pour dérouiller le dos, même les jours un peu raides. Inspirés de fiches de kinés hospitaliers. Arrête si ça descend dans la jambe.',
     exercises: [EX.bascule, EX.genoupoitrine, EX.rouleau, EX.talons] },
-  milieu: { id: 'milieu', name: 'Dos du milieu', tag: 'Mobilité douce', rest: 20, xpBase: 100,
+  milieu: { id: 'milieu', name: 'Dos du milieu', tag: 'Mobilité douce', rest: 20,
     blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pour la marche, la balade du chien fait déjà le travail. Pont fessier et bird-dog sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
     exercises: [EX.chatvache, EX.rotation, EX.thorax, EX.gainage, EX.planche] },
-  difficile: { id: 'difficile', name: 'Jour difficile', tag: 'Séance douce · 3 min', rest: 30, xpBase: 50,
+  difficile: { id: 'difficile', name: 'Jour difficile', tag: 'Séance douce · 3 min', rest: 30,
     blurb: 'Juste la respiration, pour garder le rythme sans rien forcer. Pour les jours où le dos est sensible.',
     exercises: [{ ...EX.transverse, sets: 2 }] },
-  boule: { id: 'boule', name: 'Boule qui chamboule', tag: 'Programme fessiers · nov. 2025', rest: 45, xpBase: 100,
+  boule: { id: 'boule', name: 'Boule qui chamboule', tag: 'Programme fessiers · nov. 2025', rest: 45,
     blurb: 'Ton ancien programme fessiers. Il date d’avant les adaptations pour ton dos et n’a pas été revalidé.',
     exercises: [EX.hipthrust, EX.fentes, EX.donkey, EX.sumo, EX.hydrant] },
-  essai: { id: 'essai', name: 'Essai', tag: '', rest: 0, xpBase: 0, practice: true, blurb: '',
+  essai: { id: 'essai', name: 'Essai', tag: '', rest: 0, practice: true, blurb: '',
     exercises: [{ id: 'essai', name: 'Essai : 3 lancers', kind: 'reps', target: 3, tempo: 3, prescText: 'Tape 3 fois au bon moment',
       cue: 'Pas besoin de bouger. Regarde le cercle se remplir. Quand il devient jaune et que ça bipe, tape : la balle part sur les boîtes.',
       tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
@@ -167,11 +167,15 @@ const OUTFITS = [
   { id: 'chapeau', name: 'Chapeau de fête', unlock: 'Badge Semaine pleine', test: s => !!s.badges.semaine },
   { id: 'couronne', name: 'Couronne', unlock: 'Niveau 5', test: s => levelInfo(s.xp).n >= 5 }
 ];
-function weekChallenges(d) {
+/* Sans vélo, le défi vélo de la semaine est remplacé par un autre ; les deux autres ne changent pas. */
+function weekChallenges(d, noBike) {
   let h = 7;
   for (const ch of weekKey(d)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const pool = CHALLENGES.slice(), out = [];
-  for (let i = 0; i < 3; i++) { h = (Math.imul(h, 1103515245) + 12345) >>> 0; out.push(pool.splice(h % pool.length, 1)[0]); }
+  const draw = () => { h = (Math.imul(h, 1103515245) + 12345) >>> 0; return pool.splice(h % pool.length, 1)[0]; };
+  for (let i = 0; i < 3; i++) out.push(draw());
+  const v = out.findIndex(c => c.id === 'velo15');
+  if (noBike && v >= 0) out[v] = draw();
   return out;
 }
 
@@ -198,7 +202,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, bike: true, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, veloMin: 10, bike: true, weeklyGoal: 3, sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud' }, badges: {}, challenges: {}, history: [] };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -246,6 +250,7 @@ function cleanSettings(s, d) {
     sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
     bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
     solideUnlocked: s.solideUnlocked === true, solideUnlockedAt: isoOr(s.solideUnlockedAt),
+    milieuOk: s.milieuOk === true, milieuOkAt: isoOr(s.milieuOkAt),
     lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
     outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud'
   };
@@ -299,16 +304,24 @@ function backCat(h) {
 }
 /* Programmes qui prouvent que le dos encaisse du renforcement. La respiration et la mobilité ne comptent pas. */
 const STRENGTH_PROGS = ['dos', 'milieu', 'fessiers', 'solide', 'boule'];
-/* Séances de renforcement d’affilée finies avec un dos qui va bien, y compris le lendemain.
-   Une séance douce sans douleur ne compte pas mais ne casse pas la série ; toute séance douloureuse la remet à zéro,
-   quel que soit le programme. Les séances sans ressenti noté sont ignorées. */
+/* Une séance « sans douleur » : 3/10 au plus avant, après et le lendemain, sans aggravation, sans symptôme dans la jambe
+   ni exercice passé pour douleur. Renvoie 'count' quand le lendemain est noté, 'wait' tant qu’il manque, 'break' sinon,
+   et null quand aucun ressenti n’a été noté. */
+const QUIET_MAX = 3;
+function quietState(h) {
+  if (h.pain == null && !h.stop) return null;
+  if (backCat(h) !== 'ok' || (h.painEx && h.painEx.length)) return 'break';
+  if (Math.max(h.painBefore ?? 0, h.pain, h.next ?? 0) > QUIET_MAX) return 'break';
+  return h.next == null ? 'wait' : 'count';
+}
+/* Séances de renforcement « sans douleur » d’affilée. Une séance douce ou pas encore suivie le lendemain ne compte pas
+   mais ne casse pas la série ; toute séance au-dessus de 3/10 la remet à zéro, quel que soit le programme. */
 function solidStreak(s) {
   let n = 0;
   for (const h of s.history) {
-    if (h.pain == null && !h.stop) continue;
-    const okNext = h.next == null || h.next <= (h.painBefore ?? h.pain ?? 0) + 1;
-    if (!(backCat(h) === 'ok' && okNext && !(h.painEx && h.painEx.length))) break;
-    if (STRENGTH_PROGS.includes(h.prog)) n++;
+    const q = quietState(h);
+    if (q === 'break') break;
+    if (q === 'count' && STRENGTH_PROGS.includes(h.prog)) n++;
   }
   return n;
 }
@@ -326,7 +339,8 @@ function suggestToday(s, now = new Date()) {
     return { prog: 'difficile', why: 'Ton dos a été douloureux à la dernière séance. Aujourd’hui, juste la respiration, et on voit demain.' };
   }
   if (recent && cat === 'sensible') return { prog: 'calme', why: 'Ton dos était un peu sensible la dernière fois : place aux mouvements doux.' };
-  const pool = SUGGEST_ROTATION.concat(s.settings.solideUnlocked ? ['solide'] : []);
+  /* Dos du milieu n’est proposé qu’une fois l’avis médical déclaré. */
+  const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : []);
   const lastDone = id => { const h = s.history.find(x => x.prog === id); return h ? new Date(h.d).getTime() : -Infinity; };
   const prog = pool.slice().sort((a, b) => lastDone(a) - lastDone(b))[0];
   const why = {
@@ -341,8 +355,9 @@ function painFreeRun(s) {
   let n = 0;
   for (const h of s.history) {
     if (h.prog !== 'dos') continue;
-    const okNext = h.next == null || h.next <= (h.painBefore ?? h.pain ?? 0) + 1;
-    if (backCat(h) === 'ok' && okNext && !(h.painEx && h.painEx.length)) n++; else break;
+    const q = quietState(h);
+    if (q === 'break' || q === null) break;
+    if (q === 'count') n++;
   }
   return n;
 }
@@ -361,7 +376,7 @@ function evalChallenges(s, now = new Date()) {
   s.challenges = s.challenges || {};
   const done = s.challenges[k] || (s.challenges[k] = {});
   const fresh = [];
-  weekChallenges(now).forEach(c => { if (!done[c.id] && chalProgress(s, c, now) >= c.goal) { done[c.id] = dayKey(now); s.xp += 50; fresh.push(c); } });
+  weekChallenges(now, !s.settings.bike).forEach(c => { if (!done[c.id] && chalProgress(s, c, now) >= c.goal) { done[c.id] = dayKey(now); s.xp += 50; fresh.push(c); } });
   const keep = new Set(); const w = startOfWeek(now);
   for (let i = 0; i < 4; i++) { keep.add(weekKey(w)); w.setDate(w.getDate() - 7); }
   Object.keys(s.challenges).forEach(x => { if (!keep.has(x)) delete s.challenges[x]; });
@@ -412,13 +427,17 @@ function buildSteps(s, prog) {
   });
   return steps;
 }
-/* XP d’une séance : la qualité compte, pas le volume. Un exercice passé pour douleur ne pénalise pas. */
-function computeXP(prog, r) {
+/* XP d’une séance : 10 par minute jouée (15 min au plus), modulés par la qualité, +20 pour la première séance du jour.
+   Une autre séance le même jour rapporte moitié moins et sans bonus : enchaîner les séances courtes ne paie pas.
+   Un exercice passé pour douleur ne pénalise pas. */
+const XP_MINUTES_CAP = 15;
+function computeXP(prog, r, minutes, repeat) {
   const considered = prog.exercises.map(e => e.id).filter(id => !r.painEx.includes(id));
   const done = considered.filter(id => !r.skipped.includes(id)).length;
   const completion = considered.length ? done / considered.length : 0;
   const quality = r.reps ? r.perfect / r.reps : 1;
-  return Math.round(prog.xpBase * completion * (0.6 + 0.4 * quality)) + 30;
+  const xp = Math.round(10 * Math.min(XP_MINUTES_CAP, minutes) * completion * (0.6 + 0.4 * quality));
+  return repeat ? Math.round(xp / 2) : xp + 20;
 }
 function computeStars(reason, r) {
   if (reason === 'pain') return 0;
@@ -449,7 +468,8 @@ function kineSummary(s, now = new Date()) {
   L.push(`Période : du ${from.toLocaleDateString('fr-FR')} au ${now.toLocaleDateString('fr-FR')}`);
   L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
   L.push(`Réglages actuels : ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, ${st.bike ? 'vélo ' + st.veloMin + ' min' : 'vélo mis de côté pour le moment'}`);
-  L.push(`Programme Dos solide : ${st.solideUnlocked ? 'débloqué' + (st.solideUnlockedAt ? ' le ' + new Date(st.solideUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : 'verrouillé (' + solidStreak(s) + ' / ' + SOLIDE_NEEDED + ' séances de renforcement sans douleur d’affilée)'}`);
+  L.push(`Programme Dos solide : ${st.solideUnlocked ? 'débloqué' + (st.solideUnlockedAt ? ' le ' + new Date(st.solideUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : 'verrouillé (' + solidStreak(s) + ' / ' + SOLIDE_NEEDED + ' séances de renforcement d’affilée à 3/10 au plus, lendemain compris)'}`);
+  L.push(`Programme Dos du milieu : ${st.milieuOk ? 'ouvert après vérification médicale déclarée' + (st.milieuOkAt ? ' le ' + new Date(st.milieuOkAt).toLocaleDateString('fr-FR') : '') : 'en attente d’une vérification médicale'}`);
   L.push(`Programme Boule qui chamboule : ${st.bouleUnlocked ? 'débloqué' + (st.bouleUnlockedAt ? ' le ' + new Date(st.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);
   L.push('');
   L.push('Douleur de dos notée de 0 à 10 : avant la séance → juste après → le lendemain.');
