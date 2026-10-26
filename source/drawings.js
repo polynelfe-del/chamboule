@@ -186,6 +186,11 @@ Object.assign(ILLUS, {
     { prop: SUPPORT, h: [86, 31], b: [[[86, 40], [86, 80]]], n: [[[86, 80], [110, 84], [112, 108], [120, 108]], [[86, 46], [67, 45], [48, 43]]], a: [[[86, 80], [74, 104], [52, 106]]], over: down(138, 30, 48) }
   ]}
 });
+const FRONT = { b: [[[80, 25], [80, 64]], [[66, 32], [94, 32]], [[72, 64], [88, 64]]], legs: [[[72, 64], [70, 110]], [[88, 64], [90, 110]]] };
+ILLUS.tirageserviette = { labels: ['Serviette tendue devant la poitrine', 'Écarte en serrant les omoplates'], poses: [
+  { h: [80, 16], b: FRONT.b, n: FRONT.legs.concat([[[66, 32], [68, 42], [74, 44]], [[94, 32], [92, 42], [86, 44]]]), over: '<path class="il-cue" d="M74 44 L86 44 M74 44 L72 56 M86 44 L88 56"/>' },
+  { h: [80, 16], b: FRONT.b, n: FRONT.legs, a: [[[66, 32], [54, 42], [62, 46]], [[94, 32], [106, 42], [98, 46]]], over: '<path class="il-cue" d="M62 46 L98 46"/><path class="il-arrow" d="M44 50 H32 M37 45 L32 50 L37 55 M116 50 H128 M123 45 L128 50 L123 55"/>' }
+]};
 function poseSVG(p) {
   const pl = list => (list || []).map(pts => `<polyline points="${pts.map(q => q.join(',')).join(' ')}"/>`).join('');
   return `${p.prop || ''}<g class="il-far">${pl(p.f)}</g><g class="il-body">${pl(p.b)}${pl(p.n)}</g><g class="il-move">${pl(p.a)}</g><circle class="il-head" cx="${p.h[0]}" cy="${p.h[1]}" r="8"/>${p.over || ''}`;

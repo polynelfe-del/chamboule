@@ -177,7 +177,7 @@ function legHTML(action, value) {
 }
 
 /* ---------- Écrans ---------- */
-const ui = { screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set(), allProgs: false };
+const ui = { setOpen: new Set(['seances']), screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set(), allProgs: false };
 
 function renderScreen(opts = {}) {
   if (ui.screen === 'home') app.innerHTML = homeHTML();
@@ -218,7 +218,7 @@ function homeHTML() {
     notices += `<div class="notice good"><b>${run} séances de suite sans douleur.</b><span>Demande à ton kiné si tu peux passer à 2 séries. Le réglage est dans les réglages.</span></div>`;
   }
   const readyProgs = [...new Set(LADDERS.map(l => l.prog))].filter(pid => rungsReady(state, pid).length && !(pid === 'milieu' && !state.settings.milieuOk));
-  if (readyProgs.length) notices += `<div class="notice good"><b>Prêt pour la suite : ${esc(readyProgs.map(pid => PROGRAMS[pid].name).join(', '))}</b><span>Tu es au dernier cran. Une version plus difficile t’attend dans l’arbre de progression, avec l’accord de ton kiné.</span><div class="row-btns"><button class="btn ghost" data-action="tab" data-tab="progress">Voir l’arbre</button></div></div>`;
+  if (readyProgs.length) notices += `<div class="notice good"><b>Prêt pour la suite : ${esc(readyProgs.map(pid => PROGRAMS[pid].name).join(', '))}</b><span>Tu es au dernier palier. Une version plus difficile t’attend dans l’arbre de progression, avec l’accord de ton kiné.</span><div class="row-btns"><button class="btn ghost" data-action="tab" data-tab="progress">Voir l’arbre</button></div></div>`;
   const earned = BADGES.filter(b => state.badges[b.id]).length;
   const gear = `<button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button>`;
   const wkDone = (state.challenges || {})[weekKey(new Date())] || {};
@@ -306,7 +306,7 @@ function homeHTML() {
       <div class="bulbs" aria-hidden="true">${bulbs}</div>
       <p class="week-meta">${wk >= goal ? 'Objectif atteint. Profite aussi des jours de repos, ils font partie du programme.' : `Chaque jour d’entraînement remplit un cœur, un seul par jour. Encore ${goal - wk} pour l’objectif.`}</p>
       <button class="link-row" data-action="tab" data-tab="progress"><span>Défis de la semaine : <b>${chalWon} / 3</b> gagnés</span>${ICON.chev}</button>
-      ${state.settings.solideUnlocked ? '' : `<button class="link-row" data-action="show-solide"><span>Dos solide : <b>${Math.min(solidStreak(state), SOLIDE_NEEDED)} / ${SOLIDE_NEEDED}</b> séances de renfo sans douleur</span>${ICON.chev}</button>`}
+      ${state.settings.solideUnlocked ? '' : `<button class="link-row" data-action="show-solide"><span>Dos solide : <b>${Math.min(solidStreak(state), SOLIDE_NEEDED)} / ${SOLIDE_NEEDED}</b> séances de renfo calmes</span>${ICON.chev}</button>`}
     </section>
 
     <section class="programs" aria-label="Tous les programmes">
@@ -341,7 +341,7 @@ function todayCardHTML() {
   return `<section class="card today" aria-label="Séance du jour">
     <p class="eyebrow">${sug.rest ? 'Si tu en as envie' : `Séance du jour · +${SUGGEST_BONUS} XP bonus`}</p>
     ${buddyHTML(sug.why, sug.prog === 'difficile' || sug.rest ? 'calm' : 'happy', 'sm')}
-    <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · cran ${p.level}/${STEP_MAX}` : ''}</span>${bikeChipHTML(p.id)}</div>
+    <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span>${bikeChipHTML(p.id)}</div>
     <div class="ex-strip">${strip}</div>
     <button class="btn play big" data-action="play" data-prog="${p.id}">${ICON.play} Jouer</button>
   </section>`;
@@ -355,10 +355,10 @@ function ticketHTML(id) {
   const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(state, ex, setsFor(state, p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
   let foot;
   if (id === 'milieu' && !state.settings.milieuOk) foot = `<div class="unlock-progress"><span class="est">Avant ce programme, fais vérifier par un médecin l’origine de ta douleur au milieu du dos, surtout si elle s’accompagne de douleurs au ventre.</span><button class="btn ghost" data-action="milieu-ok">Un médecin a vérifié</button></div>`;
-  else if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · cran ${p.level}/${STEP_MAX}` : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
+  else if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
   else if (id === 'solide' && solidStreak(state) < SOLIDE_NEEDED) {
     const k = solidStreak(state);
-    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances de renforcement d’affilée à 3/10 au plus, lendemain compris (Reprise dos, Dos du milieu, Fessiers doux)</span></div>`;
+    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances de renforcement d’affilée à ${state.settings.painMax}/10 au plus, lendemain compris (Reprise dos, Dos du milieu, Fessiers doux)</span></div>`;
   }
   else if (ui.unlockOpen !== id) foot = `<div class="t-row"><span class="est">${id === 'solide' ? 'Ton dos va bien : prêt à débloquer' : 'À débloquer avec ton kiné'}</span><button class="btn ${id === 'solide' ? 'primary' : 'ghost'}" data-action="unlock-open" data-prog="${id}">${ICON.lock} Débloquer</button></div>`;
   else foot = unlockPanelHTML(id);
@@ -399,24 +399,25 @@ function treeHTML() {
   const groups = [...new Set(LADDERS.map(l => l.prog))];
   return `<section class="card tree" aria-label="Arbre de progression">
     <h2 class="section-title">Arbre de progression</h2>
-    <p class="muted">Chaque mouvement a des versions de plus en plus dures. Au cran ${STEP_MAX}/${STEP_MAX} d’un programme, ses versions suivantes peuvent se débloquer, avec l’accord de ton kiné.</p>
+    <p class="muted">Chaque mouvement a des versions de plus en plus dures. Chaque programme monte d’abord par paliers (une répétition de plus, ou quelques secondes). Au palier ${STEP_MAX}/${STEP_MAX}, ses versions suivantes peuvent se débloquer, avec l’accord de ton kiné.</p>
     ${groups.map(pid => {
       const ready = rungsReady(state, pid), locked = pid === 'milieu' && !state.settings.milieuOk;
       const rows = laddersOf(pid).map(l => {
         const r = rungOf(state, l);
         const nodes = l.rungs.map((id, i) => `<li class="${i < r ? 'done' : i === r ? 'now' : 'next'}"><button class="tree-node" data-action="ex-open" data-prog="${pid}" data-ex="${id}" aria-label="${esc(exName(id))}, ${i < r ? 'déjà passée' : i === r ? 'version actuelle' : 'à venir'}">${illusMini(id)}</button><span>${esc(exName(id))}</span></li>`).join('');
-        return `<div class="tree-row"><span class="tree-name">${esc(l.name)}</span><ol class="tree-rungs">${nodes}</ol>${r > 0 ? `<button class="link-btn" data-action="rung-down" data-ladder="${l.id}">Revenir à la version précédente</button>` : ''}</div>`;
+        const noDoor = l.id === 'tirer' && state.settings.noDoor ? '<p class="muted">Sans porte adaptée : remplacé par le tirage à la serviette.</p>' : '';
+        return `<div class="tree-row"><span class="tree-name">${esc(l.name)}</span><ol class="tree-rungs">${nodes}</ol>${noDoor}${r > 0 ? `<button class="link-btn" data-action="rung-down" data-ladder="${l.id}">Revenir à la version précédente</button>` : ''}</div>`;
       }).join('');
       let foot = '';
       if (ready.length && !locked) foot = ui.unlockOpen === 'rung:' + pid ? unlockPanelHTML('rung:' + pid)
         : `<div class="t-row"><span class="est">Prêt pour la suite : ${esc(nextRungNames(pid))}</span><button class="btn primary" data-action="unlock-open" data-prog="rung:${pid}">${ICON.lock} Débloquer</button></div>`;
-      return `<div class="tree-group"><div class="tree-head"><b>${esc(PROGRAMS[pid].name)}</b><span class="est">cran ${stepLevel(state, pid)}/${STEP_MAX}</span></div>${rows}${foot}</div>`;
+      return `<div class="tree-group"><div class="tree-head"><b>${esc(PROGRAMS[pid].name)}</b><span class="est">palier ${stepLevel(state, pid)}/${STEP_MAX}</span></div>${rows}${foot}</div>`;
     }).join('')}
   </section>`;
 }
 function rungPanelHTML(pid) {
   return `<div class="unlock">
-    <p>Nouvelles versions pour ${esc(PROGRAMS[pid].name)} : ${esc(nextRungNames(pid))}. Elles sont plus difficiles : demande d’abord l’accord de ton kiné. Les crans de ce programme repartiront de zéro.</p>
+    <p>Nouvelles versions pour ${esc(PROGRAMS[pid].name)} : ${esc(nextRungNames(pid))}. Elles sont plus difficiles : demande d’abord l’accord de ton kiné. Les paliers de ce programme repartiront de zéro.</p>
     <label class="check"><input type="checkbox" id="unlock-check" ${ui.unlockChecked ? 'checked' : ''}> Mon kiné est d’accord pour ces versions</label>
     <div class="t-row">
       <button class="btn primary" id="unlock-confirm" data-action="rung-confirm" data-prog="${pid}" ${ui.unlockChecked ? '' : 'disabled'}>Débloquer</button>
@@ -425,41 +426,78 @@ function rungPanelHTML(pid) {
   </div>`;
 }
 function fitHTML() {
-  const t = state.tests, due = testDue(state);
+  const t = state.tests, due = testDue(state), cur = t.filter(x => x.v === TEST_VERSION);
   const rows = FIT_TESTS.map(f => {
-    const vals = t.slice(0, 6).reverse().filter(x => x[f.id] != null);
-    const max = Math.max(1, ...vals.map(x => x[f.id]));
-    const bars = vals.map(x => `<span style="height:${Math.round(25 + 75 * x[f.id] / max)}%" title="${esc(fmtDate(x.d))}"><i>${x[f.id]}</i></span>`).join('');
-    return `<div class="fit-row"><b>${esc(f.name)}</b>${vals.length ? `<div class="fit-bars" role="img" aria-label="${esc(f.name)}, du plus ancien au plus récent : ${vals.map(x => x[f.id]).join(', ')}">${bars}</div>` : '<span class="muted">Pas encore de mesure.</span>'}</div>`;
+    const vals = cur.slice(0, 6).reverse().filter(x => x[f.id] != null);
+    const cols = vals.map(x => `<div class="fit-col"><span class="fit-bar" style="height:${Math.round(25 + 75 * x[f.id] / TEST_CAP)}%"><i>${x[f.id]}</i></span><small>${esc(new Date(x.d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }))}</small></div>`).join('');
+    return `<div class="fit-row"><b>${esc(f.name)}</b>${vals.length ? `<div class="fit-bars" role="img" aria-label="${esc(f.name)}, du plus ancien au plus récent : ${vals.map(x => x[f.id] + ' le ' + fmtDate(x.d)).join(', ')}">${cols}</div>` : '<span class="muted">Pas encore de mesure.</span>'}</div>`;
   }).join('');
   const next = t[0] ? new Date(Date.parse(t[0].d) + TEST_EVERY_DAYS * 86400000) : null;
   const when = due ? `À faire maintenant · +${TEST_XP} XP` : next ? 'Prochain test conseillé à partir du ' + fmtDate(next.toISOString()) : 'Conseillé après tes 3 premières séances';
   return `<section class="card fit" aria-label="Test de forme">
     <h2 class="section-title">Test de forme du mois</h2>
-    <p class="muted">Deux mesures de 30 secondes, debout, à comparer à toi-même d’un mois sur l’autre. Arrête au moindre signe de douleur.</p>
+    <p class="muted">Deux mesures debout, au rythme d’un bip toutes les 3 secondes, ${TEST_CAP} répétitions au plus. On ne cherche pas la vitesse : tu t’arrêtes dès que tu ne suis plus le rythme proprement, ou au moindre signe de douleur.</p>
+    ${t.length && !cur.length ? '<p class="muted">Le test a changé : tes anciennes mesures restent dans le résumé pour le kiné, la nouvelle courbe démarre au prochain test.</p>' : ''}
     ${rows}
     <div class="t-row"><span class="est">${esc(when)}</span><button class="btn ${due ? 'primary' : 'ghost'}" data-action="test-start">Faire le test</button></div>
   </section>`;
 }
 function testCardHTML() {
-  return `<div class="notice good"><b>Test de forme du mois · +${TEST_XP} XP</b><span>Deux minutes, debout : assis-debout et pompes contre le mur, 30 secondes chacun.</span><div class="row-btns"><button class="btn primary" data-action="test-start">Faire le test</button></div></div>`;
+  return `<div class="notice good"><b>Test de forme du mois · +${TEST_XP} XP</b><span>Deux mesures debout, au rythme d’un bip : assis-debout et pompes contre le mur. Une à deux minutes en tout.</span><div class="row-btns"><button class="btn primary" data-action="test-start">Faire le test</button></div></div>`;
 }
 function testHTML() {
-  const T = ui.test, f = FIT_TESTS[T.i], prev = state.tests[0];
-  let inner;
-  if (T.phase === 'intro') inner = `${illusFull(f.ex)}<p>${esc(f.cue)}</p><button class="btn primary big" data-action="test-go">${ICON.play} Partez, 30 secondes</button>`;
-  else if (T.phase === 'run') inner = `<div class="test-clock" role="timer"><b id="test-left">${Math.max(0, Math.ceil((T.endAt - Date.now()) / 1000))}</b><span>secondes</span></div><p class="muted center-note">Compte à voix haute. Arrête tout de suite si ça fait mal.</p><button class="btn ghost" data-action="test-stop">Arrêter : douleur</button>`;
-  else inner = `<h2 class="section-title">Combien en 30 secondes ?</h2>${prev && prev[f.id] != null ? `<p class="muted">La dernière fois : ${prev[f.id]}.</p>` : ''}<div class="stepper big"><button data-action="test-dec" aria-label="Un de moins">−</button><output id="test-val" aria-live="polite">${T.val}</output><button data-action="test-inc" aria-label="Un de plus">+</button></div><button class="btn primary big" data-action="test-save">${T.i < FIT_TESTS.length - 1 ? 'Valider et passer au suivant' : 'Valider'}</button>`;
+  const T = ui.test, f = FIT_TESTS[Math.min(T.i, FIT_TESTS.length - 1)];
+  let title = f.name, inner;
+  if (T.phase === 'intro') inner = `${illusFull(f.ex)}<p>${esc(f.cue)}</p><button class="btn primary big" data-action="test-go">${ICON.play} C’est parti</button>`;
+  else if (T.phase === 'run') inner = `<p class="eyebrow center-note" id="test-lead">Prêt ? 3</p>
+    <div class="test-clock"><b id="test-count" aria-live="polite">${T.count}</b><span>répétitions · un bip toutes les ${f.tempo} s · ${TEST_CAP} au plus</span></div>
+    <button class="btn primary big" data-action="test-end">Je ne suis plus le rythme</button>
+    <button class="btn ghost" data-action="test-stop">Arrêter : douleur</button>`;
+  else {
+    title = 'Et ton dos ?';
+    inner = `<h2 class="section-title">Ton dos, là, maintenant ?</h2>${scaleHTML('test-pain', T.pain)}
+      <p class="muted">${FIT_TESTS.map(x => `${esc(x.short)} : ${T.vals[x.id] ?? 0}`).join(' · ')}</p>
+      <button class="btn primary big" data-action="test-save"${T.pain == null ? ' disabled' : ''}>Enregistrer</button>`;
+  }
+  const step = T.phase === 'pain' ? 'Fin du test' : `Test de forme · ${T.i + 1} / ${FIT_TESTS.length}`;
   return `<main class="page plain">
     <header class="sub-top">
       <button class="icon-btn" data-action="home" aria-label="Quitter le test">${ICON.back}</button>
-      <div><p class="eyebrow">Test de forme · ${T.i + 1} / ${FIT_TESTS.length}</p><h1>${esc(f.name)}</h1></div>
+      <div><p class="eyebrow">${step}</p><h1>${esc(title)}</h1></div>
     </header>
     <section class="card set-card test-card">${inner}</section>
   </main>`;
 }
+/* Le chrono du test : un bip et un nombre dit à voix haute à chaque répétition. */
+function testTick(T) {
+  if (ui.screen !== 'test' || ui.test !== T || T.phase !== 'run') { clearInterval(T.timer); return; }
+  const f = FIT_TESTS[T.i], el = Date.now() - T.startAt, lead = $('#test-lead');
+  if (el < 0) { if (lead) lead.textContent = 'Prêt ? ' + Math.ceil(-el / 1000); return; }
+  if (lead) lead.textContent = 'Un bip, une répétition';
+  const k = Math.floor(el / (f.tempo * 1000));
+  if (k === T.lastBip) return;
+  T.lastBip = k; T.count = Math.min(TEST_CAP, k);
+  const c = $('#test-count'); if (c) c.textContent = T.count;
+  if (T.count >= TEST_CAP) { testFinish(T); return; }
+  if (state.settings.sound) { tone(880, .08, 'triangle', .12); if (k > 0) say(String(k)); }
+}
+function testFinish(T) {
+  clearInterval(T.timer);
+  T.vals[FIT_TESTS[T.i].id] = T.count || 0;
+  if (state.settings.sound) SFX.end();
+  if (T.i < FIT_TESTS.length - 1) { T.i++; T.phase = 'intro'; } else T.phase = 'pain';
+  renderScreen(); window.scrollTo(0, 0);
+}
 function unlockPanelHTML(id) {
   if (id.startsWith('rung:')) return rungPanelHTML(id.slice(5));
+  if (id === 'seuil') return `<div class="unlock">
+    <p>Monter le seuil à ${Math.min(6, state.settings.painMax + 1)}/10 : tes séances compteront pour progresser avec un peu plus de douleur, tant qu’elle n’augmente pas pendant la séance ni le lendemain. À faire seulement si ton kiné te l’a conseillé.</p>
+    <label class="check"><input type="checkbox" id="unlock-check" ${ui.unlockChecked ? 'checked' : ''}> Mon kiné m’a donné ce seuil</label>
+    <div class="t-row">
+      <button class="btn primary" id="unlock-confirm" data-action="seuil-confirm" ${ui.unlockChecked ? '' : 'disabled'}>Monter le seuil</button>
+      <button class="btn ghost" data-action="unlock-cancel">Annuler</button>
+    </div>
+  </div>`;
   const solide = id === 'solide';
   return `<div class="unlock">
     <p>${solide ? `Ton dos va bien depuis ${solidStreak(state)} séances de renforcement d’affilée. Avant de passer au niveau supérieur, demande l’accord de ton kiné.` : 'Ce programme date de novembre 2025, avant les adaptations pour ton dos. Pour ta reprise, la priorité reste la routine Reprise dos.'}</p>
@@ -572,18 +610,19 @@ function historyHTML() {
   return `<ul class="hist">${li}</ul><div class="hist-actions">${more}<button class="btn ghost" data-action="summary">Résumé pour mon kiné</button></div>`;
 }
 
+/* Réglages rangés en sections repliables : seule « Mes séances » est ouverte au départ. */
+function setSection(id, title, body) {
+  const open = ui.setOpen.has(id) || (id === 'suivi' && ui.importData) || (id === 'boule' && ui.unlockOpen === 'boule') || (id === 'douleur' && ui.unlockOpen === 'seuil');
+  return `<section class="card set-card fold" aria-label="${esc(title)}">
+      <h2 class="section-title"><button class="fold-head" data-action="set-toggle" data-sec="${id}" aria-expanded="${!!open}"><span>${esc(title)}</span>${ICON.chev}</button></h2>
+      ${open ? body : ''}
+    </section>`;
+}
 function settingsHTML() {
   const s = state.settings;
   const seg = [1, 2, 3].map(n => `<button data-action="set-sets" data-v="${n}" aria-pressed="${s.sets === n}">${n}</button>`).join('');
-  return `
-  <main class="page plain">
-    <header class="sub-top">
-      <button class="icon-btn" data-action="home" aria-label="Retour à l’accueil">${ICON.back}</button>
-      <h1>Réglages</h1>
-    </header>
-
-    <section class="card set-card" aria-label="Reprise dos">
-      <h2 class="section-title">Reprise dos</h2>
+  const seances = `
+      <h3 class="set-sub">Reprise dos</h3>
       <div class="set-row">
         <div><b>Séries par exercice au sol</b><small>Ta routine prévoit 1 série au départ. Ajoute-en une seulement avec l’accord de ton kiné.</small></div>
         <div class="seg" role="group" aria-label="Nombre de séries">${seg}</div>
@@ -596,32 +635,30 @@ function settingsHTML() {
         <div><b>Durée du vélo</b><small>Progression graduelle : une minute de plus de temps en temps.</small></div>
         <div class="stepper"><button data-action="velo-dec" aria-label="Moins une minute">−</button><output>${s.veloMin} min</output><button data-action="velo-inc" aria-label="Plus une minute">+</button></div>
       </div>
-    </section>
-
-    <section class="card set-card" aria-label="Fessiers doux">
-      <h2 class="section-title">Fessiers doux</h2>
+      <h3 class="set-sub">Fessiers doux</h3>
       <div class="set-row">
         <div><b>Séries par exercice</b><small>1 série au départ. Passe à 2 seulement avec l’accord de ton kiné.</small></div>
         <div class="seg" role="group" aria-label="Séries Fessiers doux">${[1, 2].map(n => `<button data-action="set-fsets" data-v="${n}" aria-pressed="${s.fessiersSets === n}">${n}</button>`).join('')}</div>
       </div>
-    </section>
-
-    <section class="card set-card" aria-label="Progression automatique">
-      <h2 class="section-title">Progression automatique</h2>
-      <p class="muted">Toutes les ${STEP_EVERY} séances calmes et complètes d’un programme, suivi du lendemain compris, Chouquette monte d’un cran : une répétition de plus ou quelques secondes de maintien, ${STEP_MAX} crans au plus. Une séance au-dessus de 3/10 fait redescendre d’un cran. Reprise dos reste dans la fourchette donnée par ton kiné.</p>
-      <ul class="step-list">${STEP_PROGS.map(id => `<li><span>${esc(PROGRAMS[id].name)}</span><b>cran ${stepLevel(state, id)}/${STEP_MAX}</b></li>`).join('')}</ul>
-    </section>
-
-    <section class="card set-card" aria-label="Rappels">
-      <h2 class="section-title">Rappels</h2>
+      <h3 class="set-sub">Haut du corps doux</h3>
+      <div class="set-row">
+        <div><b>Rowing à la porte</b><small>Désactive-le si tu n’as pas de porte qui s’ouvre de l’autre côté avec une poignée solide : il est remplacé par un tirage à la serviette, sans porte.</small></div>
+        <button class="toggle" role="switch" aria-checked="${!s.noDoor}" aria-label="Rowing à la porte" data-action="door-toggle"></button>
+      </div>`;
+  const douleur = `
+      <div class="set-row">
+        <div><b>Douleur acceptable pour progresser</b><small>Une séance compte pour Dos solide et les paliers si ta douleur reste à ce niveau ou en dessous, avant, après et le lendemain, sans augmenter. 3/10 par défaut ; à monter seulement avec ton kiné, par exemple si ta douleur de fond est souvent à 4 ou 5.</small></div>
+        <div class="stepper"><button data-action="pain-dec" aria-label="Seuil plus bas">−</button><output>${s.painMax}/10</output><button data-action="pain-inc" aria-label="Seuil plus haut">+</button></div>
+      </div>
+      ${ui.unlockOpen === 'seuil' ? unlockPanelHTML('seuil') : ''}
+      <p class="muted">Toutes les ${STEP_EVERY} séances calmes et complètes d’un programme, suivi du lendemain compris, Chouquette monte d’un palier : une répétition de plus ou quelques secondes de maintien, ${STEP_MAX} paliers au plus. Ensuite, la version suivante de l’exercice peut se débloquer avec l’accord de ton kiné (arbre dans Progrès). Une séance au-dessus de ton seuil fait redescendre d’un palier. Reprise dos reste dans la fourchette donnée par ton kiné.</p>
+      <ul class="step-list">${STEP_PROGS.map(id => `<li><span>${esc(PROGRAMS[id].name)}</span><b>palier ${stepLevel(state, id)}/${STEP_MAX}</b></li>`).join('')}</ul>`;
+  const rappels = `
       <div class="set-row"><div><b>Jours</b><small>Les jours où tu veux un rappel de séance.</small></div></div>
       <div class="day-chips" role="group" aria-label="Jours de rappel">${[[1, 'L', 'Lundi'], [2, 'M', 'Mardi'], [3, 'M', 'Mercredi'], [4, 'J', 'Jeudi'], [5, 'V', 'Vendredi'], [6, 'S', 'Samedi'], [0, 'D', 'Dimanche']].map(([d, l, n]) => `<button data-action="rem-day" data-v="${d}" aria-pressed="${s.reminderDays.includes(d)}" aria-label="${n}">${l}</button>`).join('')}</div>
       <div class="set-row"><div><b>Heure</b></div><input type="time" id="rem-time" class="time-in" value="${esc(s.reminderTime)}" aria-label="Heure du rappel"></div>
-      ${canSave() ? `<div class="set-row"><div><b>Ajouter à mon agenda</b><small>Un rappel répété chaque semaine dans l’agenda du téléphone. Sur Android, ouvre ensuite le fichier téléchargé. À refaire si tu changes les jours ou l’heure.</small></div><button class="btn ghost" data-action="reminders"${s.reminderDays.length ? '' : ' disabled'}>Ajouter</button></div>` : ''}
-    </section>
-
-    <section class="card set-card" aria-label="Jeu">
-      <h2 class="section-title">Jeu</h2>
+      ${canSave() ? `<div class="set-row"><div><b>Ajouter à mon agenda</b><small>Un rappel répété chaque semaine dans l’agenda du téléphone. Si tu changes les jours ou l’heure, ajoute-le de nouveau : il remplace l’ancien dans la plupart des agendas (sinon, supprime l’ancien à la main). Sur Android, ouvre ensuite le fichier téléchargé.</small></div><button class="btn ghost" data-action="reminders"${s.reminderDays.length ? '' : ' disabled'}>Ajouter</button></div>` : ''}`;
+  const jeu = `
       <div class="set-row">
         <div><b>Mains libres</b><small>L’appli rythme chaque répétition et compte à voix haute. Tu n’as pas à toucher l’écran.</small></div>
         <button class="toggle" role="switch" aria-checked="${s.handsFree}" aria-label="Mains libres" data-action="hf-toggle"></button>
@@ -637,18 +674,11 @@ function settingsHTML() {
       <div class="set-row">
         <div><b>Jours d’entraînement par semaine</b><small>Le nombre de cœurs à remplir. Un seul cœur par jour.</small></div>
         <div class="stepper"><button data-action="goal-dec" aria-label="Un jour de moins">−</button><output>${s.weeklyGoal}</output><button data-action="goal-inc" aria-label="Un jour de plus">+</button></div>
-      </div>
-    </section>
-
-    <section class="card set-card" aria-label="Boule qui chamboule">
-      <h2 class="section-title">Boule qui chamboule</h2>
-      ${s.bouleUnlocked
-        ? `<div class="set-row"><div><b>Débloqué${s.bouleUnlockedAt ? ' le ' + esc(new Date(s.bouleUnlockedAt).toLocaleDateString('fr-FR')) : ''}</b><small>Tu as indiqué que ton kiné a validé ce programme. Arrête au moindre fourmillement ou douleur dans la jambe.</small></div><button class="btn ghost" data-action="relock">${ICON.lock} Reverrouiller</button></div>`
-        : (ui.unlockOpen === 'boule' ? unlockPanelHTML('boule') : `<div class="set-row"><div><b>Verrouillé</b><small>Programme fessiers de novembre 2025, pas encore revalidé pour ton dos.</small></div><button class="btn ghost" data-action="unlock-open" data-prog="boule">${ICON.lock} Débloquer</button></div>`)}
-    </section>
-
-    <section class="card set-card" aria-label="Suivi et sauvegarde">
-      <h2 class="section-title">Suivi et sauvegarde</h2>
+      </div>`;
+  const boule = s.bouleUnlocked
+    ? `<div class="set-row"><div><b>Débloqué${s.bouleUnlockedAt ? ' le ' + esc(new Date(s.bouleUnlockedAt).toLocaleDateString('fr-FR')) : ''}</b><small>Tu as indiqué que ton kiné a validé ce programme. Arrête au moindre fourmillement ou douleur dans la jambe.</small></div><button class="btn ghost" data-action="relock">${ICON.lock} Reverrouiller</button></div>`
+    : (ui.unlockOpen === 'boule' ? unlockPanelHTML('boule') : `<div class="set-row"><div><b>Verrouillé</b><small>Programme fessiers de novembre 2025, pas encore revalidé pour ton dos.</small></div><button class="btn ghost" data-action="unlock-open" data-prog="boule">${ICON.lock} Débloquer</button></div>`);
+  const suivi = `
       <div class="set-row"><div><b>Résumé pour mon kiné</b><small>Les 30 derniers jours : séances, douleur avant, après et le lendemain.</small></div><button class="btn ghost" data-action="summary">Ouvrir</button></div>
       <div class="set-row"><div><b>Sauvegarde dans un fichier</b><small>Pour passer tes données d’un appareil à l’autre, par exemple vers l’appli du téléphone.</small></div>
         <div class="row-btns">${canSave() ? '<button class="btn ghost" data-action="export">Exporter</button>' : ''}<label class="btn ghost" for="import-file">Importer</label><input type="file" id="import-file" class="sr" accept=".json,application/json"></div>
@@ -658,16 +688,28 @@ function settingsHTML() {
       <p class="muted">${mode === 'cloud' ? 'Ta progression est enregistrée sur ton compte et se retrouve sur tous tes appareils. Personne d’autre ne la voit, même si tu partages le lien de l’appli.' : 'Ta progression est enregistrée dans ce navigateur seulement.'}</p>
       ${ui.resetArm
         ? `<div class="t-row"><button class="btn danger-outline" data-action="reset-confirm">Oui, tout effacer</button><button class="btn ghost" data-action="reset-cancel">Annuler</button></div>`
-        : `<div><button class="btn ghost" data-action="reset-arm">Effacer ma progression</button></div>`}
-    </section>
+        : `<div><button class="btn ghost" data-action="reset-arm">Effacer ma progression</button></div>`}`;
+  return `
+  <main class="page plain">
+    <header class="sub-top">
+      <button class="icon-btn" data-action="home" aria-label="Retour à l’accueil">${ICON.back}</button>
+      <h1>Réglages</h1>
+    </header>
+    ${setSection('seances', 'Mes séances', seances)}
+    ${setSection('douleur', 'Douleur et progression', douleur)}
+    ${setSection('rappels', 'Rappels', rappels)}
+    ${setSection('jeu', 'Jeu', jeu)}
+    ${setSection('boule', 'Boule qui chamboule', boule)}
+    ${setSection('suivi', 'Suivi et sauvegarde', suivi)}
   </main>`;
 }
 
 /* ---------- Avant la séance ---------- */
+function needsDoorCheck(prog) { return prog === 'haut' && !state.settings.noDoor && !state.settings.doorChecked; }
 function precheckHTML() {
   const pre = ui.pre, p = PROGRAMS[pre.prog];
-  const pend = pendingNextDay(state);
-  const ready = pre.pain != null && pre.leg != null && !pend;
+  const pend = pendingNextDay(state), door = needsDoorCheck(pre.prog);
+  const ready = pre.pain != null && pre.leg != null && !pend && !door;
   let outcome = '';
   if (pre.step === 'leg') {
     outcome = `<div class="notice danger"><b>Pas de renforcement aujourd’hui.</b><span>Des symptômes dans la jambe avant même de commencer, c’est à montrer à ton kiné ou à ton médecin. La respiration du transverse reste possible si elle ne réveille rien.</span></div>
@@ -696,6 +738,15 @@ function precheckHTML() {
       <h2 class="section-title">Douleur ou fourmillements dans la jambe ?</h2>
       ${legHTML('pre-leg', pre.leg)}
     </section>
+    ${door && !outcome ? `<section class="card set-card" aria-label="Rowing à la porte">
+      <h2 class="section-title">Avant ton premier rowing à la porte</h2>
+      <ul class="door-list">
+        <li>La porte s’ouvre <b>de l’autre côté</b> : en tirant, tu la plaques contre son cadre.</li>
+        <li>La poignée est <b>bien fixée</b> : tire fort dessus, debout et bien droit, avant de te pencher.</li>
+        <li>La serviette est <b>épaisse et solide</b>, sans trou ni couture qui lâche.</li>
+      </ul>
+      <div class="row-btns"><button class="btn primary" data-action="door-ok">C’est vérifié</button><button class="btn ghost" data-action="door-none">Pas de porte adaptée</button></div>
+    </section>` : ''}
     ${hasBike(p) && !outcome ? `<section class="card set-card" aria-label="Vélo d’appartement">
       <div class="set-row">
         <div><b>Vélo d’appartement aujourd’hui ?</b><small>${state.settings.bike ? 'Inclus à la fin de la séance.' : 'Mis de côté : la séance s’arrête après le pont. Remets-le quand tu auras un vélo.'}</small></div>
@@ -1509,7 +1560,7 @@ const ACTIONS = {
   'pre-pain'(b) { ui.pre.pain = Number(b.dataset.v); ui.pre.step = 'ask'; renderScreen(); },
   'pre-leg'(b) { ui.pre.leg = b.dataset.v === '1'; ui.pre.step = 'ask'; renderScreen(); },
   'pre-go'() {
-    const pre = ui.pre; if (pre.pain == null || pre.leg == null || pendingNextDay(state)) return;
+    const pre = ui.pre; if (pre.pain == null || pre.leg == null || pendingNextDay(state) || needsDoorCheck(pre.prog)) return;
     if (pre.leg) { pre.step = 'leg'; renderScreen(); return; }
     if (pre.pain >= 7 && pre.prog !== 'difficile') { pre.step = 'high'; renderScreen(); return; }
     startGame(pre.prog, pre);
@@ -1534,7 +1585,7 @@ const ACTIONS = {
     const moved = dir => STEP_PROGS.filter((id, i) => Math.sign(stepLevel(state, id) - levels[i]) === dir).map(id => PROGRAMS[id].name).join(', ');
     const up = moved(1), down = moved(-1);
     toast((ch.length > 1 ? `+20 XP. ${ch.length} défis réussis, +${ch.length * 50} XP !` : ch.length ? `+20 XP. Défi réussi : ${ch[0].name}, +50 XP !` : '+20 XP. Noté pour ton kiné.')
-      + (up ? ` Chouquette monte d’un cran : ${up}.` : '') + (down ? ` On redescend d’un cran : ${down}.` : ''));
+      + (up ? ` Chouquette monte d’un palier : ${up}.` : '') + (down ? ` On redescend d’un palier : ${down}.` : ''));
   },
   summary() { ui.summaryBack = ui.screen; ui.screen = 'summary'; renderScreen(); window.scrollTo(0, 0); },
   'summary-back'() { ui.screen = ui.summaryBack === 'settings' ? 'settings' : 'home'; renderScreen(); window.scrollTo(0, 0); },
@@ -1592,41 +1643,47 @@ const ACTIONS = {
     persist(); renderScreen({ still: true });
     toast(`Retour à : ${exName(l.rungs[rungOf(state, l)])}.`);
   },
-  'test-start'() { audio(); ui.test = { i: 0, phase: 'intro', vals: {}, val: 10, timer: 0 }; ui.screen = 'test'; renderScreen(); window.scrollTo(0, 0); },
+  'test-start'() { audio(); ui.test = { i: 0, phase: 'intro', vals: {}, pain: null, count: 0, timer: 0 }; ui.screen = 'test'; renderScreen(); window.scrollTo(0, 0); },
   'test-go'() {
     const T = ui.test; if (!T) return;
-    T.phase = 'run'; T.endAt = Date.now() + 30000; renderScreen();
-    if (state.settings.sound) SFX.perfect();
+    T.phase = 'run'; T.count = 0; T.lastBip = -1; T.startAt = Date.now() + 3000;
+    renderScreen();
     clearInterval(T.timer);
-    T.timer = setInterval(() => {
-      if (ui.screen !== 'test' || ui.test !== T || T.phase !== 'run') { clearInterval(T.timer); return; }
-      const left = Math.max(0, Math.ceil((T.endAt - Date.now()) / 1000));
-      const el = $('#test-left'); if (el) el.textContent = left;
-      if (left > 0) return;
-      clearInterval(T.timer);
-      const f = FIT_TESTS[T.i], prev = state.tests[0];
-      T.phase = 'count'; T.val = prev && prev[f.id] != null ? prev[f.id] : 10;
-      renderScreen();
-      if (state.settings.sound) SFX.end();
-    }, 200);
+    T.timer = setInterval(() => testTick(T), 100);
   },
+  'test-end'() { const T = ui.test; if (T && T.phase === 'run') testFinish(T); },
   'test-stop'() { if (ui.test) clearInterval(ui.test.timer); ui.test = null; goHome(); toast('Test arrêté. Si la douleur persiste, parles-en à ton kiné.'); },
-  'test-dec'() { const T = ui.test; if (!T) return; T.val = Math.max(0, T.val - 1); const o = $('#test-val'); if (o) o.textContent = T.val; },
-  'test-inc'() { const T = ui.test; if (!T) return; T.val = Math.min(FIT_TESTS[T.i].max, T.val + 1); const o = $('#test-val'); if (o) o.textContent = T.val; },
+  'test-pain'(b) { const T = ui.test; if (!T) return; T.pain = Number(b.dataset.v); renderScreen({ still: true }); },
   'test-save'() {
-    const T = ui.test; if (!T) return;
-    T.vals[FIT_TESTS[T.i].id] = T.val;
-    if (T.i < FIT_TESTS.length - 1) { T.i++; T.phase = 'intro'; renderScreen(); window.scrollTo(0, 0); return; }
-    const xp = testDue(state) ? TEST_XP : 0, prev = state.tests[0];
-    state.tests.unshift(Object.assign({ d: new Date().toISOString() }, T.vals));
+    const T = ui.test; if (!T || T.pain == null) return;
+    const xp = testDue(state) ? TEST_XP : 0, prev = state.tests.find(x => x.v === TEST_VERSION);
+    state.tests.unshift(Object.assign({ d: new Date().toISOString(), v: TEST_VERSION, pain: T.pain }, T.vals));
     if (state.tests.length > 60) state.tests.length = 60;
     state.xp += xp;
     evalBadges(state);
     persist();
     ui.test = null; ui.tab = 'progress'; goHome();
     const cmp = prev ? FIT_TESTS.filter(f => prev[f.id] != null).map(f => `${f.short} ${prev[f.id]} → ${T.vals[f.id]}`).join(', ') : '';
-    toast(`Test enregistré${xp ? ` · +${xp} XP` : ''}.${cmp ? ' ' + cmp + '.' : ''}`);
+    toast(T.pain >= 6 ? 'Test enregistré. Ton dos est à ' + T.pain + '/10 : repos, et parles-en à ton kiné avant de refaire le test.'
+      : `Test enregistré${xp ? ` · +${xp} XP` : ''}.${cmp ? ' ' + cmp + '.' : ''}`);
   },
+  'set-toggle'(b) { const id = b.dataset.sec; if (ui.setOpen.has(id)) ui.setOpen.delete(id); else ui.setOpen.add(id); renderScreen({ still: true }); },
+  'pain-dec'() { const s = state.settings; if (s.painMax <= 2) return; s.painMax--; s.painMaxAt = new Date().toISOString(); persist(); renderScreen({ still: true }); },
+  'pain-inc'() { if (state.settings.painMax >= 6) return; ui.unlockOpen = 'seuil'; ui.unlockChecked = false; renderScreen({ still: true }); const c = $('#unlock-check'); if (c) c.focus(); },
+  'seuil-confirm'() {
+    if (!ui.unlockChecked) return;
+    const s = state.settings; s.painMax = Math.min(6, s.painMax + 1); s.painMaxAt = new Date().toISOString();
+    ui.unlockOpen = null; ui.unlockChecked = false;
+    persist(); renderScreen({ still: true });
+    toast(`Seuil réglé à ${s.painMax}/10. Il apparaît dans le résumé pour ton kiné.`);
+  },
+  'door-toggle'() {
+    const s = state.settings; s.noDoor = !s.noDoor; if (!s.noDoor) s.doorChecked = false;
+    persist(); renderScreen({ still: true });
+    toast(s.noDoor ? 'Rowing remplacé par le tirage à la serviette, sans porte.' : 'Rowing à la porte remis : l’appli te fera vérifier la porte avant la séance.');
+  },
+  'door-ok'() { state.settings.doorChecked = true; persist(); renderScreen({ still: true }); },
+  'door-none'() { state.settings.noDoor = true; persist(); renderScreen({ still: true }); toast('Rowing remplacé par le tirage à la serviette, sans porte.'); },
   'set-fsets'(b) { state.settings.fessiersSets = clamp(Number(b.dataset.v) || 1, 1, 2); persist(); renderScreen({ still: true }); },
   'rem-day'(b) {
     const d = Number(b.dataset.v), days = state.settings.reminderDays;

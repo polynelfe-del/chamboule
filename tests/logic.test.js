@@ -78,8 +78,10 @@ test('défis de la semaine : tirage stable, +50 XP une seule fois, vieux défis 
   assert.equal(picked.length, 3);
   assert.equal(new Set(picked.map(c => c.id)).size, 3, 'trois défis différents');
   same(api.weekChallenges(D(2026, 10, 13)).map(c => c.id), picked.map(c => c.id), 'même tirage toute la semaine');
-  const withBike = api.weekChallenges(D(2026, 10, 19)).map(c => c.id), noBike = api.weekChallenges(D(2026, 10, 19), true).map(c => c.id);
-  assert.ok(withBike.includes('velo15'), 'semaine du 19 octobre : défi vélo tiré');
+  let wk = D(2026, 10, 19);
+  for (let k = 0; k < 80 && !api.weekChallenges(wk).some(c => c.id === 'velo15'); k++) wk = new Date(wk.getTime() + 7 * 86400000);
+  const withBike = api.weekChallenges(wk).map(c => c.id), noBike = api.weekChallenges(wk, true).map(c => c.id);
+  assert.ok(withBike.includes('velo15'), 'une semaine avec le défi vélo');
   assert.ok(!noBike.includes('velo15'), 'sans vélo, il est remplacé');
   assert.equal(new Set(noBike).size, 3);
   same(noBike.filter(id => withBike.includes(id)), withBike.filter(id => id !== 'velo15'), 'les deux autres défis ne changent pas');
@@ -92,7 +94,7 @@ test('défis de la semaine : tirage stable, +50 XP une seule fois, vieux défis 
     history: [
       entry({ d: days[0], stars: 3, combo: 12, reps: 10, perfect: 10, next: 2, pain: 2, hf: true, pyramids: 2, veloMin: 8 }),
       entry({ d: days[1], stars: 3, next: 2, pain: 2, pyramids: 1, veloMin: 8, prog: 'difficile' }),
-      entry({ d: days[2], stars: 2 })
+      entry({ d: days[2], stars: 2, prog: 'haut' })
     ]
   });
   s.settings.lastExport = NOW.toISOString();
@@ -312,7 +314,7 @@ test('progression automatique', () => {
   s.settings.fessiersSets = 2;
   assert.equal(api.setsFor(s, api.PROGRAMS.fessiers, api.EX.coquillage), 2, '2e série Fessiers doux');
   assert.equal(api.normalize({ settings: { fessiersSets: 5 } }).settings.fessiersSets, 2);
-  assert.match(api.kineSummary(s, NOW), /Fessiers doux cran 1\/2/);
+  assert.match(api.kineSummary(s, NOW), /Fessiers doux palier 1\/2/);
 });
 
 test('repos et bonus de Chouquette', () => {
@@ -334,6 +336,9 @@ test('rappels pour l’agenda', () => {
   assert.match(ics, /END:VCALENDAR\r\n$/);
   for (const line of ics.split('\r\n')) assert.ok(Buffer.byteLength(line) <= 75, 'ligne trop longue : ' + line);
   assert.equal(api.reminderICS([], '18:00', NOW), '');
+  const uid = x => x.match(/UID:[^\r]+/)[0];
+  assert.equal(uid(api.reminderICS([1, 3, 5, 6], '19:30', NOW)), uid(ics), 'même identifiant : le nouveau rappel remplace l’ancien');
+  assert.ok(+api.reminderICS([1], '18:00', D(2026, 10, 20)).match(/SEQUENCE:(\d+)/)[1] > +ics.match(/SEQUENCE:(\d+)/)[1], 'numéro de version qui monte');
   assert.match(api.reminderICS([0], '20:30', NOW), /DTSTART:20261018T203000/, 'aujourd’hui si l’heure n’est pas passée');
   assert.match(api.reminderICS([0], '09:00', NOW), /DTSTART:20261025T090000/, 'sinon la semaine suivante');
   same(api.normalize({ settings: { reminderDays: [9, 1, 1, 'x', 3] } }).settings.reminderDays, [1, 3]);
@@ -369,8 +374,41 @@ test('test de forme du mois', () => {
   const n = api.normalize({ tests: [{ d: iso(2026, 10, 1), chaise: 500, mur: '18' }, { d: 'pas une date', chaise: 3 }, { d: iso(2026, 9, 1) }] }).tests;
   assert.equal(n.length, 1, 'mesures invalides écartées');
   assert.equal(n[0].chaise, 60); assert.equal(n[0].mur, 18);
-  assert.match(api.kineSummary(state({ tests: [{ d: iso(2026, 10, 1), chaise: 14, mur: 22 }] }), NOW), /assis-debout 14, pompes au mur 22/);
+  assert.match(api.kineSummary(state({ tests: [{ d: iso(2026, 10, 1), chaise: 14, mur: 22 }] }), NOW), /assis-debout 14, pompes au mur 22 \(ancien test/);
+  const v2 = api.normalize({ tests: [{ d: iso(2026, 10, 10), v: 2, chaise: 35, mur: 12, pain: 3 }] }).tests[0];
+  assert.equal(v2.chaise, api.TEST_CAP, 'nouveau test : 20 au plus');
+  assert.equal(v2.pain, 3);
+  assert.match(api.kineSummary(state({ tests: [v2] }), NOW), /au rythme, 20 au plus, douleur après 3\/10/);
   assert.ok(api.BADGES.find(b => b.id === 'forme').test(state({ tests: [{ d: iso(2026, 10, 1), chaise: 14 }] })));
+});
+
+test('douleur acceptable réglable avec le kiné', () => {
+  const day = n => iso(2026, 10, 18 - n);
+  const base4 = Array.from({ length: 12 }, (_, i) => entry({ prog: ['dos', 'fessiers', 'haut'][i % 3], d: day(1 + i), painBefore: 4, pain: 4, next: 4 }));
+  const s = state({ history: base4 });
+  assert.equal(api.solidStreak(s), 0, 'douleur de fond à 4/10 : rien ne compte avec le seuil par défaut');
+  assert.equal(api.stepLevel(s, 'fessiers'), 0);
+  s.settings.painMax = 4;
+  assert.equal(api.solidStreak(s), 8, 'seuil à 4 : les séances de renforcement stables comptent');
+  assert.equal(api.stepLevel(s, 'fessiers'), 1);
+  const worse = state({ history: [entry({ d: day(1), painBefore: 4, pain: 5, next: 4 })] });
+  worse.settings.painMax = 5;
+  assert.equal(api.quietState(worse.history[0], 5), 'break', 'une aggravation pendant la séance casse toujours la série');
+  assert.equal(api.normalize({ settings: { painMax: 9 } }).settings.painMax, 6, 'jamais au-delà de 6/10');
+  assert.equal(api.normalize({ settings: {} }).settings.painMax, 3);
+  assert.match(api.kineSummary(s, NOW), /Douleur acceptable pour progresser : 4\/10/);
+});
+
+test('rowing sans porte', () => {
+  const s = state();
+  assert.ok(api.progFor(s, 'haut').exercises.some(e => e.id === 'rowserviette'));
+  s.settings.noDoor = true;
+  const ids = api.progFor(s, 'haut').exercises.map(e => e.id);
+  assert.ok(ids.includes('tirageserviette') && !ids.includes('rowserviette'), 'remplacé par le tirage à la serviette');
+  s.settings.rungs = { tirer: 1 };
+  assert.ok(!api.progFor(s, 'haut').exercises.some(e => e.id === 'rowpenche'), 'même avec la version penchée débloquée');
+  assert.equal(((api.ILLUS.tirageserviette || {}).poses || []).length, 2, 'dessin');
+  assert.equal(api.normalize({ settings: { noDoor: 'oui', doorChecked: 1 } }).settings.noDoor, false);
 });
 
 test('séances de suite sans douleur', () => {

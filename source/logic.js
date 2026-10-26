@@ -123,12 +123,16 @@ Object.assign(EX, {
     tip: 'Buste droit, genou avant au-dessus de la cheville. Ne descends que là où c’est confortable.' }
 });
 
+EX.tirageserviette = { id: 'tirageserviette', name: 'Tirage à la serviette, sans porte', kind: 'reps', target: 8, sets: 2, tempo: 5,
+  cue: 'Debout, bras tendus devant toi à hauteur de poitrine, une serviette tenue à deux mains par les bouts. Tire les coudes vers l’arrière en écartant la serviette comme pour la déchirer, serre les omoplates 2 secondes, puis relâche.',
+  tip: 'Épaules basses, loin des oreilles. Le bas du dos ne bouge pas.' };
+
 const PROGRAMS = {
   dos: { id: 'dos', name: 'Reprise dos', tag: 'Routine du 11 oct. 2026', rest: 30,
     blurb: 'Gainage doux, fessiers et cardio léger, adaptés à ton dos. À faire valider par ton kiné.',
     exercises: [EX.transverse, EX.birddog, EX.pont, EX.velo] },
   solide: { id: 'solide', name: 'Dos solide', tag: 'Niveau supérieur', rest: 30,
-    blurb: 'La suite quand ton dos va bien : les mêmes muscles, un cran plus fort. Se débloque après 10 séances de renforcement d’affilée à 3/10 de douleur au plus (avant, après et le lendemain), puis l’accord de ton kiné. Se reverrouille si la douleur revient dans la jambe.',
+    blurb: 'La suite quand ton dos va bien : les mêmes muscles, un cran plus fort. Se débloque après 10 séances de renforcement d’affilée sans dépasser ta douleur acceptable (3/10 par défaut, réglable avec ton kiné), avant, après et le lendemain, puis l’accord de ton kiné. Se reverrouille si la douleur revient dans la jambe.',
     exercises: [EX.birddogtenu, EX.pontmarche, EX.deadbug, EX.squatchaise, EX.plancheplus] },
   fessiers: { id: 'fessiers', name: 'Fessiers doux', tag: 'Sans charger le dos', rest: 30,
     blurb: 'Les fessiers travaillent sur le côté ou depuis une chaise, sans pression sur les disques. Une alternative douce à Boule qui chamboule. À faire valider par ton kiné.',
@@ -189,6 +193,8 @@ const CHALLENGES = [
   { id: 'stars2x', name: 'Doublé', desc: '2 séances à 2 étoiles ou plus', goal: 2, prog: w => w.filter(h => h.stars >= 2).length },
   { id: 'combo12', name: 'Combo de 12', desc: 'Enchaîner 12 répétitions parfaites', goal: 12, prog: w => Math.max(0, ...w.map(h => h.combo || 0)) },
   { id: 'days3', name: 'Trois cœurs', desc: 'Remplir 3 cœurs cette semaine', goal: 3, prog: w => new Set(w.map(h => dayKey(h.d))).size },
+  { id: 'haut1', name: 'Haut du corps', desc: 'Faire une séance Haut du corps doux', goal: 1, prog: w => w.filter(h => h.prog === 'haut').length },
+  { id: 'varie3', name: 'Touche-à-tout', desc: 'Faire 3 programmes différents dans la semaine', goal: 3, prog: w => new Set(w.map(h => h.prog)).size },
   { id: 'douceur', name: 'Douceur', desc: 'Faire une séance douce : Jour difficile, Dos calme ou Dos du milieu', goal: 1, prog: w => w.filter(h => ['difficile', 'milieu', 'calme'].includes(h.prog)).length },
   { id: 'save1', name: 'Prudence', desc: 'Exporter ta sauvegarde cette semaine', goal: 1, prog: (w, s, now) => (s.settings.lastExport && weekKey(new Date(s.settings.lastExport)) === weekKey(now) ? 1 : 0) }
 ];
@@ -238,7 +244,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {} }, badges: {}, challenges: {}, history: [], tests: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false }, badges: {}, challenges: {}, history: [], tests: [] };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -279,19 +285,23 @@ function cleanEntry(h) {
     durS: numOr(h.durS, 0, 86400, 0, true)
   };
 }
-/* Test de forme du mois : deux mesures de 30 secondes, debout, comparées à soi-même d’un mois sur l’autre. */
+/* Test de forme du mois : deux mesures debout, au rythme d’un bip toutes les 3 s, 20 répétitions au plus.
+   On s’arrête dès qu’on ne suit plus le rythme proprement : on mesure l’endurance au bon tempo, jamais la vitesse.
+   Les mesures de l’ancien test (le plus possible en 30 s, v1) restent dans l’historique mais ne sont pas comparées. */
 const FIT_TESTS = [
-  { id: 'chaise', name: 'Assis-debout en 30 secondes', short: 'assis-debout', ex: 'assisdebout', max: 60,
-    cue: 'Assis au milieu d’une chaise calée contre un mur, bras croisés sur la poitrine. Au top, lève-toi complètement puis rassieds-toi, autant de fois que possible en 30 secondes, sans te précipiter. Compte à voix haute : tu noteras le total à la fin.' },
-  { id: 'mur', name: 'Pompes contre le mur en 30 secondes', short: 'pompes au mur', ex: 'murpompe', max: 120,
-    cue: 'Face au mur, mains à hauteur des épaules, corps droit. Au top, fais autant de pompes contrôlées que possible en 30 secondes. Compte à voix haute : tu noteras le total à la fin.' }
+  { id: 'chaise', name: 'Assis-debout au rythme', short: 'assis-debout', ex: 'assisdebout', tempo: 3, v1max: 60,
+    cue: 'Assis au milieu d’une chaise calée contre un mur, bras croisés sur la poitrine. À chaque bip, lève-toi complètement puis rassieds-toi, en suivant le rythme. Arrête dès que tu ne suis plus le rythme proprement : l’appli compte pour toi, 20 au plus.' },
+  { id: 'mur', name: 'Pompes contre le mur au rythme', short: 'pompes au mur', ex: 'murpompe', tempo: 3, v1max: 120,
+    cue: 'Face au mur, mains à hauteur des épaules, corps droit. À chaque bip, une pompe lente et contrôlée. Arrête dès que tu ne suis plus le rythme proprement : l’appli compte pour toi, 20 au plus.' }
 ];
-const TEST_EVERY_DAYS = 28, TEST_XP = 30;
+const TEST_CAP = 20, TEST_VERSION = 2, TEST_EVERY_DAYS = 28, TEST_XP = 30;
 function cleanTest(t) {
   if (!t || typeof t !== 'object') return null;
   const d = isoOr(t.d); if (!d) return null;
-  const out = { d };
-  FIT_TESTS.forEach(f => { out[f.id] = numOr(t[f.id], 0, f.max, null, true); });
+  const v = t.v === TEST_VERSION ? TEST_VERSION : 1;
+  const out = { d, v };
+  FIT_TESTS.forEach(f => { out[f.id] = numOr(t[f.id], 0, v === TEST_VERSION ? TEST_CAP : f.v1max, null, true); });
+  out.pain = numOr(t.pain, 0, 10, null, true);
   return FIT_TESTS.some(f => out[f.id] != null) ? out : null;
 }
 function testDue(s, now = new Date()) {
@@ -311,6 +321,8 @@ function cleanSettings(s, d) {
     reminderDays: Array.isArray(s.reminderDays) ? [...new Set(s.reminderDays.filter(x => Number.isInteger(x) && x >= 0 && x <= 6))].sort((a, b) => a - b) : d.reminderDays.slice(),
     reminderTime: typeof s.reminderTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s.reminderTime) ? s.reminderTime : d.reminderTime,
     outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud',
+    painMax: numOr(s.painMax, 2, 6, d.painMax, true), painMaxAt: isoOr(s.painMaxAt),
+    noDoor: s.noDoor === true, doorChecked: s.doorChecked === true,
     rungs: Object.fromEntries(LADDERS.map(l => [l.id, numOr((s.rungs || {})[l.id], 0, l.rungs.length - 1, 0, true)]).filter(([, v]) => v > 0)),
     stepReset: Object.fromEntries(STEP_PROGS.map(id => [id, isoOr((s.stepReset || {})[id])]).filter(([, v]) => v))
   };
@@ -365,14 +377,15 @@ function backCat(h) {
 }
 /* Programmes qui prouvent que le dos encaisse du renforcement. La respiration et la mobilité ne comptent pas. */
 const STRENGTH_PROGS = ['dos', 'milieu', 'fessiers', 'solide', 'boule'];
-/* Une séance « sans douleur » : 3/10 au plus avant, après et le lendemain, sans aggravation, sans symptôme dans la jambe
+/* Une séance « sans douleur » : douleur acceptable au plus (3/10 par défaut, réglable avec le kiné) avant, après et le lendemain,
+   sans aggravation par rapport au départ, sans symptôme dans la jambe
    ni exercice passé pour douleur. Renvoie 'count' quand le lendemain est noté, 'wait' tant qu’il manque, 'break' sinon,
    et null quand aucun ressenti n’a été noté. */
 const QUIET_MAX = 3;
-function quietState(h) {
+function quietState(h, max = QUIET_MAX) {
   if (h.pain == null && !h.stop) return null;
   if (backCat(h) !== 'ok' || (h.painEx && h.painEx.length)) return 'break';
-  if (Math.max(h.painBefore ?? 0, h.pain, h.next ?? 0) > QUIET_MAX) return 'break';
+  if (Math.max(h.painBefore ?? 0, h.pain, h.next ?? 0) > max) return 'break';
   return h.next == null ? 'wait' : 'count';
 }
 /* Séances de renforcement « sans douleur » d’affilée. Une séance douce ou pas encore suivie le lendemain ne compte pas
@@ -380,7 +393,7 @@ function quietState(h) {
 function solidStreak(s) {
   let n = 0;
   for (const h of s.history) {
-    const q = quietState(h);
+    const q = quietState(h, s.settings.painMax);
     if (q === 'break') break;
     if (q === 'count' && STRENGTH_PROGS.includes(h.prog)) n++;
   }
@@ -424,7 +437,7 @@ function painFreeRun(s) {
   let n = 0;
   for (const h of s.history) {
     if (h.prog !== 'dos') continue;
-    const q = quietState(h);
+    const q = quietState(h, s.settings.painMax);
     if (q === 'break' || q === null) break;
     if (q === 'count') n++;
   }
@@ -482,7 +495,7 @@ function stepLevel(s, progId) {
   for (let i = s.history.length - 1; i >= 0; i--) {
     const h = s.history[i];
     if (Date.parse(h.d) <= since) continue;
-    const q = quietState(h);
+    const q = quietState(h, s.settings.painMax);
     if (q === 'break') { lvl = Math.max(0, lvl - 1); run = 0; continue; }
     if (q !== 'count' || h.prog !== progId || (h.skipped && h.skipped.length)) continue;
     if (++run >= STEP_EVERY) { lvl = Math.min(STEP_MAX, lvl + 1); run = 0; }
@@ -506,7 +519,9 @@ const LADDERS = [
 ];
 function rungOf(s, l) { return Math.min(l.rungs.length - 1, (s.settings.rungs || {})[l.id] || 0); }
 function laddersOf(progId) { return LADDERS.filter(l => l.prog === progId); }
-function rungsReady(s, progId) { return stepLevel(s, progId) >= STEP_MAX ? laddersOf(progId).filter(l => rungOf(s, l) < l.rungs.length - 1) : []; }
+function rungsReady(s, progId) {
+  return stepLevel(s, progId) >= STEP_MAX ? laddersOf(progId).filter(l => rungOf(s, l) < l.rungs.length - 1 && !(l.id === 'tirer' && s.settings.noDoor)) : [];
+}
 /* Le programme tel qu’il sera joué : versions choisies, progression comprise, et sans le vélo quand il est mis de côté. */
 function progFor(s, id) {
   const p = PROGRAMS[id];
@@ -517,6 +532,8 @@ function progFor(s, id) {
   const swap = {};
   laddersOf(id).forEach(l => { const r = rungOf(s, l); if (r) swap[l.rungs[0]] = EX[l.rungs[r]]; });
   if (Object.keys(swap).length) exercises = exercises.map(ex => swap[ex.id] || ex);
+  /* Sans porte adaptée, le rowing est remplacé par le tirage à la serviette. */
+  if (s.settings.noDoor) { const pull = LADDERS.find(l => l.id === 'tirer').rungs; exercises = exercises.map(ex => pull.includes(ex.id) ? EX.tirageserviette : ex); }
   if (lvl) exercises = exercises.map(ex => stepped(ex, id, lvl));
   return exercises === p.exercises ? p : Object.assign({}, p, { exercises, level: lvl });
 }
@@ -574,7 +591,8 @@ function canRows(n) {
   while (left > 0) { const k = Math.min(b, left); rows.push(k); left -= k; b = Math.max(1, b - 1); }
   return rows;
 }
-/* Fichier agenda (.ics) : un rappel répété chaque semaine aux jours et à l’heure choisis, à l’heure locale du téléphone. */
+/* Fichier agenda (.ics) : un rappel répété chaque semaine aux jours et à l’heure choisis, à l’heure locale du téléphone.
+   Toujours le même identifiant, avec un numéro de version qui monte : l’agenda remplace l’ancien rappel au lieu d’en ajouter un. */
 const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 function reminderICS(days, time, now = new Date()) {
   if (!days.length) return '';
@@ -586,7 +604,7 @@ function reminderICS(days, time, now = new Date()) {
   const utc = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   const sorted = days.slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
   return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Chamboule Coach//FR', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
-    'UID:chamboule-rappel-' + sorted.join('') + '-' + time.replace(':', '') + '@chamboule',
+    'UID:chamboule-rappel@polynelfe-del.github.io', 'SEQUENCE:' + Math.floor(now.getTime() / 60000),
     'DTSTAMP:' + utc(now), 'DTSTART:' + local(start), 'DTEND:' + local(end),
     'RRULE:FREQ=WEEKLY;BYDAY=' + sorted.map(d => DAY_CODES[d]).join(','),
     'SUMMARY:Séance Chamboule Coach', 'DESCRIPTION:Chouquette t’attend', 'URL:https://polynelfe-del.github.io/chamboule/',
@@ -610,11 +628,13 @@ function kineSummary(s, now = new Date()) {
   L.push(`Période : du ${from.toLocaleDateString('fr-FR')} au ${now.toLocaleDateString('fr-FR')}`);
   L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
   L.push(`Réglages actuels : Reprise dos ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, Fessiers doux ${st.fessiersSets} série${st.fessiersSets > 1 ? 's' : ''}, ${st.bike ? 'vélo ' + st.veloMin + ' min' : 'vélo mis de côté pour le moment'}`);
-  L.push('Progression automatique : ' + STEP_PROGS.map(id => PROGRAMS[id].name + ' cran ' + stepLevel(s, id) + '/' + STEP_MAX).join(', '));
+  L.push(`Douleur acceptable pour progresser : ${st.painMax}/10${st.painMaxAt ? ' (réglée le ' + new Date(st.painMaxAt).toLocaleDateString('fr-FR') + (st.painMax > 3 ? ', accord kiné déclaré)' : ')') : ' (valeur par défaut)'}`);
+  L.push('Progression automatique : ' + STEP_PROGS.map(id => PROGRAMS[id].name + ' palier ' + stepLevel(s, id) + '/' + STEP_MAX).join(', '));
+  if (st.noDoor) L.push('Rowing à la porte remplacé par le tirage à la serviette (pas de porte adaptée)');
   L.push('Versions des exercices : ' + LADDERS.map(l => `${l.name} ${rungOf(s, l) + 1}/${l.rungs.length} (${exName(l.rungs[rungOf(s, l)])})`).join(', '));
   const tl = (s.tests || []).slice(0, 4).reverse();
-  if (tl.length) L.push('Tests de forme (30 s) : ' + tl.map(t => `${new Date(t.d).toLocaleDateString('fr-FR')} assis-debout ${t.chaise ?? '?'}, pompes au mur ${t.mur ?? '?'}`).join(' ; '));
-  L.push(`Programme Dos solide : ${st.solideUnlocked ? 'débloqué' + (st.solideUnlockedAt ? ' le ' + new Date(st.solideUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : 'verrouillé (' + solidStreak(s) + ' / ' + SOLIDE_NEEDED + ' séances de renforcement d’affilée à 3/10 au plus, lendemain compris)'}`);
+  if (tl.length) L.push('Tests de forme : ' + tl.map(t => `${new Date(t.d).toLocaleDateString('fr-FR')} assis-debout ${t.chaise ?? '?'}, pompes au mur ${t.mur ?? '?'}${t.v === TEST_VERSION ? ` (au rythme, ${TEST_CAP} au plus${t.pain != null ? `, douleur après ${t.pain}/10` : ''})` : ' (ancien test : le plus possible en 30 s)'}`).join(' ; '));
+  L.push(`Programme Dos solide : ${st.solideUnlocked ? 'débloqué' + (st.solideUnlockedAt ? ' le ' + new Date(st.solideUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : 'verrouillé (' + solidStreak(s) + ' / ' + SOLIDE_NEEDED + ' séances de renforcement d’affilée à ' + st.painMax + '/10 au plus, lendemain compris)'}`);
   L.push(`Programme Dos du milieu : ${st.milieuOk ? 'ouvert après vérification médicale déclarée' + (st.milieuOkAt ? ' le ' + new Date(st.milieuOkAt).toLocaleDateString('fr-FR') : '') : 'en attente d’une vérification médicale'}`);
   L.push(`Programme Boule qui chamboule : ${st.bouleUnlocked ? 'débloqué' + (st.bouleUnlockedAt ? ' le ' + new Date(st.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);
   L.push('');
