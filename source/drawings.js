@@ -309,6 +309,10 @@ const ICON = {
 };
 
 /* Garde-robe : chaque tenue ajoute des calques au dessin de Chouquette. */
+Object.assign(ICON, {
+  sun: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>',
+  moon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>'
+});
 const BOW = '<path class="m-bow" d="M26 9 15 3.5q-3 5.5 0 11zM26 9 37 3.5q3 5.5 0 11z"/><circle class="m-bow" cx="26" cy="9" r="3.4"/>';
 const OUTFIT_SVG = {
   noeud: { top: BOW },

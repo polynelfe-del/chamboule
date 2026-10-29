@@ -95,7 +95,8 @@ test('défis de la semaine : tirage stable, +50 XP une seule fois, vieux défis 
       entry({ d: days[0], stars: 3, combo: 12, reps: 10, perfect: 10, next: 2, pain: 2, hf: true, pyramids: 2, veloMin: 8 }),
       entry({ d: days[1], stars: 3, next: 2, pain: 2, pyramids: 1, veloMin: 8, prog: 'difficile' }),
       entry({ d: days[2], stars: 2, prog: 'haut' }),
-      entry({ d: days[2], stars: 1, prog: 'relax' })
+      entry({ d: days[2], stars: 1, prog: 'relax' }),
+      ...[0, 1, 2].flatMap(i => [entry({ d: iso(2026, 10, 12 + i, 8), stars: 2, prog: 'calme' }), entry({ d: iso(2026, 10, 12 + i, 20), stars: 2, prog: 'calme' })])
     ]
   });
   s.settings.lastExport = NOW.toISOString();
@@ -574,6 +575,28 @@ test('Dos calme : tous les étirements du dos et du bassin', () => {
   assert.equal(api.estMin(api.defaultState(), api.PROGRAMS.calme), 9);
   const e = (n, o) => entry(Object.assign({ prog: 'dos', d: iso(2026, 10, 18 - n), painBefore: 3, pain: 4, next: null }, o));
   assert.equal(api.suggestToday(state({ history: [e(1)] }), NOW).prog, 'calme', 'dos sensible : Chouquette propose ces étirements');
+});
+
+test('routine Dos calme matin et soir', () => {
+  const at = (d, h, prog = 'calme') => entry({ prog, d: iso(2026, 10, d, h) });
+  const s = state({ history: [at(18, 8)] });
+  same(api.routineToday(s, D(2026, 10, 18, 20)), { matin: true, soir: false, now: 'soir' });
+  s.history.unshift(at(18, 21));
+  same(api.routineToday(s, D(2026, 10, 18, 22)), { matin: true, soir: true, now: 'soir' });
+  same(api.routineWeek(state({ history: [at(18, 21), at(18, 8), at(17, 9), at(16, 20), at(10, 8)] }), NOW), { matins: 2, soirs: 2, complets: 1 });
+  const t = state({ history: [at(18, 8), entry({ prog: 'dos', d: iso(2026, 10, 17) })] });
+  assert.notEqual(api.suggestToday(t, NOW).rest, true, 'Dos calme le matin : la séance du jour reste proposée');
+  const r3 = state({ history: [at(17, 8), at(16, 8), at(15, 8), entry({ prog: 'dos', d: iso(2026, 10, 17, 18) })] });
+  assert.notEqual(api.suggestToday(r3, NOW).rest, true, 'la routine quotidienne ne compte pas comme 3 jours d’entraînement');
+  assert.equal(api.computeXP(api.PROGRAMS.calme, { painEx: [], skipped: [], reps: 10, perfect: 10 }, 9, false), api.ROUTINE_XP, 'une habitude, pas une course aux points');
+  const ics = api.routineICS('08:00', '21:30', NOW);
+  assert.match(ics, /DTSTART:20261019T080000/, 'demain matin, 8 h est passé');
+  assert.match(ics, /DTSTART:20261018T213000/, 'ce soir');
+  assert.equal((ics.match(/RRULE:FREQ=DAILY/g) || []).length, 2);
+  for (const line of ics.split('\r\n')) assert.ok(Buffer.byteLength(line) <= 75, 'ligne trop longue : ' + line);
+  assert.equal(api.normalize({ settings: { routineEvening: '27:00' } }).settings.routineEvening, '21:00');
+  assert.equal(api.PROG_GROUPS[0].ids[0], 'calme', 'en tête de « Tous les programmes »');
+  assert.match(api.kineSummary(state({ history: [at(17, 8), at(17, 21)] }), NOW), /Routine Dos calme sur la période : 1 matin, 1 soir \(1 jour matin et soir\)/);
 });
 
 test('séances de suite sans douleur', () => {

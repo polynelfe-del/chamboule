@@ -292,6 +292,7 @@ function homeHTML() {
     </header>
 
     ${todayCardHTML()}
+    ${routineCardHTML()}
 
     ${notices}
     ${todoHTML}
@@ -347,6 +348,17 @@ function bikeChipHTML(id) {
   if (!hasBike(PROGRAMS[id])) return '';
   const on = state.settings.bike;
   return `<button class="bike-chip" role="switch" aria-checked="${on}" data-action="bike-toggle" aria-label="Inclure le vélo d’appartement">${ICON.bike(false)}<span>${on ? 'Avec vélo' : 'Sans vélo'}</span></button>`;
+}
+/* Routine du jour : Dos calme matin et soir, en plus de la séance du jour. */
+function routineCardHTML() {
+  const r = routineToday(state), w = routineWeek(state);
+  const slot = (id, label, icon) => `<div class="slot${r[id] ? ' done' : ''}${r.now === id && !r[id] ? ' now' : ''}">${icon}<b>${label}</b><span>${r[id] ? 'Fait ✓' : r.now === id ? 'À faire' : id === 'matin' ? 'Pas fait' : 'Ce soir'}</span></div>`;
+  return `<section class="card routine" aria-label="Routine du jour : Dos calme matin et soir">
+    <div class="routine-head"><p class="eyebrow">Routine du jour · Dos calme</p><span class="est">≈ ${estMin(state, PROGRAMS.calme)} min</span></div>
+    <div class="slots">${slot('matin', 'Matin', ICON.sun)}${slot('soir', 'Soir', ICON.moon)}</div>
+    <p class="muted">Cette semaine : ${w.matins} matin${w.matins > 1 ? 's' : ''} et ${w.soirs} soir${w.soirs > 1 ? 's' : ''}${w.complets ? `, dont ${w.complets} jour${w.complets > 1 ? 's' : ''} complet${w.complets > 1 ? 's' : ''}` : ''}.</p>
+    ${r[r.now] ? '' : `<button class="btn ghost big" data-action="play" data-prog="calme">${ICON.play} Dos calme du ${r.now}</button>`}
+  </section>`;
 }
 function todayCardHTML() {
   const sug = suggestToday(state);
@@ -723,7 +735,11 @@ function settingsHTML() {
       <div class="set-row"><div><b>Jours</b><small>Les jours où tu veux un rappel de séance.</small></div></div>
       <div class="day-chips" role="group" aria-label="Jours de rappel">${[[1, 'L', 'Lundi'], [2, 'M', 'Mardi'], [3, 'M', 'Mercredi'], [4, 'J', 'Jeudi'], [5, 'V', 'Vendredi'], [6, 'S', 'Samedi'], [0, 'D', 'Dimanche']].map(([d, l, n]) => `<button data-action="rem-day" data-v="${d}" aria-pressed="${s.reminderDays.includes(d)}" aria-label="${n}">${l}</button>`).join('')}</div>
       <div class="set-row"><div><b>Heure</b></div><input type="time" id="rem-time" class="time-in" value="${esc(s.reminderTime)}" aria-label="Heure du rappel"></div>
-      ${canSave() ? `<div class="set-row"><div><b>Ajouter à mon agenda</b><small>Un rappel répété chaque semaine dans l’agenda du téléphone. Si tu changes les jours ou l’heure, ajoute-le de nouveau : il remplace l’ancien dans la plupart des agendas (sinon, supprime l’ancien à la main). Sur Android, ouvre ensuite le fichier téléchargé.</small></div><button class="btn ghost" data-action="reminders"${s.reminderDays.length ? '' : ' disabled'}>Ajouter</button></div>` : ''}`;
+      ${canSave() ? `<div class="set-row"><div><b>Ajouter à mon agenda</b><small>Un rappel répété chaque semaine dans l’agenda du téléphone. Si tu changes les jours ou l’heure, ajoute-le de nouveau : il remplace l’ancien dans la plupart des agendas (sinon, supprime l’ancien à la main). Sur Android, ouvre ensuite le fichier téléchargé.</small></div><button class="btn ghost" data-action="reminders"${s.reminderDays.length ? '' : ' disabled'}>Ajouter</button></div>` : ''}
+      <h3 class="set-sub">Routine Dos calme</h3>
+      <div class="set-row"><div><b>Matin</b></div><input type="time" id="rt-matin" class="time-in" value="${esc(s.routineMorning)}" aria-label="Heure de la routine du matin"></div>
+      <div class="set-row"><div><b>Soir</b></div><input type="time" id="rt-soir" class="time-in" value="${esc(s.routineEvening)}" aria-label="Heure de la routine du soir"></div>
+      ${canSave() ? '<div class="set-row"><div><b>Ajouter matin et soir à mon agenda</b><small>Deux rappels chaque jour pour Dos calme. Ils remplacent les anciens si tu changes les heures.</small></div><button class="btn ghost" data-action="routine-reminders">Ajouter</button></div>' : ''}`;
   const jeu = `
       <div class="set-row">
         <div><b>Mains libres</b><small>L’appli rythme chaque répétition et compte à voix haute. Tu n’as pas à toucher l’écran.</small></div>
@@ -1420,7 +1436,7 @@ function finish(reason) {
     return;
   }
   const stars = computeStars(reason, G);
-  const sameDay = state.history.some(h => dayKey(h.d) === dayKey(new Date()));
+  const sameDay = G.prog.id !== ROUTINE_PROG && state.history.some(h => dayKey(h.d) === dayKey(new Date()) && h.prog !== ROUTINE_PROG);
   const minutes = Math.min(estMin(state, G.prog), Math.max(1, Math.round((Date.now() - G.t0) / 60000)));
   const bonus = suggestBonus(G.sugg, G.prog.id, reason);
   const xp = computeXP(G.prog, G, minutes, sameDay) + bonus;
@@ -1806,6 +1822,12 @@ const ACTIONS = {
     state.settings.reminderDays = days.includes(d) ? days.filter(x => x !== d) : days.concat(d).sort((a, c) => a - c);
     persist(); renderScreen({ still: true });
   },
+  'routine-reminders'() {
+    const s = state.settings;
+    saveFile('chamboule-routine.ics', routineICS(s.routineMorning, s.routineEvening), 'text/calendar', true)
+      .then(() => toast('Ajoute les rappels du matin et du soir à ton agenda quand le téléphone te le propose.'))
+      .catch(e => { if (!e || e.code !== 'declined') toast('Impossible de créer les rappels ici.'); });
+  },
   reminders() {
     const s = state.settings; if (!s.reminderDays.length) return;
     saveFile('chamboule-rappels.ics', reminderICS(s.reminderDays, s.reminderTime), 'text/calendar', true)
@@ -1871,6 +1893,10 @@ app.addEventListener('click', e => {
   if (fn) fn(b, e);
 });
 app.addEventListener('change', e => {
+  if (e.target.id === 'rt-matin' || e.target.id === 'rt-soir') {
+    if (/^([01]\d|2[0-3]):[0-5]\d$/.test(e.target.value)) { state.settings[e.target.id === 'rt-matin' ? 'routineMorning' : 'routineEvening'] = e.target.value; persist(); }
+    return;
+  }
   if (e.target.id === 'rem-time') {
     if (/^([01]\d|2[0-3]):[0-5]\d$/.test(e.target.value)) { state.settings.reminderTime = e.target.value; persist(); }
     return;

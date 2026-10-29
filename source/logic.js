@@ -208,8 +208,8 @@ const PROGRAMS = {
   haut: { id: 'haut', name: 'Haut du corps doux', tag: 'Debout · sans charge', rest: 30,
     blurb: 'Bras, épaules et haut du dos, debout et sans charge sur la colonne, plus la charnière de hanche pour apprendre à te pencher sans plier le dos. Inspiré des programmes de calisthénie et de fiches de kinés. À faire valider par ton kiné.',
     exercises: [EX.murpompe, EX.rowserviette, EX.angesmur, EX.charniere] },
-  calme: { id: 'calme', name: 'Dos calme', tag: 'Étirements · 9 min', rest: 20,
-    blurb: 'Les étirements qui décontractent le dos et le bassin, pour les jours où le dos fait mal ou se raidit : bascule du bassin, genoux vers la poitrine, tes genoux vers l’intérieur puis en papillon, rotation des genoux, fesses vers les talons. Arrête si ça descend dans la jambe.',
+  calme: { id: 'calme', name: 'Dos calme', tag: 'Routine matin et soir · 9 min', rest: 20,
+    blurb: 'La base de ta routine quotidienne, matin et soir, et ta séance des jours où le dos fait mal : les étirements qui décontractent le dos et le bassin : bascule du bassin, genoux vers la poitrine, tes genoux vers l’intérieur puis en papillon, rotation des genoux, fesses vers les talons. Arrête si ça descend dans la jambe.',
     exercises: [EX.bascule, EX.genoupoitrine, EX.deuxgenoux, EX.genouinterieur, EX.papillon, EX.rouleau, EX.talons] },
   milieu: { id: 'milieu', name: 'Dos du milieu', tag: 'Mobilité douce', rest: 20,
     blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pour la marche, la balade du chien fait déjà le travail. Pont fessier et bras-jambe opposés sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
@@ -249,8 +249,9 @@ const PROGRAMS = {
 const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'haut', 'mcgill', 'jambes', 'express', 'cardio', 'calme', 'etirements', 'relax', 'difficile', 'solide', 'calis', 'boule'];
 /* Les programmes rangés par famille dans « Tous les programmes ». */
 const PROG_GROUPS = [
+  { name: 'Ta routine matin et soir', ids: ['calme'] },
   { name: 'La base', ids: ['dos', 'fessiers', 'haut', 'milieu', 'mcgill', 'jambes', 'express'] },
-  { name: 'Les jours doux', ids: ['calme', 'etirements', 'relax', 'difficile', 'cardio'] },
+  { name: 'Les jours doux', ids: ['etirements', 'relax', 'difficile', 'cardio'] },
   { name: 'Pour aller plus loin', ids: ['solide', 'calis'] },
   { name: 'Ancien programme', ids: ['boule'] }
 ];
@@ -293,6 +294,7 @@ const CHALLENGES = [
   { id: 'days3', name: 'Trois cœurs', desc: 'Remplir 3 cœurs cette semaine', goal: 3, prog: w => new Set(w.map(h => dayKey(h.d))).size },
   { id: 'haut1', name: 'Haut du corps', desc: 'Faire une séance Haut du corps doux', goal: 1, prog: w => w.filter(h => h.prog === 'haut').length },
   { id: 'varie3', name: 'Touche-à-tout', desc: 'Faire 3 programmes différents dans la semaine', goal: 3, prog: w => new Set(w.map(h => h.prog)).size },
+  { id: 'routine3', name: 'Matin et soir', desc: 'Faire Dos calme matin et soir, 3 jours cette semaine', goal: 3, prog: w => routineDays(w).complets },
   { id: 'zen', name: 'Zen', desc: 'Faire une séance Étirements du soir ou Relaxation', goal: 1, prog: w => w.filter(h => ['etirements', 'relax'].includes(h.prog)).length },
   { id: 'douceur', name: 'Douceur', desc: 'Faire une séance douce : Jour difficile, Dos calme ou Dos du milieu', goal: 1, prog: w => w.filter(h => ['difficile', 'milieu', 'calme'].includes(h.prog)).length },
   { id: 'save1', name: 'Prudence', desc: 'Exporter ta sauvegarde cette semaine', goal: 1, prog: (w, s, now) => (s.settings.lastExport && weekKey(new Date(s.settings.lastExport)) === weekKey(now) ? 1 : 0) }
@@ -343,7 +345,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, calisUnlocked: false, calisUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, noTable: false, tableChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {} };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', routineMorning: '08:00', routineEvening: '21:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, calisUnlocked: false, calisUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, noTable: false, tableChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {} };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -426,6 +428,8 @@ function cleanSettings(s, d) {
     lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
     reminderDays: Array.isArray(s.reminderDays) ? [...new Set(s.reminderDays.filter(x => Number.isInteger(x) && x >= 0 && x <= 6))].sort((a, b) => a - b) : d.reminderDays.slice(),
     reminderTime: typeof s.reminderTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s.reminderTime) ? s.reminderTime : d.reminderTime,
+    routineMorning: typeof s.routineMorning === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s.routineMorning) ? s.routineMorning : d.routineMorning,
+    routineEvening: typeof s.routineEvening === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s.routineEvening) ? s.routineEvening : d.routineEvening,
     outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud',
     painMax: numOr(s.painMax, 2, 6, d.painMax, true), painMaxAt: isoOr(s.painMaxAt),
     noDoor: s.noDoor === true, doorChecked: s.doorChecked === true,
@@ -514,7 +518,8 @@ const SUGGEST_ROTATION = ['dos', 'fessiers', 'milieu', 'haut', 'mcgill', 'jambes
 function suggestToday(s, now = new Date()) {
   const last = s.history[0];
   if (!last) return { prog: 'dos', why: 'Coucou, moi c’est Chouquette ! Pour commencer, ta routine de base, tout en douceur.' };
-  if (s.history.some(h => dayKey(h.d) === dayKey(now))) {
+  /* La routine Dos calme du matin ou du soir ne compte pas comme la séance du jour. */
+  if (s.history.some(h => dayKey(h.d) === dayKey(now) && h.prog !== ROUTINE_PROG)) {
     return { prog: 'calme', rest: true, why: 'Ton cœur du jour est déjà rempli. Repos, ou quelques minutes de Dos calme si le dos est raide.' };
   }
   const recent = now.getTime() - new Date(last.d).getTime() < 3 * 86400000;
@@ -524,7 +529,7 @@ function suggestToday(s, now = new Date()) {
   }
   if (recent && cat === 'sensible') return { prog: 'calme', why: 'Ton dos était un peu sensible la dernière fois : place aux mouvements doux.' };
   const dayBefore = n => { const d = new Date(now); d.setDate(d.getDate() - n); return dayKey(d); };
-  if ([1, 2, 3].every(n => s.history.some(h => dayKey(h.d) === dayBefore(n)))) {
+  if ([1, 2, 3].every(n => s.history.some(h => h.prog !== ROUTINE_PROG && dayKey(h.d) === dayBefore(n)))) {
     return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : aujourd’hui, je te conseille le repos. La balade du chien suffit ; si tu as envie de bouger, un peu de Vélo seul, et si le dos est raide, quelques minutes de Dos calme.' };
   }
   /* Cardio : si tu as un vélo et que tu n’as pas pédalé depuis 4 jours, Chouquette propose le Vélo seul. */
@@ -723,11 +728,27 @@ function buildSteps(s, prog) {
    Une autre séance le même jour rapporte moitié moins et sans bonus : enchaîner les séances courtes ne paie pas.
    Un exercice passé pour douleur ne pénalise pas. */
 const XP_MINUTES_CAP = 15;
+/* Routine quotidienne : Dos calme matin et soir. Avant 14 h, c’est la routine du matin ; après, celle du soir.
+   Chaque passage rapporte 30 XP au plus : c’est une habitude, pas une course aux points. */
+const ROUTINE_PROG = 'calme', ROUTINE_SPLIT_HOUR = 14, ROUTINE_XP = 30;
+function routineSlot(d) { return new Date(d).getHours() < ROUTINE_SPLIT_HOUR ? 'matin' : 'soir'; }
+function routineDays(list) {
+  const days = new Map();
+  list.filter(h => h.prog === ROUTINE_PROG).forEach(h => { const k = dayKey(h.d); if (!days.has(k)) days.set(k, new Set()); days.get(k).add(routineSlot(h.d)); });
+  const v = [...days.values()];
+  return { matins: v.filter(x => x.has('matin')).length, soirs: v.filter(x => x.has('soir')).length, complets: v.filter(x => x.size === 2).length };
+}
+function routineToday(s, now = new Date()) {
+  const done = s.history.filter(h => h.prog === ROUTINE_PROG && dayKey(h.d) === dayKey(now));
+  return { matin: done.some(h => routineSlot(h.d) === 'matin'), soir: done.some(h => routineSlot(h.d) === 'soir'), now: routineSlot(now) };
+}
+function routineWeek(s, now = new Date()) { return routineDays(weekEntries(s, now)); }
 function computeXP(prog, r, minutes, repeat) {
   const considered = prog.exercises.map(e => e.id).filter(id => !r.painEx.includes(id));
   const done = considered.filter(id => !r.skipped.includes(id)).length;
   const completion = considered.length ? done / considered.length : 0;
   const quality = r.reps ? r.perfect / r.reps : 1;
+  if (prog.id === ROUTINE_PROG) return Math.round(ROUTINE_XP * completion * (0.6 + 0.4 * quality));
   const xp = Math.round(10 * Math.min(XP_MINUTES_CAP, minutes) * completion * (0.6 + 0.4 * quality));
   return repeat ? Math.round(xp / 2) : xp + 20;
 }
@@ -746,6 +767,21 @@ function canRows(n) {
 /* Fichier agenda (.ics) : un rappel répété chaque semaine aux jours et à l’heure choisis, à l’heure locale du téléphone.
    Toujours le même identifiant, avec un numéro de version qui monte : l’agenda remplace l’ancien rappel au lieu d’en ajouter un. */
 const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+/* Rappels de la routine : Dos calme chaque jour, le matin et le soir, aux heures choisies. */
+function routineICS(morning, evening, now = new Date()) {
+  const local = d => '' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
+  const utc = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const ev = (slot, time) => {
+    const [hh, mm] = time.split(':').map(Number);
+    const start = new Date(now); start.setHours(hh, mm, 0, 0);
+    if (start <= now) start.setDate(start.getDate() + 1);
+    return ['BEGIN:VEVENT', 'UID:chamboule-routine-' + slot + '@polynelfe-del.github.io', 'SEQUENCE:' + Math.floor(now.getTime() / 60000),
+      'DTSTAMP:' + utc(now), 'DTSTART:' + local(start), 'DTEND:' + local(new Date(start.getTime() + 10 * 60000)), 'RRULE:FREQ=DAILY',
+      'SUMMARY:Dos calme du ' + slot, 'DESCRIPTION:Ta routine du ' + slot + ', 9 minutes',
+      'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Dos calme du ' + slot, 'TRIGGER:PT0S', 'END:VALARM', 'END:VEVENT'];
+  };
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Chamboule Coach//FR', 'CALSCALE:GREGORIAN', ...ev('matin', morning), ...ev('soir', evening), 'END:VCALENDAR', ''].join('\r\n');
+}
 function reminderICS(days, time, now = new Date()) {
   if (!days.length) return '';
   const [hh, mm] = time.split(':').map(Number);
@@ -863,6 +899,8 @@ function kineSummary(s, now = new Date()) {
   const pc = Object.entries(painCount);
   L.push('Exercices passés pour douleur sur la période : ' + (pc.length ? pc.map(([id, n]) => `${exName(id)} (${n})`).join(', ') : 'aucun'));
   const zc = ZONE_IDS.filter(id => zoneCount[id]);
+  const rt = routineDays(list);
+  L.push(`Routine Dos calme sur la période : ${rt.matins} matin${rt.matins > 1 ? 's' : ''}, ${rt.soirs} soir${rt.soirs > 1 ? 's' : ''} (${rt.complets} jour${rt.complets > 1 ? 's' : ''} matin et soir)`);
   L.push('Zones signalées sur la période : ' + (zc.length ? zc.map(id => `${zoneName(id)} (${zoneCount[id]})`).join(', ') : 'aucune précisée'));
   return L.join('\n');
 }

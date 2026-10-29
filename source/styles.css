@@ -144,6 +144,14 @@ button{font:inherit;color:inherit}
 .ticket.relax{--t-color:var(--ok);--t-ink:var(--ok-ink)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ticket.fessiers{--t-color:#A93C70;--t-ink:#FFFFFF}}
 :root[data-theme="dark"] .ticket.fessiers{--t-color:#A93C70;--t-ink:#FFFFFF}
+.routine{display:flex;flex-direction:column;gap:10px}
+.routine-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.slots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.slot{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--ink-2)}
+.slot b{color:var(--ink);font-size:17px}
+.slot span{font-weight:800;font-size:14px}
+.slot.now{border-color:var(--accent);color:var(--accent)}
+.slot.done{border-color:var(--ok);color:var(--ok)}
 .prog-group{margin:14px 2px 2px;font-size:14px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
 .unlock-progress{display:flex;flex-direction:column;gap:6px}
 .ticket.locked{--t-color:var(--surface-2);--t-ink:var(--ink-2)}
