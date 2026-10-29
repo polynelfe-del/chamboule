@@ -179,6 +179,18 @@ Object.assign(EX, {
     cue: 'Assis ou allongé, épaules relâchées. Inspire 5 secondes par le nez, puis expire 5 secondes, en suivant le cercle.',
     tip: 'Six respirations par minute. Si la tête tourne un peu, respire plus doucement.' }
 });
+/* Tes étirements habituels, pour décontracter le dos et le bassin. */
+Object.assign(EX, {
+  deuxgenoux: { id: 'deuxgenoux', name: 'Deux genoux vers la poitrine', kind: 'hold', target: 2, hold: 20,
+    cue: 'Sur le dos, ramène un genou puis l’autre vers la poitrine, attrape-les avec les mains et tiens en respirant calmement. Pour sortir, repose un pied puis l’autre.',
+    tip: 'Tire doucement, sans décoller la tête. Si ça réveille la douleur dans la jambe, reviens à un seul genou.' },
+  genouinterieur: { id: 'genouinterieur', name: 'Genou vers l’intérieur, un puis l’autre', kind: 'reps', target: 10, tempo: 5,
+    cue: 'Sur le dos, genoux pliés, pieds à plat un peu plus écartés que le bassin. Laisse doucement tomber un genou vers l’intérieur, ramène-le, puis l’autre. Une descente, une répétition.',
+    tip: 'Le bassin reste posé. Va seulement là où c’est confortable : le bas du dos et les hanches se détendent.' },
+  papillon: { id: 'papillon', name: 'Genoux qui s’ouvrent (papillon)', kind: 'reps', target: 6, tempo: 8,
+    cue: 'Sur le dos, genoux pliés, pieds joints. Laisse les deux genoux s’ouvrir doucement sur les côtés, respire, puis ramène-les.',
+    tip: 'Laisse faire la pesanteur, sans pousser sur les genoux. Un coussin sous chaque genou si ça tire trop.' }
+});
 EX.tirageserviette = { id: 'tirageserviette', name: 'Tirage à la serviette, sans porte', kind: 'reps', target: 8, sets: 2, tempo: 5,
   cue: 'Debout, bras tendus devant toi à hauteur de poitrine, une serviette tenue à deux mains par les bouts. Tire les coudes vers l’arrière en écartant la serviette comme pour la déchirer, serre les omoplates 2 secondes, puis relâche.',
   tip: 'Épaules basses, loin des oreilles. Le bas du dos ne bouge pas.' };
@@ -196,9 +208,9 @@ const PROGRAMS = {
   haut: { id: 'haut', name: 'Haut du corps doux', tag: 'Debout · sans charge', rest: 30,
     blurb: 'Bras, épaules et haut du dos, debout et sans charge sur la colonne, plus la charnière de hanche pour apprendre à te pencher sans plier le dos. Inspiré des programmes de calisthénie et de fiches de kinés. À faire valider par ton kiné.',
     exercises: [EX.murpompe, EX.rowserviette, EX.angesmur, EX.charniere] },
-  calme: { id: 'calme', name: 'Dos calme', tag: 'Mobilité · 5 min', rest: 20,
-    blurb: 'Des mouvements doux pour dérouiller le dos, même les jours un peu raides. Inspirés de fiches de kinés hospitaliers. Arrête si ça descend dans la jambe.',
-    exercises: [EX.bascule, EX.genoupoitrine, EX.rouleau, EX.talons] },
+  calme: { id: 'calme', name: 'Dos calme', tag: 'Étirements · 9 min', rest: 20,
+    blurb: 'Les étirements qui décontractent le dos et le bassin, pour les jours où le dos fait mal ou se raidit : bascule du bassin, genoux vers la poitrine, tes genoux vers l’intérieur puis en papillon, rotation des genoux, fesses vers les talons. Arrête si ça descend dans la jambe.',
+    exercises: [EX.bascule, EX.genoupoitrine, EX.deuxgenoux, EX.genouinterieur, EX.papillon, EX.rouleau, EX.talons] },
   milieu: { id: 'milieu', name: 'Dos du milieu', tag: 'Mobilité douce', rest: 20,
     blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pour la marche, la balade du chien fait déjà le travail. Pont fessier et bras-jambe opposés sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
     exercises: [EX.chatvache, EX.rotation, EX.thorax, EX.gainage, EX.planche] },

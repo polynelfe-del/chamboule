@@ -140,7 +140,7 @@ test('déroulé des séances', () => {
   assert.equal(api.buildSteps(s, api.PROGRAMS.boule).length, 21);
   assert.equal(api.buildSteps(s, api.PROGRAMS.milieu).length, 6);
   assert.equal(api.buildSteps(s, api.PROGRAMS.difficile).length, 2);
-  assert.equal(api.buildSteps(s, api.PROGRAMS.calme).length, 5, 'Dos calme');
+  assert.equal(api.buildSteps(s, api.PROGRAMS.calme).length, 8, 'Dos calme : 7 étirements, genou vers la poitrine de chaque côté');
   assert.equal(api.buildSteps(s, api.PROGRAMS.fessiers).length, 7, 'Fessiers doux');
   assert.equal(api.buildSteps(s, api.PROGRAMS.solide).length, 6, 'Dos solide');
   const sides = api.buildSteps(s, api.PROGRAMS.dos).filter(st => st.ex.id === 'birddog').map(st => st.side);
@@ -565,6 +565,15 @@ test('nouveaux programmes : McGill, jambes, express, étirements, relaxation', (
   assert.equal(api.presc(s, api.EX.coherence, 1), '30 respirations lentes');
   assert.equal(api.setsFor(s, api.PROGRAMS.express, api.PROGRAMS.express.exercises[2]), 1, 'une série chacun');
   assert.ok(api.CHALLENGES.some(c => c.id === 'zen'));
+});
+
+test('Dos calme : tous les étirements du dos et du bassin', () => {
+  const ids = api.PROGRAMS.calme.exercises.map(e => e.id);
+  for (const id of ['genouinterieur', 'papillon', 'deuxgenoux', 'bascule', 'genoupoitrine', 'rouleau', 'talons']) assert.ok(ids.includes(id), id);
+  assert.ok(ids.indexOf('genouinterieur') < ids.indexOf('papillon'), 'un genou puis l’autre, puis les deux genoux qui s’ouvrent');
+  assert.equal(api.estMin(api.defaultState(), api.PROGRAMS.calme), 9);
+  const e = (n, o) => entry(Object.assign({ prog: 'dos', d: iso(2026, 10, 18 - n), painBefore: 3, pain: 4, next: null }, o));
+  assert.equal(api.suggestToday(state({ history: [e(1)] }), NOW).prog, 'calme', 'dos sensible : Chouquette propose ces étirements');
 });
 
 test('séances de suite sans douleur', () => {

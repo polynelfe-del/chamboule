@@ -791,6 +791,18 @@ Object.assign(EX, {
     cue: 'Assis ou allongé, épaules relâchées. Inspire 5 secondes par le nez, puis expire 5 secondes, en suivant le cercle.',
     tip: 'Six respirations par minute. Si la tête tourne un peu, respire plus doucement.' }
 });
+/* Tes étirements habituels, pour décontracter le dos et le bassin. */
+Object.assign(EX, {
+  deuxgenoux: { id: 'deuxgenoux', name: 'Deux genoux vers la poitrine', kind: 'hold', target: 2, hold: 20,
+    cue: 'Sur le dos, ramène un genou puis l’autre vers la poitrine, attrape-les avec les mains et tiens en respirant calmement. Pour sortir, repose un pied puis l’autre.',
+    tip: 'Tire doucement, sans décoller la tête. Si ça réveille la douleur dans la jambe, reviens à un seul genou.' },
+  genouinterieur: { id: 'genouinterieur', name: 'Genou vers l’intérieur, un puis l’autre', kind: 'reps', target: 10, tempo: 5,
+    cue: 'Sur le dos, genoux pliés, pieds à plat un peu plus écartés que le bassin. Laisse doucement tomber un genou vers l’intérieur, ramène-le, puis l’autre. Une descente, une répétition.',
+    tip: 'Le bassin reste posé. Va seulement là où c’est confortable : le bas du dos et les hanches se détendent.' },
+  papillon: { id: 'papillon', name: 'Genoux qui s’ouvrent (papillon)', kind: 'reps', target: 6, tempo: 8,
+    cue: 'Sur le dos, genoux pliés, pieds joints. Laisse les deux genoux s’ouvrir doucement sur les côtés, respire, puis ramène-les.',
+    tip: 'Laisse faire la pesanteur, sans pousser sur les genoux. Un coussin sous chaque genou si ça tire trop.' }
+});
 EX.tirageserviette = { id: 'tirageserviette', name: 'Tirage à la serviette, sans porte', kind: 'reps', target: 8, sets: 2, tempo: 5,
   cue: 'Debout, bras tendus devant toi à hauteur de poitrine, une serviette tenue à deux mains par les bouts. Tire les coudes vers l’arrière en écartant la serviette comme pour la déchirer, serre les omoplates 2 secondes, puis relâche.',
   tip: 'Épaules basses, loin des oreilles. Le bas du dos ne bouge pas.' };
@@ -808,9 +820,9 @@ const PROGRAMS = {
   haut: { id: 'haut', name: 'Haut du corps doux', tag: 'Debout · sans charge', rest: 30,
     blurb: 'Bras, épaules et haut du dos, debout et sans charge sur la colonne, plus la charnière de hanche pour apprendre à te pencher sans plier le dos. Inspiré des programmes de calisthénie et de fiches de kinés. À faire valider par ton kiné.',
     exercises: [EX.murpompe, EX.rowserviette, EX.angesmur, EX.charniere] },
-  calme: { id: 'calme', name: 'Dos calme', tag: 'Mobilité · 5 min', rest: 20,
-    blurb: 'Des mouvements doux pour dérouiller le dos, même les jours un peu raides. Inspirés de fiches de kinés hospitaliers. Arrête si ça descend dans la jambe.',
-    exercises: [EX.bascule, EX.genoupoitrine, EX.rouleau, EX.talons] },
+  calme: { id: 'calme', name: 'Dos calme', tag: 'Étirements · 9 min', rest: 20,
+    blurb: 'Les étirements qui décontractent le dos et le bassin, pour les jours où le dos fait mal ou se raidit : bascule du bassin, genoux vers la poitrine, tes genoux vers l’intérieur puis en papillon, rotation des genoux, fesses vers les talons. Arrête si ça descend dans la jambe.',
+    exercises: [EX.bascule, EX.genoupoitrine, EX.deuxgenoux, EX.genouinterieur, EX.papillon, EX.rouleau, EX.talons] },
   milieu: { id: 'milieu', name: 'Dos du milieu', tag: 'Mobilité douce', rest: 20,
     blurb: 'Mobilité et gainage profond, sans crunch ni mouvement brusque. Pour la marche, la balade du chien fait déjà le travail. Pont fessier et bras-jambe opposés sont dans Reprise dos. À faire valider par ton médecin ou ton kiné.',
     exercises: [EX.chatvache, EX.rotation, EX.thorax, EX.gainage, EX.planche] },
@@ -1704,6 +1716,22 @@ Object.assign(ILLUS, {
   ]},
   coherence: { labels: ['Inspire 5 secondes', 'Expire 5 secondes'], poses: ILLUS.transverse.poses }
 });
+/* Étirements du dos et du bassin, vue de dessus pour les genoux. */
+const TOP = { h: [24, 60], b: [[[32, 60], [86, 60]], [[40, 46], [40, 74]], [[86, 52], [86, 68]]], f: [[[40, 46], [28, 34]], [[40, 74], [28, 86]]] };
+Object.assign(ILLUS, {
+  deuxgenoux: { labels: ['Sur le dos, genoux pliés', 'Ramène les deux genoux, tiens'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm] },
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [[[86, 106], [78, 86], [96, 82]]], n: [[[50, 106], [64, 94], [78, 86]]], a: [[[88, 106], [80, 84], [98, 80]]], over: sec(124, 60, '20 s') }
+  ]},
+  genouinterieur: { labels: ['Vue de dessus, pieds écartés', 'Un genou tombe vers l’intérieur, puis l’autre'], poses: [
+    { h: TOP.h, b: TOP.b, f: TOP.f, n: [[[86, 54], [110, 46], [124, 48]], [[86, 66], [110, 74], [124, 72]]] },
+    { h: TOP.h, b: TOP.b, f: TOP.f, n: [[[86, 54], [110, 46], [124, 48]]], a: [[[86, 66], [106, 60], [124, 72]]], over: up(108, 92, 78) }
+  ]},
+  papillon: { labels: ['Vue de dessus, pieds joints', 'Les deux genoux s’ouvrent, sans forcer'], poses: [
+    { h: TOP.h, b: TOP.b, f: TOP.f, n: [[[86, 56], [110, 56], [124, 59]], [[86, 64], [110, 64], [124, 61]]] },
+    { h: TOP.h, b: TOP.b, f: TOP.f, a: [[[86, 56], [104, 38], [124, 58]], [[86, 64], [104, 82], [124, 62]]], over: up(118, 40, 26) + down(118, 80, 94) }
+  ]}
+});
 const TABLE = '<path class="il-prop" d="M88 46h66v6H88z"/><path class="il-bike" d="M94 52v60M148 52v60"/>';
 Object.assign(ILLUS, {
   pompes: { labels: ['Bras tendus, corps droit', 'Poitrine près du sol'], poses: [
@@ -2152,6 +2180,7 @@ function todayCardHTML() {
     <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span>${bikeChipHTML(p.id)}</div>
     <div class="ex-strip">${strip}</div>
     <button class="btn play big" data-action="play" data-prog="${p.id}">${ICON.play} Jouer</button>
+    ${['calme', 'difficile', 'relax'].includes(p.id) ? '' : '<button class="link-btn" data-action="play" data-prog="calme">J’ai mal au dos aujourd’hui : Dos calme</button>'}
   </section>`;
 }
 function ticketHTML(id) {
@@ -2601,6 +2630,7 @@ function precheckHTML() {
       <h2 class="section-title">Douleur ou fourmillements dans la jambe ?</h2>
       ${legHTML('pre-leg', pre.leg)}
     </section>
+    ${pre.pain >= 4 && pre.pain < 7 && !['calme', 'difficile', 'relax', 'etirements', 'cardio'].includes(pre.prog) && !outcome ? `<div class="notice warn"><b>Ton dos est à ${pre.pain}/10 aujourd’hui.</b><span>Dos calme, les étirements qui décontractent le dos et le bassin, peut te faire du bien à la place.</span><div class="row-btns"><button class="btn ghost" data-action="pre-calme">Faire Dos calme</button></div></div>` : ''}
     ${door && !outcome ? `<section class="card set-card" aria-label="Rowing à la porte">
       <h2 class="section-title">Avant ton premier rowing à la porte</h2>
       <ul class="door-list">
@@ -3436,6 +3466,7 @@ const ACTIONS = {
     try { navigator.share({ title: 'Suivi dos', text: kineSummary(state) }).catch(() => {}); } catch {}
   },
   'pre-pain'(b) { ui.pre.pain = Number(b.dataset.v); ui.pre.step = 'ask'; renderScreen(); },
+  'pre-calme'() { ui.pre.prog = 'calme'; ui.pre.step = 'ask'; renderScreen(); window.scrollTo(0, 0); },
   'pre-leg'(b) { ui.pre.leg = b.dataset.v === '1'; ui.pre.step = 'ask'; renderScreen(); },
   'pre-go'() {
     const pre = ui.pre; if (pre.pain == null || pre.leg == null || pendingNextDay(state) || needsDoorCheck(pre.prog) || needsTableCheck(pre.prog)) return;

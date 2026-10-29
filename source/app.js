@@ -358,6 +358,7 @@ function todayCardHTML() {
     <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span>${bikeChipHTML(p.id)}</div>
     <div class="ex-strip">${strip}</div>
     <button class="btn play big" data-action="play" data-prog="${p.id}">${ICON.play} Jouer</button>
+    ${['calme', 'difficile', 'relax'].includes(p.id) ? '' : '<button class="link-btn" data-action="play" data-prog="calme">J’ai mal au dos aujourd’hui : Dos calme</button>'}
   </section>`;
 }
 function ticketHTML(id) {
@@ -807,6 +808,7 @@ function precheckHTML() {
       <h2 class="section-title">Douleur ou fourmillements dans la jambe ?</h2>
       ${legHTML('pre-leg', pre.leg)}
     </section>
+    ${pre.pain >= 4 && pre.pain < 7 && !['calme', 'difficile', 'relax', 'etirements', 'cardio'].includes(pre.prog) && !outcome ? `<div class="notice warn"><b>Ton dos est à ${pre.pain}/10 aujourd’hui.</b><span>Dos calme, les étirements qui décontractent le dos et le bassin, peut te faire du bien à la place.</span><div class="row-btns"><button class="btn ghost" data-action="pre-calme">Faire Dos calme</button></div></div>` : ''}
     ${door && !outcome ? `<section class="card set-card" aria-label="Rowing à la porte">
       <h2 class="section-title">Avant ton premier rowing à la porte</h2>
       <ul class="door-list">
@@ -1642,6 +1644,7 @@ const ACTIONS = {
     try { navigator.share({ title: 'Suivi dos', text: kineSummary(state) }).catch(() => {}); } catch {}
   },
   'pre-pain'(b) { ui.pre.pain = Number(b.dataset.v); ui.pre.step = 'ask'; renderScreen(); },
+  'pre-calme'() { ui.pre.prog = 'calme'; ui.pre.step = 'ask'; renderScreen(); window.scrollTo(0, 0); },
   'pre-leg'(b) { ui.pre.leg = b.dataset.v === '1'; ui.pre.step = 'ask'; renderScreen(); },
   'pre-go'() {
     const pre = ui.pre; if (pre.pain == null || pre.leg == null || pendingNextDay(state) || needsDoorCheck(pre.prog) || needsTableCheck(pre.prog)) return;

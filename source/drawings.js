@@ -235,6 +235,22 @@ Object.assign(ILLUS, {
   ]},
   coherence: { labels: ['Inspire 5 secondes', 'Expire 5 secondes'], poses: ILLUS.transverse.poses }
 });
+/* Étirements du dos et du bassin, vue de dessus pour les genoux. */
+const TOP = { h: [24, 60], b: [[[32, 60], [86, 60]], [[40, 46], [40, 74]], [[86, 52], [86, 68]]], f: [[[40, 46], [28, 34]], [[40, 74], [28, 86]]] };
+Object.assign(ILLUS, {
+  deuxgenoux: { labels: ['Sur le dos, genoux pliés', 'Ramène les deux genoux, tiens'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [SUP2.legN, SUP2.arm] },
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [[[86, 106], [78, 86], [96, 82]]], n: [[[50, 106], [64, 94], [78, 86]]], a: [[[88, 106], [80, 84], [98, 80]]], over: sec(124, 60, '20 s') }
+  ]},
+  genouinterieur: { labels: ['Vue de dessus, pieds écartés', 'Un genou tombe vers l’intérieur, puis l’autre'], poses: [
+    { h: TOP.h, b: TOP.b, f: TOP.f, n: [[[86, 54], [110, 46], [124, 48]], [[86, 66], [110, 74], [124, 72]]] },
+    { h: TOP.h, b: TOP.b, f: TOP.f, n: [[[86, 54], [110, 46], [124, 48]]], a: [[[86, 66], [106, 60], [124, 72]]], over: up(108, 92, 78) }
+  ]},
+  papillon: { labels: ['Vue de dessus, pieds joints', 'Les deux genoux s’ouvrent, sans forcer'], poses: [
+    { h: TOP.h, b: TOP.b, f: TOP.f, n: [[[86, 56], [110, 56], [124, 59]], [[86, 64], [110, 64], [124, 61]]] },
+    { h: TOP.h, b: TOP.b, f: TOP.f, a: [[[86, 56], [104, 38], [124, 58]], [[86, 64], [104, 82], [124, 62]]], over: up(118, 40, 26) + down(118, 80, 94) }
+  ]}
+});
 const TABLE = '<path class="il-prop" d="M88 46h66v6H88z"/><path class="il-bike" d="M94 52v60M148 52v60"/>';
 Object.assign(ILLUS, {
   pompes: { labels: ['Bras tendus, corps droit', 'Poitrine près du sol'], poses: [
