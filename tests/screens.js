@@ -58,7 +58,7 @@ async function step(label, fn) {
   await step('accueil : « À faire aujourd’hui » et Jouer visible sans défiler', async () => {
     await load(BUSY);
     await has('.todo [data-action="next"]', 'suivi du lendemain');
-    const box = await page.locator('.today [data-action="play"]').boundingBox();
+    const box = await page.locator('.today [data-action="play"]').first().boundingBox();
     if (!box || box.y + box.height > 812) throw new Error('le bouton Jouer est sous la ligne de flottaison');
   });
   await step('suivi du lendemain avec la zone', async () => {
