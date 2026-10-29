@@ -46,7 +46,8 @@ OPTION B : L'APPLI DE CE DOSSIER SUR GITHUB PAGES (gratuit, marche hors ligne)
        page-head.html / page-body.html   le début de la page
        privacy.js      les mots qui ne doivent jamais apparaître dans la page (rangés sous forme d'empreintes)
        fonts.js        les polices, hébergées avec l'appli (fichiers dans fonts/, licence libre SIL OFL)
-   Les tests automatiques sont dans tests/logic.test.js.
+   Les tests automatiques sont dans tests/logic.test.js (règles du jeu) et tests/screens.js
+   (écrans ouverts dans un vrai navigateur ; ce second test tourne seulement sur GitHub).
 
    Après une modification, depuis la racine du dépôt :
        node source/build.js

@@ -368,10 +368,10 @@ button{font:inherit;color:inherit}
 .stepper{display:inline-flex;align-items:center;gap:6px}
 .stepper button{width:44px;height:44px;border-radius:12px;border:2px solid var(--line);background:transparent;font-size:22px;font-weight:900;cursor:pointer;line-height:1}
 .stepper output{min-width:76px;text-align:center;font-family:var(--f-display);font-size:18px;font-variant-numeric:tabular-nums}
-.toggle{width:58px;height:34px;border-radius:99px;background:var(--surface-2);border:0;position:relative;cursor:pointer;flex:none}
-.toggle::after{content:"";position:absolute;top:5px;left:5px;width:24px;height:24px;border-radius:50%;background:var(--ink-2);transition:transform .2s}
+.toggle{width:72px;height:44px;border-radius:99px;background:var(--surface-2);border:0;position:relative;cursor:pointer;flex:none}
+.toggle::after{content:"";position:absolute;top:5px;left:5px;width:34px;height:34px;border-radius:50%;background:var(--ink-2);transition:transform .2s}
 .toggle[aria-checked="true"]{background:var(--accent)}
-.toggle[aria-checked="true"]::after{transform:translateX(24px);background:var(--accent-ink)}
+.toggle[aria-checked="true"]::after{transform:translateX(28px);background:var(--accent-ink)}
 .sub-top{display:flex;align-items:center;gap:12px}
 .sub-top h1{font-size:clamp(22px,7vw,28px)}
 .summary{white-space:pre-wrap;background:var(--surface);border-radius:16px;padding:16px;font:600 14px/1.55 var(--f-body);max-height:58vh;overflow:auto;margin:0;user-select:text;-webkit-user-select:text;box-shadow:var(--shadow)}
@@ -514,6 +514,20 @@ button{font:inherit;color:inherit}
 .step-list b{color:var(--prize)}
 .center-note{text-align:center;margin:0}
 .il-wall{fill:var(--line);opacity:.45}
+.todo{display:flex;flex-direction:column;gap:4px}
+.todo-row{display:flex;flex-direction:column;gap:10px;padding:12px 0;border-top:2px dashed var(--line)}
+.todo-row:first-of-type{border-top:0;padding-top:4px}
+.todo-txt{display:flex;flex-direction:column;gap:2px}
+.todo-txt span{font-size:15px;color:var(--ink-2)}
+.zone-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.zone-chips span{font-weight:800;color:var(--ink-2);margin-right:2px}
+.zone-chips button{min-height:44px;padding:0 14px;border-radius:99px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:800;cursor:pointer}
+.zone-chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.week-bike{margin:0;font-size:15px;color:var(--ink-2)}
+.week-bike b{color:var(--ink)}
+.maint{display:flex;flex-direction:column;gap:8px}
+.maint-row{display:flex;justify-content:space-between;gap:10px;font-weight:700}
+.maint-row b{color:var(--prize)}
 .fold-head{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:none;border:0;padding:4px 0;min-height:44px;font:inherit;color:inherit;cursor:pointer;text-align:left}
 .fold-head .chev{transition:transform .2s;flex:none}
 .fold-head[aria-expanded="true"] .chev{transform:rotate(90deg)}
@@ -824,7 +838,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false }, badges: {}, challenges: {}, history: [], tests: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {} };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -832,6 +846,10 @@ const EX_IDS = new Set(Object.keys(EX));
 const BADGE_IDS = new Set(BADGES.map(b => b.id));
 const CHAL_IDS = new Set(CHALLENGES.map(c => c.id));
 const BACKS = ['ok', 'sensible', 'douleur', 'stop'];
+/* Où a-t-on mal : deux zones du dos qui n’ont pas la même histoire, plus la fesse (la jambe a sa propre question). */
+const ZONES = [{ id: 'bas', name: 'bas du dos', label: 'Bas du dos' }, { id: 'milieu', name: 'milieu du dos', label: 'Milieu du dos' }, { id: 'fesse', name: 'fesse', label: 'Fesse' }];
+const ZONE_IDS = ZONES.map(z => z.id);
+function zoneName(id) { return (ZONES.find(z => z.id === id) || {}).name || id; }
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 function numOr(v, lo, hi, dflt, int) {
   if (v === null || v === undefined || v === '' || typeof v === 'boolean') return dflt;
@@ -850,6 +868,7 @@ function cleanEntry(h) {
   if (!h || typeof h !== 'object') return null;
   const d = isoOr(h.d); if (!d) return null;
   const ids = a => Array.isArray(a) ? [...new Set(a.filter(x => typeof x === 'string' && EX_IDS.has(x)))] : [];
+  const zs = a => Array.isArray(a) ? [...new Set(a.filter(z => ZONE_IDS.includes(z)))] : [];
   const prog = typeof h.prog === 'string' && Object.prototype.hasOwnProperty.call(PROGRAMS, h.prog) && !PROGRAMS[h.prog].practice ? h.prog : 'dos';
   return {
     id: typeof h.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(h.id) ? h.id : 's' + Date.parse(d).toString(36),
@@ -862,6 +881,7 @@ function cleanEntry(h) {
     painBefore: numOr(h.painBefore, 0, 10, null, true), legBefore: h.legBefore === true,
     pain: numOr(h.pain, 0, 10, null, true), leg: typeof h.leg === 'boolean' ? h.leg : null,
     next: numOr(h.next, 0, 10, null, true), nextAt: isoOr(h.nextAt),
+    zoneBefore: zs(h.zoneBefore), zone: zs(h.zone), zoneNext: zs(h.zoneNext),
     durS: numOr(h.durS, 0, 86400, 0, true)
   };
 }
@@ -903,6 +923,7 @@ function cleanSettings(s, d) {
     outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud',
     painMax: numOr(s.painMax, 2, 6, d.painMax, true), painMaxAt: isoOr(s.painMaxAt),
     noDoor: s.noDoor === true, doorChecked: s.doorChecked === true,
+    kineReview: isoOr(s.kineReview), kineSnooze: isoOr(s.kineSnooze),
     rungs: Object.fromEntries(LADDERS.map(l => [l.id, numOr((s.rungs || {})[l.id], 0, l.rungs.length - 1, 0, true)]).filter(([, v]) => v > 0)),
     stepReset: Object.fromEntries(STEP_PROGS.map(id => [id, isoOr((s.stepReset || {})[id])]).filter(([, v]) => v))
   };
@@ -922,7 +943,9 @@ function normalize(raw) {
     badges: cleanDayMap(raw.badges, BADGE_IDS),
     challenges,
     history: Array.isArray(raw.history) ? raw.history.slice(0, 300).map(cleanEntry).filter(Boolean) : [],
-    tests: Array.isArray(raw.tests) ? raw.tests.slice(0, 60).map(cleanTest).filter(Boolean) : []
+    tests: Array.isArray(raw.tests) ? raw.tests.slice(0, 60).map(cleanTest).filter(Boolean) : [],
+    maint: Object.fromEntries(Object.entries(raw.maint && typeof raw.maint === 'object' ? raw.maint : {})
+      .filter(([k, v]) => /^\d{4}-\d{2}:[a-z]+$/.test(k) && STEP_PROGS.includes(k.split(':')[1]) && typeof v === 'string' && DAY_RE.test(v)))
   };
 }
 
@@ -1031,11 +1054,11 @@ function pendingNextDay(s, now = new Date()) {
   return h;
 }
 /* Note le suivi du lendemain sur la séance et sur les autres séances du même jour encore sans suivi (+20 XP une fois). */
-function applyNext(s, id, v, now = new Date()) {
+function applyNext(s, id, v, now = new Date(), zones = []) {
   const h = s.history.find(x => x.id === id);
   if (!h || h.next != null) return null;
   const day = dayKey(h.d), at = now.toISOString();
-  s.history.filter(x => x.next == null && dayKey(x.d) === day).forEach(x => { x.next = v; x.nextAt = at; x.back = backCat(x); });
+  s.history.filter(x => x.next == null && dayKey(x.d) === day).forEach(x => { x.next = v; x.nextAt = at; x.zoneNext = v > 0 ? zones.slice() : []; x.back = backCat(x); });
   h.xp = (h.xp || 0) + 20; s.xp += 20;
   return h;
 }
@@ -1198,6 +1221,41 @@ function backupDue(s, now, inClaude) {
   return !st.lastExport || now - Date.parse(st.lastExport) > 30 * 86400000;
 }
 /* Résumé texte des 30 derniers jours, pour le kiné. Ne contient que ce qui a été noté dans l’appli. */
+/* Point avec le kiné : la routine Reprise dos date du 11 octobre 2026 ; toutes les 4 semaines, on propose de la lui faire revoir. */
+const ROUTINE_DATE = '2026-10-11T10:00:00.000Z', KINE_EVERY_DAYS = 28;
+function kineDue(s, now = new Date()) {
+  const st = s.settings;
+  if (s.history.length < 4 || (st.kineSnooze && now.getTime() < Date.parse(st.kineSnooze))) return false;
+  return now.getTime() - Date.parse(st.kineReview || ROUTINE_DATE) >= KINE_EVERY_DAYS * 86400000;
+}
+function routineTag(s) {
+  return s.settings.kineReview ? 'Routine revue le ' + new Date(s.settings.kineReview).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : PROGRAMS.dos.tag;
+}
+/* Mode entretien : tout est débloqué pour un programme (dernier palier et dernières versions).
+   Défi du mois : 4 séances calmes de ce programme, +40 XP une fois par mois. */
+const MAINT_GOAL = 4, MAINT_XP = 40;
+function monthKey(d) { const x = new Date(d); return x.getFullYear() + '-' + pad(x.getMonth() + 1); }
+function atTop(s, progId) {
+  return STEP_PROGS.includes(progId) && stepLevel(s, progId) >= STEP_MAX
+    && laddersOf(progId).every(l => rungOf(s, l) >= l.rungs.length - 1 || (l.id === 'tirer' && s.settings.noDoor));
+}
+function maintProgress(s, progId, now = new Date()) {
+  const mk = monthKey(now);
+  return Math.min(MAINT_GOAL, s.history.filter(h => h.prog === progId && monthKey(h.d) === mk && quietState(h, s.settings.painMax) === 'count').length);
+}
+function evalMaintenance(s, now = new Date()) {
+  s.maint = s.maint || {};
+  const mk = monthKey(now), won = [];
+  STEP_PROGS.filter(id => atTop(s, id)).forEach(id => {
+    const k = mk + ':' + id;
+    if (!s.maint[k] && maintProgress(s, id, now) >= MAINT_GOAL) { s.maint[k] = dayKey(now); s.xp += MAINT_XP; won.push(id); }
+  });
+  const keep = new Set([0, 1, 2].map(i => monthKey(new Date(now.getFullYear(), now.getMonth() - i, 15))));
+  Object.keys(s.maint).forEach(k => { if (!keep.has(k.split(':')[0])) delete s.maint[k]; });
+  return won;
+}
+/* Repère cardio : minutes de vélo de la semaine en cours. */
+function weekBikeMin(s, now = new Date()) { return Math.round(weekEntries(s, now).reduce((a, h) => a + (h.veloMin || 0), 0) * 10) / 10; }
 function kineSummary(s, now = new Date()) {
   const from = new Date(now); from.setDate(from.getDate() - 30); from.setHours(0, 0, 0, 0);
   const list = s.history.filter(h => new Date(h.d) >= from).slice().reverse();
@@ -1208,6 +1266,7 @@ function kineSummary(s, now = new Date()) {
   L.push(`Période : du ${from.toLocaleDateString('fr-FR')} au ${now.toLocaleDateString('fr-FR')}`);
   L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
   L.push(`Réglages actuels : Reprise dos ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, Fessiers doux ${st.fessiersSets} série${st.fessiersSets > 1 ? 's' : ''}, ${st.bike ? 'vélo ' + st.veloMin + ' min' : 'vélo mis de côté pour le moment'}`);
+  L.push(`Routine Reprise dos : prescrite le ${new Date(ROUTINE_DATE).toLocaleDateString('fr-FR')}${st.kineReview ? ', revue avec le kiné le ' + new Date(st.kineReview).toLocaleDateString('fr-FR') : ', pas encore revue depuis'}`);
   L.push(`Douleur acceptable pour progresser : ${st.painMax}/10${st.painMaxAt ? ' (réglée le ' + new Date(st.painMaxAt).toLocaleDateString('fr-FR') + (st.painMax > 3 ? ', accord kiné déclaré)' : ')') : ' (valeur par défaut)'}`);
   L.push('Progression automatique : ' + STEP_PROGS.map(id => PROGRAMS[id].name + ' palier ' + stepLevel(s, id) + '/' + STEP_MAX).join(', '));
   if (st.noDoor) L.push('Rowing à la porte remplacé par le tirage à la serviette (pas de porte adaptée)');
@@ -1221,11 +1280,13 @@ function kineSummary(s, now = new Date()) {
   L.push('Douleur de dos notée de 0 à 10 : avant la séance → juste après → le lendemain.');
   L.push('');
   if (!list.length) L.push('Aucune séance sur la période.');
-  const painCount = {};
+  const painCount = {}, zoneCount = {};
   list.forEach(h => {
     const p = PROGRAMS[h.prog] || { name: h.prog };
     L.push(`${fmtDateLong(h.d)} · ${p.name}${h.hf ? ' (mains libres)' : ''}`);
-    L.push(`  Douleur : ${h.painBefore ?? '?'} → ${h.pain ?? '?'} → ${h.next ?? '?'}`);
+    const zt = z => (z && z.length ? ' (' + z.map(zoneName).join(', ') + ')' : '');
+    L.push(`  Douleur : ${h.painBefore ?? '?'}${zt(h.zoneBefore)} → ${h.pain ?? '?'}${zt(h.zone)} → ${h.next ?? '?'}${zt(h.zoneNext)}`);
+    [h.zoneBefore, h.zone, h.zoneNext].forEach(z => (z || []).forEach(id => { zoneCount[id] = (zoneCount[id] || 0) + 1; }));
     if (h.legBefore) L.push('  Symptômes dans la jambe AVANT la séance');
     if (h.leg) L.push('  Symptômes dans la jambe APRÈS la séance');
     if (backCat(h) === 'stop') L.push('  Séance arrêtée : douleur dans la jambe ou fourmillements');
@@ -1238,6 +1299,8 @@ function kineSummary(s, now = new Date()) {
   L.push('');
   const pc = Object.entries(painCount);
   L.push('Exercices passés pour douleur sur la période : ' + (pc.length ? pc.map(([id, n]) => `${exName(id)} (${n})`).join(', ') : 'aucun'));
+  const zc = ZONE_IDS.filter(id => zoneCount[id]);
+  L.push('Zones signalées sur la période : ' + (zc.length ? zc.map(id => `${zoneName(id)} (${zoneCount[id]})`).join(', ') : 'aucune précisée'));
   return L.join('\n');
 }
 
@@ -1513,7 +1576,7 @@ let downloadsApi = null;
 let writeChain = Promise.resolve();
 let warnedSave = false;
 
-function body() { return JSON.parse(JSON.stringify({ v: 1, xp: state.xp, bestCombo: state.bestCombo, settings: state.settings, badges: state.badges, challenges: state.challenges, history: state.history, tests: state.tests })); }
+function body() { return JSON.parse(JSON.stringify({ v: 1, xp: state.xp, bestCombo: state.bestCombo, settings: state.settings, badges: state.badges, challenges: state.challenges, history: state.history, tests: state.tests, maint: state.maint })); }
 function persist() {
   clearTimeout(persistTimer);
   const b = body();
@@ -1674,7 +1737,7 @@ function legHTML(action, value) {
 }
 
 /* ---------- Écrans ---------- */
-const ui = { setOpen: new Set(['seances']), screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set(), allProgs: false };
+const ui = { nextZones: [], setOpen: new Set(['seances']), screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set(), allProgs: false };
 
 function renderScreen(opts = {}) {
   if (ui.screen === 'home') app.innerHTML = homeHTML();
@@ -1702,20 +1765,24 @@ function homeHTML() {
   const pend = pendingNextDay(state);
   let notices = '';
   if (ui.nextMsg) notices += `<div class="notice warn"><b>${esc(ui.nextMsg.title)}</b><span>${esc(ui.nextMsg.text)}</span></div>`;
-  if (pend) {
-    notices += `<section class="card next-card" aria-label="Suivi du lendemain">
-      <p class="eyebrow">Suivi du lendemain · +20 XP</p>
-      <h2 class="section-title">Ton dos aujourd’hui, après ta séance de ${esc(fmtDate(pend.d))} ?</h2>
-      ${scaleHTML('next', null, `data-id="${esc(pend.id)}"`)}
-    </section>`;
-  }
+  /* Tout ce qui attend une réponse est rangé dans une seule carte « À faire aujourd’hui » ; les alertes restent à part. */
+  const todos = [];
+  if (pend) todos.push(`<div class="todo-row">
+        <div class="todo-txt"><b>Ton dos aujourd’hui, après ta séance de ${esc(fmtDate(pend.d))} ?</b><span>Suivi du lendemain · +20 XP</span></div>
+        ${zoneChipsHTML('next-zone', ui.nextZones)}
+        ${scaleHTML('next', null, `data-id="${esc(pend.id)}"`)}
+      </div>`);
   if (last && (lastCat === 'douleur' || lastCat === 'stop') && !ui.nextMsg) {
     notices += `<div class="notice warn"><b>Ta dernière séance s’est finie avec de la douleur.</b><span>Si elle persiste ou descend dans la jambe, vois ton kiné avant de rejouer. La séance Jour difficile reste possible si elle ne réveille rien.</span></div>`;
   } else if (state.settings.sets === 1 && run >= 6) {
-    notices += `<div class="notice good"><b>${run} séances de suite sans douleur.</b><span>Demande à ton kiné si tu peux passer à 2 séries. Le réglage est dans les réglages.</span></div>`;
+    todos.push(todoRow(`${run} séances de suite sans douleur`, 'Demande à ton kiné si tu peux passer à 2 séries dans Reprise dos.', '<button class="btn ghost" data-action="settings">Réglages</button>'));
   }
+  if (kineDue(state)) todos.push(todoRow('Point avec ton kiné', 'Ça fait 4 semaines : montre-lui ton résumé et demande-lui de revoir ta routine.', '<button class="btn primary" data-action="summary">Ouvrir le résumé</button><button class="btn ghost" data-action="kine-reviewed">Il l’a revue</button><button class="btn ghost" data-action="kine-later">Plus tard</button>'));
+  if (testDue(state)) todos.push(todoRow(`Test de forme du mois · +${TEST_XP} XP`, 'Deux mesures debout, au rythme d’un bip. Une à deux minutes.', '<button class="btn primary" data-action="test-start">Faire le test</button>'));
+  if (backupDue(state, Date.now(), !!window.claude)) todos.push(todoRow('Sauvegarder ta progression', 'Tes séances ne sont que dans ce téléphone : exporte un fichier et range-le dans tes fichiers ou envoie-le-toi par mail.', '<button class="btn primary" data-action="export">Exporter</button><button class="btn ghost" data-action="backup-later">Plus tard</button>'));
   const readyProgs = [...new Set(LADDERS.map(l => l.prog))].filter(pid => rungsReady(state, pid).length && !(pid === 'milieu' && !state.settings.milieuOk));
-  if (readyProgs.length) notices += `<div class="notice good"><b>Prêt pour la suite : ${esc(readyProgs.map(pid => PROGRAMS[pid].name).join(', '))}</b><span>Tu es au dernier palier. Une version plus difficile t’attend dans l’arbre de progression, avec l’accord de ton kiné.</span><div class="row-btns"><button class="btn ghost" data-action="tab" data-tab="progress">Voir l’arbre</button></div></div>`;
+  if (readyProgs.length) todos.push(todoRow(`Prêt pour la suite : ${readyProgs.map(pid => PROGRAMS[pid].name).join(', ')}`, 'Tu es au dernier palier : une version plus difficile t’attend dans l’arbre, avec l’accord de ton kiné.', '<button class="btn ghost" data-action="tab" data-tab="progress">Voir l’arbre</button>'));
+  const todoHTML = todos.length ? `<section class="card todo" aria-label="À faire aujourd’hui"><h2 class="section-title">À faire aujourd’hui</h2>${todos.join('')}</section>` : '';
   const earned = BADGES.filter(b => state.badges[b.id]).length;
   const gear = `<button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button>`;
   const wkDone = (state.challenges || {})[weekKey(new Date())] || {};
@@ -1726,6 +1793,7 @@ function homeHTML() {
     <header class="top"><div class="brand"><h1>Progrès</h1><p>Défis, badges et régularité.</p></div>${gear}</header>
     ${challengesHTML()}
     ${treeHTML()}
+    ${maintHTML()}
     ${fitHTML()}
     ${wardrobeHTML()}
     <section aria-label="Badges">
@@ -1778,8 +1846,7 @@ function homeHTML() {
     ${todayCardHTML()}
 
     ${notices}
-    ${backupReminderHTML()}
-    ${testDue(state) ? testCardHTML() : ''}
+    ${todoHTML}
 
     <section class="card player" aria-label="Ta progression">
       <div class="player-top">
@@ -1801,6 +1868,7 @@ function homeHTML() {
     <section class="card week" aria-label="Cette semaine">
       <div class="week-head"><h2 class="section-title">Cette semaine</h2><p><b>${wk}</b> / ${goal} jours</p></div>
       <div class="bulbs" aria-hidden="true">${bulbs}</div>
+      ${state.settings.bike ? `<p class="week-bike">Vélo cette semaine : <b>${fmtMin(weekBikeMin(state, new Date()))}</b> / ${state.settings.veloMin * state.settings.weeklyGoal} min</p>` : ''}
       <p class="week-meta">${wk >= goal ? 'Objectif atteint. Profite aussi des jours de repos, ils font partie du programme.' : `Chaque jour d’entraînement remplit un cœur, un seul par jour. Encore ${goal - wk} pour l’objectif.`}</p>
       <button class="link-row" data-action="tab" data-tab="progress"><span>Défis de la semaine : <b>${chalWon} / 3</b> gagnés</span>${ICON.chev}</button>
       ${state.settings.solideUnlocked ? '' : `<button class="link-row" data-action="show-solide"><span>Dos solide : <b>${Math.min(solidStreak(state), SOLIDE_NEEDED)} / ${SOLIDE_NEEDED}</b> séances de renfo calmes</span>${ICON.chev}</button>`}
@@ -1863,7 +1931,7 @@ function ticketHTML(id) {
   <article class="ticket ${id}${locked ? ' locked' : ''}">
     <div class="ticket-head">
       <h3>${esc(p.name)}</h3>
-      ${locked ? `<span class="lockchip">${ICON.lock} Verrouillé</span>` : `<p>${esc(p.tag)}</p>`}
+      ${locked ? `<span class="lockchip">${ICON.lock} Verrouillé</span>` : `<p>${esc(id === 'dos' ? routineTag(state) : p.tag)}</p>`}
     </div>
     <div class="perf" aria-hidden="true"></div>
     <div class="ticket-body">
@@ -1939,8 +2007,25 @@ function fitHTML() {
     <div class="t-row"><span class="est">${esc(when)}</span><button class="btn ${due ? 'primary' : 'ghost'}" data-action="test-start">Faire le test</button></div>
   </section>`;
 }
-function testCardHTML() {
-  return `<div class="notice good"><b>Test de forme du mois · +${TEST_XP} XP</b><span>Deux mesures debout, au rythme d’un bip : assis-debout et pompes contre le mur. Une à deux minutes en tout.</span><div class="row-btns"><button class="btn primary" data-action="test-start">Faire le test</button></div></div>`;
+function todoRow(title, text, btns) {
+  return `<div class="todo-row"><div class="todo-txt"><b>${esc(title)}</b><span>${esc(text)}</span></div><div class="row-btns">${btns}</div></div>`;
+}
+function zoneChipsHTML(action, sel) {
+  return `<div class="zone-chips" role="group" aria-label="Où as-tu mal ? Facultatif"><span>Où ?</span>${ZONES.map(z => `<button data-action="${action}" data-z="${z.id}" aria-pressed="${(sel || []).includes(z.id)}">${z.label}</button>`).join('')}</div>`;
+}
+function maintHTML() {
+  const progs = STEP_PROGS.filter(id => atTop(state, id) && !(id === 'milieu' && !state.settings.milieuOk) && !(id === 'solide' && !state.settings.solideUnlocked));
+  if (!progs.length) return '';
+  const done = state.maint || {}, mk = monthKey(new Date());
+  return `<section class="card maint" aria-label="Mode entretien">
+    <h2 class="section-title">Mode entretien</h2>
+    <p class="muted">Tout est débloqué pour ces programmes : on garde le niveau. Défi du mois : ${MAINT_GOAL} séances calmes de chacun, suivi du lendemain compris, +${MAINT_XP} XP.</p>
+    ${progs.map(id => {
+      const k = maintProgress(state, id), won = !!done[mk + ':' + id];
+      return `<div class="maint-row"><span>${esc(PROGRAMS[id].name)}</span><b>${won ? 'Réussi ✓' : `${k} / ${MAINT_GOAL}`}</b></div>
+      <div class="chal-bar" role="progressbar" aria-label="${esc(PROGRAMS[id].name)} : défi d’entretien du mois" aria-valuemin="0" aria-valuemax="${MAINT_GOAL}" aria-valuenow="${k}"><i style="width:${Math.round(100 * k / MAINT_GOAL)}%"></i></div>`;
+    }).join('')}
+  </section>`;
 }
 function testHTML() {
   const T = ui.test, f = FIT_TESTS[Math.min(T.i, FIT_TESTS.length - 1)];
@@ -2099,6 +2184,8 @@ function historyHTML() {
     if (backCat(h) !== 'stop') bits.push(miniStars(Number(h.stars) || 0));
     bits.push(`+${esc(h.xp ?? h.score ?? 0)} XP`);
     if (h.painBefore != null || h.pain != null) bits.push(`· douleur ${esc(h.painBefore ?? '?')}→${esc(h.pain ?? '?')}${h.next != null ? ' · lendemain ' + esc(h.next) : ''}`);
+    const zs = [...new Set([...(h.zoneBefore || []), ...(h.zone || []), ...(h.zoneNext || [])])];
+    if (zs.length) bits.push('· ' + esc(zs.map(zoneName).join(', ')));
     if (h.veloMin) bits.push(`· vélo ${fmtMin(h.veloMin)} min`);
     if (h.walkMin) bits.push(`· marche ${fmtMin(h.walkMin)} min`);
     return `<li><span class="h-date">${esc(fmtDate(h.d))}</span><div class="h-main"><b>${esc(p.name)}</b><span>${bits.join(' ')}</span></div>${backChip(h)}</li>`;
@@ -2176,7 +2263,8 @@ function settingsHTML() {
     ? `<div class="set-row"><div><b>Débloqué${s.bouleUnlockedAt ? ' le ' + esc(new Date(s.bouleUnlockedAt).toLocaleDateString('fr-FR')) : ''}</b><small>Tu as indiqué que ton kiné a validé ce programme. Arrête au moindre fourmillement ou douleur dans la jambe.</small></div><button class="btn ghost" data-action="relock">${ICON.lock} Reverrouiller</button></div>`
     : (ui.unlockOpen === 'boule' ? unlockPanelHTML('boule') : `<div class="set-row"><div><b>Verrouillé</b><small>Programme fessiers de novembre 2025, pas encore revalidé pour ton dos.</small></div><button class="btn ghost" data-action="unlock-open" data-prog="boule">${ICON.lock} Débloquer</button></div>`);
   const suivi = `
-      <div class="set-row"><div><b>Résumé pour mon kiné</b><small>Les 30 derniers jours : séances, douleur avant, après et le lendemain.</small></div><button class="btn ghost" data-action="summary">Ouvrir</button></div>
+      <div class="set-row"><div><b>Résumé pour mon kiné</b><small>Les 30 derniers jours : séances, douleur avant, après et le lendemain, avec les zones.</small></div><button class="btn ghost" data-action="summary">Ouvrir</button></div>
+      <div class="set-row"><div><b>Point avec le kiné</b><small>${esc(routineTag(state))} · rappel toutes les 4 semaines</small></div><button class="btn ghost" data-action="kine-reviewed">Il a revu ma routine</button></div>
       <div class="set-row"><div><b>Sauvegarde dans un fichier</b><small>Pour passer tes données d’un appareil à l’autre, par exemple vers l’appli du téléphone.</small></div>
         <div class="row-btns">${canSave() ? '<button class="btn ghost" data-action="export">Exporter</button>' : ''}<label class="btn ghost" for="import-file">Importer</label><input type="file" id="import-file" class="sr" accept=".json,application/json"></div>
       </div>
@@ -2225,11 +2313,13 @@ function precheckHTML() {
     ${pend ? `<section class="card set-card next-card" aria-label="Suivi du lendemain">
       <p class="eyebrow">D’abord, le suivi · +20 XP</p>
       <h2 class="section-title">Ton dos aujourd’hui, après ta séance de ${esc(fmtDate(pend.d))} ?</h2>
+      ${zoneChipsHTML('next-zone', ui.nextZones)}
       ${scaleHTML('next', null, `data-id="${esc(pend.id)}"`)}
     </section>` : ''}
     <section class="card set-card" aria-label="Douleur avant la séance">
       <h2 class="section-title">Ton dos, là, maintenant ?</h2>
       ${scaleHTML('pre-pain', pre.pain)}
+      ${pre.pain ? zoneChipsHTML('pre-zone', pre.zones) : ''}
     </section>
     <section class="card set-card" aria-label="Symptômes dans la jambe">
       <h2 class="section-title">Douleur ou fourmillements dans la jambe ?</h2>
@@ -2287,6 +2377,7 @@ function startGame(progId, pre) {
     setPerfect: 0, nCans: 0, pyramids: 0, canGeo: null, litL: -1,
     painBefore: pre ? pre.pain : null, legBefore: pre ? !!pre.leg : false,
     sugg: prog.practice ? null : suggestToday(state),
+    zoneBefore: pre ? (pre.zones || []).slice() : [],
     count: 0, taps: [], lastTap: 0, combo: 0, bestCombo: 0, score: 0, perfect: 0, fast: 0, reps: 0,
     skipped: [], painEx: [], veloSec: 0, walkSec: 0, t0: Date.now(), holdStart: null,
     restEnd: 0, switchEnd: 0, flashUntil: 0, lastRem: -1, overlay: null, pausedAt: 0,
@@ -2846,6 +2937,7 @@ function finish(reason) {
     veloMin: Math.round(G.veloSec / 6) / 10, walkMin: Math.round(G.walkSec / 6) / 10, skipped: [...G.skipped], painEx: [...G.painEx],
     stop: reason === 'pain', back: reason === 'pain' ? 'stop' : null, hf: G.hf, pyramids: G.pyramids,
     painBefore: G.painBefore, legBefore: G.legBefore, pain: null, leg: null, next: null,
+    zoneBefore: G.zoneBefore || [], zone: [], zoneNext: [],
     durS: Math.round((Date.now() - G.t0) / 1000)
   };
   const before = levelInfo(state.xp);
@@ -2859,7 +2951,7 @@ function finish(reason) {
   persist();
   const newOutfits = OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id));
   const relocked = reason === 'pain' && relockSolide();
-  R = { bonus, relocked, entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null }, sameDay };
+  R = { bonus, relocked, entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null, zones: null }, sameDay };
   if (relocked) persist();
   G = null;
   ui.screen = 'result';
@@ -2904,6 +2996,7 @@ function renderResult() {
       <p class="eyebrow">Ressenti · ${done ? 'noté' : '+20 XP'}</p>
       <h2 class="section-title">Ton dos, là, maintenant ?</h2>
       ${scaleHTML('ci-pain', R.ci.pain ?? e.pain)}
+      ${(R.ci.pain ?? e.pain) ? zoneChipsHTML('ci-zone', R.ci.zones ?? e.zone) : ''}
       <h2 class="section-title">Douleur ou fourmillements dans la jambe ?</h2>
       ${legHTML('ci-leg', R.ci.leg ?? e.leg)}
       ${done ? ciMessage(e) : `<p class="ci-msg muted">${e.painBefore != null ? `Avant la séance, tu étais à ${e.painBefore}/10.` : 'Réponds aux deux questions, c’est gardé pour ton kiné.'}</p>`}
@@ -2943,7 +3036,7 @@ function applyCheckin() {
   const objs = new Set([R.entry, state.history.find(x => x.id === R.entry.id)].filter(Boolean));
   const first = R.entry.pain == null;
   objs.forEach(o => {
-    o.pain = R.ci.pain; o.leg = !!R.ci.leg;
+    o.pain = R.ci.pain; o.leg = !!R.ci.leg; o.zone = (R.ci.zones ?? o.zone ?? []).slice();
     if (o.leg && relockSolide()) R.relocked = true;
     o.back = backCat(o);
     if (first) o.xp = (o.xp || 0) + 20;
@@ -2967,7 +3060,7 @@ function relockSolide() {
   return true;
 }
 function goHome() { ui.screen = 'home'; ui.resetArm = false; ui.pre = null; R = null; renderScreen(); window.scrollTo(0, 0); }
-function openPrecheck(prog) { ui.pre = { prog, pain: null, leg: null, step: 'ask' }; ui.screen = 'precheck'; renderScreen(); window.scrollTo(0, 0); }
+function openPrecheck(prog) { ui.pre = { prog, pain: null, leg: null, zones: [], step: 'ask' }; ui.screen = 'precheck'; renderScreen(); window.scrollTo(0, 0); }
 function endPractice() {
   const perfect = G ? G.perfect : 0;
   G = null;
@@ -2999,11 +3092,7 @@ function saveFile(name, text, type, noShare) {
     return Promise.resolve({ status: 'saved' });
   } catch { return Promise.reject({ code: 'unavailable' }); }
 }
-function backupReminderHTML() {
-  if (!backupDue(state, Date.now(), !!window.claude)) return '';
-  return `<div class="notice warn"><b>Pense à sauvegarder ta progression.</b><span>Tes séances ne sont que dans ce téléphone. Exporte un fichier de sauvegarde et range-le dans tes fichiers ou envoie-le-toi par mail.</span>
-    <div class="row-btns"><button class="btn primary" data-action="export">Exporter maintenant</button><button class="btn ghost" data-action="backup-later">Plus tard</button></div></div>`;
-}
+
 const ACTIONS = {
   settings() { ui.screen = 'settings'; ui.resetArm = false; ui.nextMsg = null; renderScreen(); window.scrollTo(0, 0); },
   home() { goHome(); },
@@ -3071,19 +3160,36 @@ const ACTIONS = {
     const levels = STEP_PROGS.map(id => stepLevel(state, id));
     const outfitsBefore = unlockedOutfits(state);
     const v = Number(b.dataset.v);
-    const h = applyNext(state, b.dataset.id, v); if (!h) return;
+    const h = applyNext(state, b.dataset.id, v, new Date(), ui.nextZones); if (!h) return;
+    ui.nextZones = [];
     const base = h.painBefore ?? h.pain ?? 0;
     ui.nextMsg = (v >= 7 || v >= base + 3) ? { title: `Plus douloureux qu’avant la séance (${base} → ${v}).`, text: 'Prends un jour de repos ou fais Jour difficile, et parles-en à ton kiné.' } : null;
     evalBadges(state);
     const ch = evalChallenges(state);
+    const mt = evalMaintenance(state);
     persist(); renderScreen({ still: true });
     const newOutfit = OUTFITS.find(o => o.test(state) && !outfitsBefore.includes(o.id));
     if (newOutfit) { setTimeout(() => toast(`Nouvelle tenue pour Chouquette : ${newOutfit.name} ! Va voir dans Progrès.`), 4300); }
     const moved = dir => STEP_PROGS.filter((id, i) => Math.sign(stepLevel(state, id) - levels[i]) === dir).map(id => PROGRAMS[id].name).join(', ');
     const up = moved(1), down = moved(-1);
     toast((ch.length > 1 ? `+20 XP. ${ch.length} défis réussis, +${ch.length * 50} XP !` : ch.length ? `+20 XP. Défi réussi : ${ch[0].name}, +50 XP !` : '+20 XP. Noté pour ton kiné.')
-      + (up ? ` Chouquette monte d’un palier : ${up}.` : '') + (down ? ` On redescend d’un palier : ${down}.` : ''));
+      + (up ? ` Chouquette monte d’un palier : ${up}.` : '') + (down ? ` On redescend d’un palier : ${down}.` : '')
+      + (mt.length ? ` Défi d’entretien réussi : +${MAINT_XP * mt.length} XP.` : ''));
   },
+  'next-zone'(b) { const z = b.dataset.z, a = ui.nextZones; ui.nextZones = a.includes(z) ? a.filter(x => x !== z) : a.concat(z); renderScreen({ still: true }); },
+  'pre-zone'(b) { const z = b.dataset.z, a = ui.pre.zones; ui.pre.zones = a.includes(z) ? a.filter(x => x !== z) : a.concat(z); renderScreen({ still: true }); },
+  'ci-zone'(b) {
+    const z = b.dataset.z, cur = (R.ci.zones ?? R.entry.zone ?? []).slice();
+    R.ci.zones = cur.includes(z) ? cur.filter(x => x !== z) : cur.concat(z);
+    if (R.entry.pain != null) { [R.entry, state.history.find(x => x.id === R.entry.id)].filter(Boolean).forEach(o => { o.zone = R.ci.zones.slice(); }); persist(); }
+    renderResult();
+  },
+  'kine-reviewed'() {
+    state.settings.kineReview = new Date().toISOString(); state.settings.kineSnooze = null;
+    persist(); renderScreen({ still: true });
+    toast('Noté : routine revue avec ton kiné aujourd’hui. Prochain point dans 4 semaines.');
+  },
+  'kine-later'() { state.settings.kineSnooze = new Date(Date.now() + 7 * 86400000).toISOString(); persist(); renderScreen({ still: true }); },
   summary() { ui.summaryBack = ui.screen; ui.screen = 'summary'; renderScreen(); window.scrollTo(0, 0); },
   'summary-back'() { ui.screen = ui.summaryBack === 'settings' ? 'settings' : 'home'; renderScreen(); window.scrollTo(0, 0); },
   'sum-copy'() {

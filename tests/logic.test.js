@@ -411,6 +411,58 @@ test('rowing sans porte', () => {
   assert.equal(api.normalize({ settings: { noDoor: 'oui', doorChecked: 1 } }).settings.noDoor, false);
 });
 
+test('zone de la douleur', () => {
+  const e = api.cleanEntry(entry({ zoneBefore: ['bas', 'bas', 'genou'], zone: 'bas', zoneNext: ['milieu'] }));
+  same(e.zoneBefore, ['bas']); same(e.zone, []); same(e.zoneNext, ['milieu']);
+  const a = entry({ d: iso(2026, 10, 17, 19) }), b = entry({ d: iso(2026, 10, 17, 9) });
+  const s = state({ history: [a, b] });
+  api.applyNext(s, a.id, 3, NOW, ['milieu']);
+  same(a.zoneNext, ['milieu']); same(b.zoneNext, ['milieu'], 'aussi pour l’autre séance du jour');
+  const c = entry({ d: iso(2026, 10, 16) }), t = state({ history: [c] });
+  api.applyNext(t, c.id, 0, NOW, ['bas']);
+  same(c.zoneNext, [], 'pas de zone sans douleur');
+  const z = state({ history: [entry({ d: iso(2026, 10, 16), painBefore: 3, zoneBefore: ['bas'], pain: 2, zone: ['bas', 'fesse'], next: 1 })] });
+  const txt = api.kineSummary(z, NOW);
+  assert.match(txt, /Douleur : 3 \(bas du dos\) → 2 \(bas du dos, fesse\) → 1/);
+  assert.match(txt, /Zones signalées sur la période : bas du dos \(2\), fesse \(1\)/);
+  assert.match(api.kineSummary(state(), NOW), /Zones signalées sur la période : aucune précisée/);
+});
+
+test('point avec le kiné toutes les 4 semaines', () => {
+  const four = [1, 2, 3, 4].map(n => entry({ d: iso(2026, 11, 6 - n) }));
+  assert.equal(api.kineDue(state({ history: four }), D(2026, 11, 7)), false, 'moins de 4 semaines après la routine du 11 octobre');
+  assert.equal(api.kineDue(state({ history: four }), D(2026, 11, 9)), true, '4 semaines après');
+  assert.equal(api.kineDue(state({ history: four.slice(0, 2) }), D(2026, 11, 9)), false, 'pas avant 4 séances');
+  const s = state({ history: four });
+  s.settings.kineSnooze = D(2026, 11, 12).toISOString();
+  assert.equal(api.kineDue(s, D(2026, 11, 9)), false, 'plus tard : une semaine de répit');
+  s.settings.kineReview = D(2026, 11, 8).toISOString(); s.settings.kineSnooze = null;
+  assert.equal(api.kineDue(s, D(2026, 11, 20)), false, 'revue récemment');
+  assert.equal(api.kineDue(s, D(2026, 12, 7)), true, '4 semaines après la revue');
+  assert.match(api.routineTag(s), /^Routine revue le 8 nov/);
+  assert.match(api.routineTag(state()), /^Routine du 11 oct/);
+  assert.match(api.kineSummary(s, D(2026, 11, 20)), /Routine Reprise dos : prescrite le 11\/10\/2026, revue avec le kiné le 08\/11\/2026/);
+});
+
+test('mode entretien et repère vélo', () => {
+  const calm = d => entry({ prog: 'fessiers', d: iso(2026, 10, d), painBefore: 2, pain: 2, next: 2 });
+  const s = state({ history: [16, 14, 12, 10, 8, 6].map(calm) });
+  assert.equal(api.atTop(s, 'fessiers'), false, 'une version plus dure reste à débloquer');
+  s.settings.rungs = { squat: 2 };
+  assert.equal(api.atTop(s, 'fessiers'), true, 'dernier palier et dernière version');
+  assert.equal(api.maintProgress(s, 'fessiers', NOW), api.MAINT_GOAL);
+  const xp = s.xp;
+  same(api.evalMaintenance(s, NOW), ['fessiers']);
+  assert.equal(s.xp, xp + api.MAINT_XP);
+  same(api.evalMaintenance(s, NOW), [], 'une fois par mois');
+  s.maint['2026-01:fessiers'] = '2026-01-20';
+  api.evalMaintenance(s, NOW);
+  assert.ok(!('2026-01:fessiers' in s.maint), 'les vieux mois sont oubliés');
+  const b = state({ history: [entry({ d: iso(2026, 10, 17), veloMin: 8 }), entry({ d: iso(2026, 10, 13), veloMin: 6.5 }), entry({ d: iso(2026, 10, 9), veloMin: 10 })] });
+  assert.equal(api.weekBikeMin(b, NOW), 14.5, 'seulement cette semaine');
+  same(api.normalize({ maint: { '2026-10:fessiers': '2026-10-18', x: '2026-10-18', '2026-10:inconnu': '2026-10-18' } }).maint, { '2026-10:fessiers': '2026-10-18' });
+});
+
 test('séances de suite sans douleur', () => {
   const s = state({ history: [entry({ pain: 2, next: 2 }), entry({ pain: 3, prog: 'boule', next: 2 }), entry({ pain: 2, next: 2 }), entry({ pain: 7, next: 2 }), entry({ pain: 1, next: 1 })] });
   assert.equal(api.painFreeRun(s), 2, 's’arrête à la première séance douloureuse ; les autres programmes ne comptent pas');

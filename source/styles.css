@@ -338,10 +338,10 @@ button{font:inherit;color:inherit}
 .stepper{display:inline-flex;align-items:center;gap:6px}
 .stepper button{width:44px;height:44px;border-radius:12px;border:2px solid var(--line);background:transparent;font-size:22px;font-weight:900;cursor:pointer;line-height:1}
 .stepper output{min-width:76px;text-align:center;font-family:var(--f-display);font-size:18px;font-variant-numeric:tabular-nums}
-.toggle{width:58px;height:34px;border-radius:99px;background:var(--surface-2);border:0;position:relative;cursor:pointer;flex:none}
-.toggle::after{content:"";position:absolute;top:5px;left:5px;width:24px;height:24px;border-radius:50%;background:var(--ink-2);transition:transform .2s}
+.toggle{width:72px;height:44px;border-radius:99px;background:var(--surface-2);border:0;position:relative;cursor:pointer;flex:none}
+.toggle::after{content:"";position:absolute;top:5px;left:5px;width:34px;height:34px;border-radius:50%;background:var(--ink-2);transition:transform .2s}
 .toggle[aria-checked="true"]{background:var(--accent)}
-.toggle[aria-checked="true"]::after{transform:translateX(24px);background:var(--accent-ink)}
+.toggle[aria-checked="true"]::after{transform:translateX(28px);background:var(--accent-ink)}
 .sub-top{display:flex;align-items:center;gap:12px}
 .sub-top h1{font-size:clamp(22px,7vw,28px)}
 .summary{white-space:pre-wrap;background:var(--surface);border-radius:16px;padding:16px;font:600 14px/1.55 var(--f-body);max-height:58vh;overflow:auto;margin:0;user-select:text;-webkit-user-select:text;box-shadow:var(--shadow)}
@@ -484,6 +484,20 @@ button{font:inherit;color:inherit}
 .step-list b{color:var(--prize)}
 .center-note{text-align:center;margin:0}
 .il-wall{fill:var(--line);opacity:.45}
+.todo{display:flex;flex-direction:column;gap:4px}
+.todo-row{display:flex;flex-direction:column;gap:10px;padding:12px 0;border-top:2px dashed var(--line)}
+.todo-row:first-of-type{border-top:0;padding-top:4px}
+.todo-txt{display:flex;flex-direction:column;gap:2px}
+.todo-txt span{font-size:15px;color:var(--ink-2)}
+.zone-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.zone-chips span{font-weight:800;color:var(--ink-2);margin-right:2px}
+.zone-chips button{min-height:44px;padding:0 14px;border-radius:99px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:800;cursor:pointer}
+.zone-chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.week-bike{margin:0;font-size:15px;color:var(--ink-2)}
+.week-bike b{color:var(--ink)}
+.maint{display:flex;flex-direction:column;gap:8px}
+.maint-row{display:flex;justify-content:space-between;gap:10px;font-weight:700}
+.maint-row b{color:var(--prize)}
 .fold-head{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:none;border:0;padding:4px 0;min-height:44px;font:inherit;color:inherit;cursor:pointer;text-align:left}
 .fold-head .chev{transition:transform .2s;flex:none}
 .fold-head[aria-expanded="true"] .chev{transform:rotate(90deg)}

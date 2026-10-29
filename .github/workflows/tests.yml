@@ -29,3 +29,20 @@ jobs:
         run: |
           node source/build.js
           git diff --exit-code -- index.html || (echo "index.html n'a pas été reconstruit : lance node source/build.js avant d'envoyer." && exit 1)
+
+  # Les écrans principaux ouverts dans un vrai navigateur, au format téléphone.
+  # Playwright n'est installé que le temps de ce test, sur GitHub : rien n'est ajouté à l'appli.
+  ecrans:
+    name: Écrans (navigateur)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Installer Playwright et Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.48.2
+          npx playwright install --with-deps chromium
+      - name: Vérifier les écrans principaux
+        run: node tests/screens.js

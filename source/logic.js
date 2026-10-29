@@ -244,7 +244,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false }, badges: {}, challenges: {}, history: [], tests: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {} };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -252,6 +252,10 @@ const EX_IDS = new Set(Object.keys(EX));
 const BADGE_IDS = new Set(BADGES.map(b => b.id));
 const CHAL_IDS = new Set(CHALLENGES.map(c => c.id));
 const BACKS = ['ok', 'sensible', 'douleur', 'stop'];
+/* Où a-t-on mal : deux zones du dos qui n’ont pas la même histoire, plus la fesse (la jambe a sa propre question). */
+const ZONES = [{ id: 'bas', name: 'bas du dos', label: 'Bas du dos' }, { id: 'milieu', name: 'milieu du dos', label: 'Milieu du dos' }, { id: 'fesse', name: 'fesse', label: 'Fesse' }];
+const ZONE_IDS = ZONES.map(z => z.id);
+function zoneName(id) { return (ZONES.find(z => z.id === id) || {}).name || id; }
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 function numOr(v, lo, hi, dflt, int) {
   if (v === null || v === undefined || v === '' || typeof v === 'boolean') return dflt;
@@ -270,6 +274,7 @@ function cleanEntry(h) {
   if (!h || typeof h !== 'object') return null;
   const d = isoOr(h.d); if (!d) return null;
   const ids = a => Array.isArray(a) ? [...new Set(a.filter(x => typeof x === 'string' && EX_IDS.has(x)))] : [];
+  const zs = a => Array.isArray(a) ? [...new Set(a.filter(z => ZONE_IDS.includes(z)))] : [];
   const prog = typeof h.prog === 'string' && Object.prototype.hasOwnProperty.call(PROGRAMS, h.prog) && !PROGRAMS[h.prog].practice ? h.prog : 'dos';
   return {
     id: typeof h.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(h.id) ? h.id : 's' + Date.parse(d).toString(36),
@@ -282,6 +287,7 @@ function cleanEntry(h) {
     painBefore: numOr(h.painBefore, 0, 10, null, true), legBefore: h.legBefore === true,
     pain: numOr(h.pain, 0, 10, null, true), leg: typeof h.leg === 'boolean' ? h.leg : null,
     next: numOr(h.next, 0, 10, null, true), nextAt: isoOr(h.nextAt),
+    zoneBefore: zs(h.zoneBefore), zone: zs(h.zone), zoneNext: zs(h.zoneNext),
     durS: numOr(h.durS, 0, 86400, 0, true)
   };
 }
@@ -323,6 +329,7 @@ function cleanSettings(s, d) {
     outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud',
     painMax: numOr(s.painMax, 2, 6, d.painMax, true), painMaxAt: isoOr(s.painMaxAt),
     noDoor: s.noDoor === true, doorChecked: s.doorChecked === true,
+    kineReview: isoOr(s.kineReview), kineSnooze: isoOr(s.kineSnooze),
     rungs: Object.fromEntries(LADDERS.map(l => [l.id, numOr((s.rungs || {})[l.id], 0, l.rungs.length - 1, 0, true)]).filter(([, v]) => v > 0)),
     stepReset: Object.fromEntries(STEP_PROGS.map(id => [id, isoOr((s.stepReset || {})[id])]).filter(([, v]) => v))
   };
@@ -342,7 +349,9 @@ function normalize(raw) {
     badges: cleanDayMap(raw.badges, BADGE_IDS),
     challenges,
     history: Array.isArray(raw.history) ? raw.history.slice(0, 300).map(cleanEntry).filter(Boolean) : [],
-    tests: Array.isArray(raw.tests) ? raw.tests.slice(0, 60).map(cleanTest).filter(Boolean) : []
+    tests: Array.isArray(raw.tests) ? raw.tests.slice(0, 60).map(cleanTest).filter(Boolean) : [],
+    maint: Object.fromEntries(Object.entries(raw.maint && typeof raw.maint === 'object' ? raw.maint : {})
+      .filter(([k, v]) => /^\d{4}-\d{2}:[a-z]+$/.test(k) && STEP_PROGS.includes(k.split(':')[1]) && typeof v === 'string' && DAY_RE.test(v)))
   };
 }
 
@@ -451,11 +460,11 @@ function pendingNextDay(s, now = new Date()) {
   return h;
 }
 /* Note le suivi du lendemain sur la séance et sur les autres séances du même jour encore sans suivi (+20 XP une fois). */
-function applyNext(s, id, v, now = new Date()) {
+function applyNext(s, id, v, now = new Date(), zones = []) {
   const h = s.history.find(x => x.id === id);
   if (!h || h.next != null) return null;
   const day = dayKey(h.d), at = now.toISOString();
-  s.history.filter(x => x.next == null && dayKey(x.d) === day).forEach(x => { x.next = v; x.nextAt = at; x.back = backCat(x); });
+  s.history.filter(x => x.next == null && dayKey(x.d) === day).forEach(x => { x.next = v; x.nextAt = at; x.zoneNext = v > 0 ? zones.slice() : []; x.back = backCat(x); });
   h.xp = (h.xp || 0) + 20; s.xp += 20;
   return h;
 }
@@ -618,6 +627,41 @@ function backupDue(s, now, inClaude) {
   return !st.lastExport || now - Date.parse(st.lastExport) > 30 * 86400000;
 }
 /* Résumé texte des 30 derniers jours, pour le kiné. Ne contient que ce qui a été noté dans l’appli. */
+/* Point avec le kiné : la routine Reprise dos date du 11 octobre 2026 ; toutes les 4 semaines, on propose de la lui faire revoir. */
+const ROUTINE_DATE = '2026-10-11T10:00:00.000Z', KINE_EVERY_DAYS = 28;
+function kineDue(s, now = new Date()) {
+  const st = s.settings;
+  if (s.history.length < 4 || (st.kineSnooze && now.getTime() < Date.parse(st.kineSnooze))) return false;
+  return now.getTime() - Date.parse(st.kineReview || ROUTINE_DATE) >= KINE_EVERY_DAYS * 86400000;
+}
+function routineTag(s) {
+  return s.settings.kineReview ? 'Routine revue le ' + new Date(s.settings.kineReview).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : PROGRAMS.dos.tag;
+}
+/* Mode entretien : tout est débloqué pour un programme (dernier palier et dernières versions).
+   Défi du mois : 4 séances calmes de ce programme, +40 XP une fois par mois. */
+const MAINT_GOAL = 4, MAINT_XP = 40;
+function monthKey(d) { const x = new Date(d); return x.getFullYear() + '-' + pad(x.getMonth() + 1); }
+function atTop(s, progId) {
+  return STEP_PROGS.includes(progId) && stepLevel(s, progId) >= STEP_MAX
+    && laddersOf(progId).every(l => rungOf(s, l) >= l.rungs.length - 1 || (l.id === 'tirer' && s.settings.noDoor));
+}
+function maintProgress(s, progId, now = new Date()) {
+  const mk = monthKey(now);
+  return Math.min(MAINT_GOAL, s.history.filter(h => h.prog === progId && monthKey(h.d) === mk && quietState(h, s.settings.painMax) === 'count').length);
+}
+function evalMaintenance(s, now = new Date()) {
+  s.maint = s.maint || {};
+  const mk = monthKey(now), won = [];
+  STEP_PROGS.filter(id => atTop(s, id)).forEach(id => {
+    const k = mk + ':' + id;
+    if (!s.maint[k] && maintProgress(s, id, now) >= MAINT_GOAL) { s.maint[k] = dayKey(now); s.xp += MAINT_XP; won.push(id); }
+  });
+  const keep = new Set([0, 1, 2].map(i => monthKey(new Date(now.getFullYear(), now.getMonth() - i, 15))));
+  Object.keys(s.maint).forEach(k => { if (!keep.has(k.split(':')[0])) delete s.maint[k]; });
+  return won;
+}
+/* Repère cardio : minutes de vélo de la semaine en cours. */
+function weekBikeMin(s, now = new Date()) { return Math.round(weekEntries(s, now).reduce((a, h) => a + (h.veloMin || 0), 0) * 10) / 10; }
 function kineSummary(s, now = new Date()) {
   const from = new Date(now); from.setDate(from.getDate() - 30); from.setHours(0, 0, 0, 0);
   const list = s.history.filter(h => new Date(h.d) >= from).slice().reverse();
@@ -628,6 +672,7 @@ function kineSummary(s, now = new Date()) {
   L.push(`Période : du ${from.toLocaleDateString('fr-FR')} au ${now.toLocaleDateString('fr-FR')}`);
   L.push(`Séances : ${list.length}, sur ${days > 1 ? days + ' jours différents' : days + ' jour'}`);
   L.push(`Réglages actuels : Reprise dos ${st.sets} série${st.sets > 1 ? 's' : ''} par exercice au sol, Fessiers doux ${st.fessiersSets} série${st.fessiersSets > 1 ? 's' : ''}, ${st.bike ? 'vélo ' + st.veloMin + ' min' : 'vélo mis de côté pour le moment'}`);
+  L.push(`Routine Reprise dos : prescrite le ${new Date(ROUTINE_DATE).toLocaleDateString('fr-FR')}${st.kineReview ? ', revue avec le kiné le ' + new Date(st.kineReview).toLocaleDateString('fr-FR') : ', pas encore revue depuis'}`);
   L.push(`Douleur acceptable pour progresser : ${st.painMax}/10${st.painMaxAt ? ' (réglée le ' + new Date(st.painMaxAt).toLocaleDateString('fr-FR') + (st.painMax > 3 ? ', accord kiné déclaré)' : ')') : ' (valeur par défaut)'}`);
   L.push('Progression automatique : ' + STEP_PROGS.map(id => PROGRAMS[id].name + ' palier ' + stepLevel(s, id) + '/' + STEP_MAX).join(', '));
   if (st.noDoor) L.push('Rowing à la porte remplacé par le tirage à la serviette (pas de porte adaptée)');
@@ -641,11 +686,13 @@ function kineSummary(s, now = new Date()) {
   L.push('Douleur de dos notée de 0 à 10 : avant la séance → juste après → le lendemain.');
   L.push('');
   if (!list.length) L.push('Aucune séance sur la période.');
-  const painCount = {};
+  const painCount = {}, zoneCount = {};
   list.forEach(h => {
     const p = PROGRAMS[h.prog] || { name: h.prog };
     L.push(`${fmtDateLong(h.d)} · ${p.name}${h.hf ? ' (mains libres)' : ''}`);
-    L.push(`  Douleur : ${h.painBefore ?? '?'} → ${h.pain ?? '?'} → ${h.next ?? '?'}`);
+    const zt = z => (z && z.length ? ' (' + z.map(zoneName).join(', ') + ')' : '');
+    L.push(`  Douleur : ${h.painBefore ?? '?'}${zt(h.zoneBefore)} → ${h.pain ?? '?'}${zt(h.zone)} → ${h.next ?? '?'}${zt(h.zoneNext)}`);
+    [h.zoneBefore, h.zone, h.zoneNext].forEach(z => (z || []).forEach(id => { zoneCount[id] = (zoneCount[id] || 0) + 1; }));
     if (h.legBefore) L.push('  Symptômes dans la jambe AVANT la séance');
     if (h.leg) L.push('  Symptômes dans la jambe APRÈS la séance');
     if (backCat(h) === 'stop') L.push('  Séance arrêtée : douleur dans la jambe ou fourmillements');
@@ -658,5 +705,7 @@ function kineSummary(s, now = new Date()) {
   L.push('');
   const pc = Object.entries(painCount);
   L.push('Exercices passés pour douleur sur la période : ' + (pc.length ? pc.map(([id, n]) => `${exName(id)} (${n})`).join(', ') : 'aucun'));
+  const zc = ZONE_IDS.filter(id => zoneCount[id]);
+  L.push('Zones signalées sur la période : ' + (zc.length ? zc.map(id => `${zoneName(id)} (${zoneCount[id]})`).join(', ') : 'aucune précisée'));
   return L.join('\n');
 }
