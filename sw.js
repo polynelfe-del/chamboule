@@ -1,5 +1,5 @@
 // Généré par build-phone-app.js
-const CACHE = 'chamboule-46eb45db00';
+const CACHE = 'chamboule-6de30950aa';
 const SHELL = ["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png","./icon-512-maskable.png","./apple-touch-icon.png","./fonts/fredoka.woff2","./fonts/pacifico.woff2","./fonts/nunito.woff2","./fonts/nunito-italic.woff2"];
 
 // cache: 'reload' : on prend toujours la version fraîche sur GitHub, jamais une copie gardée par le navigateur.

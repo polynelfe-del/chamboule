@@ -484,6 +484,42 @@ test('Calisthénie : quand le dos ne fait plus mal', () => {
   assert.match(api.kineSummary(state(), NOW), /Programme Calisthénie : verrouillé \(après Dos solide\)/);
 });
 
+test('Calisthénie : repli sans table, échelles reliées', () => {
+  const s = state(); s.settings.solideUnlocked = true; s.settings.calisUnlocked = true;
+  assert.ok(api.progFor(s, 'calis').exercises.some(e => e.id === 'rowtable'));
+  s.settings.noTable = true;
+  let ids = api.progFor(s, 'calis').exercises.map(e => e.id);
+  assert.ok(ids.includes('rowpenche') && !ids.includes('rowtable'), 'sans table : rowing à la serviette penché');
+  s.settings.noDoor = true;
+  ids = api.progFor(s, 'calis').exercises.map(e => e.id);
+  assert.ok(ids.includes('tirageserviette') && !ids.includes('rowpenche'), 'ni table ni porte : tirage à la serviette');
+  for (const l of api.LADDERS) assert.ok(api.PROGRAMS.calis.exercises.some(e => e.id === l.next), `${l.id} mène à la Calisthénie`);
+  assert.equal(api.normalize({ settings: { noTable: 'oui', tableChecked: 1 } }).settings.noTable, false);
+  assert.match(api.kineSummary(s, NOW), /Rowing sous la table remplacé/);
+});
+
+test('alertes selon la zone de douleur', () => {
+  const e = (n, o) => entry(Object.assign({ d: iso(2026, 10, 18 - n), painBefore: 2, pain: 2, next: 2 }, o));
+  assert.equal(api.zoneAlert(state({ history: [e(1, { zone: ['fesse'] })] }), NOW), null, 'une seule fois : pas d’alerte');
+  assert.equal(api.zoneAlert(state({ history: [e(1, { zone: ['fesse'] }), e(3, { zoneNext: ['fesse'] })] }), NOW).zone, 'fesse', 'deux séances de suite');
+  assert.equal(api.zoneAlert(state({ history: [e(1, { zone: ['fesse'] }), e(10, { zone: ['fesse'] })] }), NOW), null, 'trop ancien');
+  assert.equal(api.zoneAlert(state({ history: [e(1, { pain: 4, zone: ['milieu'] })] }), NOW), null, 'milieu du dos à 4/10 : pas d’alerte');
+  const m = api.zoneAlert(state({ history: [e(1, { next: 6, zoneNext: ['milieu'] })] }), NOW);
+  assert.equal(m.zone, 'milieu'); assert.equal(m.pain, 6);
+});
+
+test('carnet de 2 000 séances et Vélo seul', () => {
+  const many = Array.from({ length: 2100 }, (_, i) => entry({ d: new Date(2020, 0, 1 + i).toISOString() }));
+  assert.equal(api.HISTORY_MAX, 2000);
+  assert.equal(api.normalize({ history: many }).history.length, 2000, 'plus de 300 séances gardées');
+  const s = state();
+  assert.ok(api.PROG_ORDER.includes('cardio'));
+  assert.equal(api.estMin(s, api.progFor(s, 'cardio')), s.settings.veloMin);
+  s.settings.bike = false;
+  assert.equal(api.progFor(s, 'cardio').exercises.length, 0, 'sans vélo, rien à jouer : le ticket le dit');
+  assert.ok(!api.STRENGTH_PROGS.includes('cardio'), 'le vélo seul ne compte pas pour Dos solide');
+});
+
 test('séances de suite sans douleur', () => {
   const s = state({ history: [entry({ pain: 2, next: 2 }), entry({ pain: 3, prog: 'boule', next: 2 }), entry({ pain: 2, next: 2 }), entry({ pain: 7, next: 2 }), entry({ pain: 1, next: 1 })] });
   assert.equal(api.painFreeRun(s), 2, 's’arrête à la première séance douloureuse ; les autres programmes ne comptent pas');

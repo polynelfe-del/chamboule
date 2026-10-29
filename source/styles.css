@@ -136,6 +136,7 @@ button{font:inherit;color:inherit}
 .ticket.calme{--t-color:var(--blush);--t-ink:var(--face-ink)}
 .ticket.solide{--t-color:var(--prize);--t-ink:var(--prize-ink)}
 .ticket.calis{--t-color:var(--ok);--t-ink:var(--ok-ink)}
+.ticket.cardio{--t-color:var(--accent);--t-ink:var(--accent-ink)}
 .unlock-progress{display:flex;flex-direction:column;gap:6px}
 .ticket.locked{--t-color:var(--surface-2);--t-ink:var(--ink-2)}
 .ticket-head{background:var(--t-color);color:var(--t-ink);padding:16px 18px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
@@ -423,7 +424,7 @@ button{font:inherit;color:inherit}
 @keyframes flashIn{from{transform:translate(-50%,-50%) scale(.4);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
 
 .bike{width:64px;height:40px;color:currentColor}
-.bike-chip{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:6px 14px 6px 10px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;min-height:40px;align-self:flex-start}
+.bike-chip{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:6px 14px 6px 10px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;min-height:44px;align-self:flex-start}
 .bike-chip .bike{width:32px;height:20px}
 .bike-chip[aria-checked="true"]{border-color:var(--accent);color:var(--accent)}
 .bike-chip[aria-checked="false"] .bike{opacity:.45}
@@ -524,6 +525,14 @@ button{font:inherit;color:inherit}
 .tree-rungs li.now span{color:var(--accent)}
 .tree-rungs li.next .tree-node{border-style:dashed}
 .tree-rungs li.next .il-mini{opacity:.5}
+.tree-rungs li.goal .tree-node{border-color:var(--ok)}
+.tree-rungs li.goal.locked .tree-node{border-style:dashed}
+.tree-rungs li.goal.locked .il-mini{opacity:.5}
+.tree-rungs li.goal small{display:block;font-size:12px;font-weight:900;color:var(--ok)}
+.tree-top{border-top-style:solid;border-top-color:var(--ok)}
+.tree-goal{flex-wrap:wrap;row-gap:12px}
+.tree-goal li{flex:0 0 calc(33.33% - 7px)}
+.tree-goal li::before{display:none}
 .fit{display:flex;flex-direction:column;gap:12px}
 .fit-row{display:flex;flex-direction:column;gap:6px}
 .fit-bars{display:flex;align-items:flex-end;gap:8px;height:96px}

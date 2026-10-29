@@ -166,6 +166,7 @@ button{font:inherit;color:inherit}
 .ticket.calme{--t-color:var(--blush);--t-ink:var(--face-ink)}
 .ticket.solide{--t-color:var(--prize);--t-ink:var(--prize-ink)}
 .ticket.calis{--t-color:var(--ok);--t-ink:var(--ok-ink)}
+.ticket.cardio{--t-color:var(--accent);--t-ink:var(--accent-ink)}
 .unlock-progress{display:flex;flex-direction:column;gap:6px}
 .ticket.locked{--t-color:var(--surface-2);--t-ink:var(--ink-2)}
 .ticket-head{background:var(--t-color);color:var(--t-ink);padding:16px 18px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
@@ -453,7 +454,7 @@ button{font:inherit;color:inherit}
 @keyframes flashIn{from{transform:translate(-50%,-50%) scale(.4);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
 
 .bike{width:64px;height:40px;color:currentColor}
-.bike-chip{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:6px 14px 6px 10px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;min-height:40px;align-self:flex-start}
+.bike-chip{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:6px 14px 6px 10px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;min-height:44px;align-self:flex-start}
 .bike-chip .bike{width:32px;height:20px}
 .bike-chip[aria-checked="true"]{border-color:var(--accent);color:var(--accent)}
 .bike-chip[aria-checked="false"] .bike{opacity:.45}
@@ -554,6 +555,14 @@ button{font:inherit;color:inherit}
 .tree-rungs li.now span{color:var(--accent)}
 .tree-rungs li.next .tree-node{border-style:dashed}
 .tree-rungs li.next .il-mini{opacity:.5}
+.tree-rungs li.goal .tree-node{border-color:var(--ok)}
+.tree-rungs li.goal.locked .tree-node{border-style:dashed}
+.tree-rungs li.goal.locked .il-mini{opacity:.5}
+.tree-rungs li.goal small{display:block;font-size:12px;font-weight:900;color:var(--ok)}
+.tree-top{border-top-style:solid;border-top-color:var(--ok)}
+.tree-goal{flex-wrap:wrap;row-gap:12px}
+.tree-goal li{flex:0 0 calc(33.33% - 7px)}
+.tree-goal li::before{display:none}
 .fit{display:flex;flex-direction:column;gap:12px}
 .fit-row{display:flex;flex-direction:column;gap:6px}
 .fit-bars{display:flex;align-items:flex-end;gap:8px;height:96px}
@@ -766,6 +775,9 @@ const PROGRAMS = {
   difficile: { id: 'difficile', name: 'Jour difficile', tag: 'Séance douce · 3 min', rest: 30,
     blurb: 'Juste la respiration, pour garder le rythme sans rien forcer. Pour les jours où le dos est sensible.',
     exercises: [{ ...EX.transverse, sets: 2 }] },
+  cardio: { id: 'cardio', name: 'Vélo seul', tag: 'Cardio doux', rest: 0,
+    blurb: 'Juste le vélo d’appartement, résistance légère, pour les jours sans renforcement : ça compte dans tes minutes de vélo de la semaine. La durée se règle dans les Réglages.',
+    exercises: [EX.velo] },
   calis: { id: 'calis', name: 'Calisthénie', tag: 'Quand le dos ne fait plus mal', rest: 45,
     blurb: 'Les mouvements de base de la calisthénie, au poids du corps : pompes, rowing, fente bulgare, pont sur une jambe, gainage. Se débloque après Dos solide, puis 10 séances de renforcement d’affilée à 2/10 de douleur au plus (avant, après et le lendemain), et l’accord de ton kiné. Se reverrouille si la douleur revient dans la jambe.',
     exercises: [EX.pompes, EX.rowtable, EX.bulgare, EX.pontunejambe, EX.lateralpieds, EX.ours] },
@@ -777,7 +789,9 @@ const PROGRAMS = {
       cue: 'Pas besoin de bouger. Regarde le cercle se remplir. Quand il devient jaune et que ça bipe, tape : la balle part sur les boîtes.',
       tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
 };
-const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'haut', 'calme', 'difficile', 'solide', 'calis', 'boule'];
+const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'haut', 'cardio', 'calme', 'difficile', 'solide', 'calis', 'boule'];
+/* Le carnet garde jusqu’à 2 000 séances (des années d’entraînement) ; l’appli prévient bien avant. */
+const HISTORY_MAX = 2000;
 const SOLIDE_NEEDED = 10;
 
 const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Cœur de la fête', 'Grande roue', 'Feu d’artifice', 'Légende de la foire'];
@@ -864,7 +878,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, calisUnlocked: false, calisUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {} };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, calisUnlocked: false, calisUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, noTable: false, tableChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {} };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -950,6 +964,7 @@ function cleanSettings(s, d) {
     outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud',
     painMax: numOr(s.painMax, 2, 6, d.painMax, true), painMaxAt: isoOr(s.painMaxAt),
     noDoor: s.noDoor === true, doorChecked: s.doorChecked === true,
+    noTable: s.noTable === true, tableChecked: s.tableChecked === true,
     kineReview: isoOr(s.kineReview), kineSnooze: isoOr(s.kineSnooze),
     rungs: Object.fromEntries(LADDERS.map(l => [l.id, numOr((s.rungs || {})[l.id], 0, l.rungs.length - 1, 0, true)]).filter(([, v]) => v > 0)),
     stepReset: Object.fromEntries(STEP_PROGS.map(id => [id, isoOr((s.stepReset || {})[id])]).filter(([, v]) => v))
@@ -969,7 +984,7 @@ function normalize(raw) {
     settings: cleanSettings(raw.settings, d.settings),
     badges: cleanDayMap(raw.badges, BADGE_IDS),
     challenges,
-    history: Array.isArray(raw.history) ? raw.history.slice(0, 300).map(cleanEntry).filter(Boolean) : [],
+    history: Array.isArray(raw.history) ? raw.history.slice(0, HISTORY_MAX).map(cleanEntry).filter(Boolean) : [],
     tests: Array.isArray(raw.tests) ? raw.tests.slice(0, 60).map(cleanTest).filter(Boolean) : [],
     maint: Object.fromEntries(Object.entries(raw.maint && typeof raw.maint === 'object' ? raw.maint : {})
       .filter(([k, v]) => /^\d{4}-\d{2}:[a-z]+$/.test(k) && STEP_PROGS.includes(k.split(':')[1]) && typeof v === 'string' && DAY_RE.test(v)))
@@ -1045,7 +1060,7 @@ function suggestToday(s, now = new Date()) {
   if (recent && cat === 'sensible') return { prog: 'calme', why: 'Ton dos était un peu sensible la dernière fois : place aux mouvements doux.' };
   const dayBefore = n => { const d = new Date(now); d.setDate(d.getDate() - n); return dayKey(d); };
   if ([1, 2, 3].every(n => s.history.some(h => dayKey(h.d) === dayBefore(n)))) {
-    return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : aujourd’hui, je te conseille le repos. La balade du chien suffit, et si le dos est raide, quelques minutes de Dos calme.' };
+    return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : aujourd’hui, je te conseille le repos. La balade du chien suffit ; si tu as envie de bouger, un peu de Vélo seul, et si le dos est raide, quelques minutes de Dos calme.' };
   }
   /* Dos du milieu n’est proposé qu’une fois l’avis médical déclaré. */
   const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : [], s.settings.calisUnlocked ? ['calis'] : []);
@@ -1153,15 +1168,16 @@ function stepped(ex, progId, lvl) {
   if (ex.kind === 'hold') return Object.assign({}, ex, { hold: ex.hold + Math.max(1, Math.round(ex.hold * 0.2)) * lvl });
   return Object.assign({}, ex, { target: ex.max ? Math.min(ex.max, ex.target + lvl) : ex.target + lvl });
 }
-/* Échelles de progression (principe de la calisthénie) : chaque mouvement a des versions de plus en plus dures.
+/* Échelles de progression (principe de la calisthénie) : chaque mouvement a des versions de plus en plus dures,
+   et mène (next) à un exercice du programme Calisthénie, le sommet de l’arbre.
    Au dernier cran d’un programme, ses versions suivantes peuvent se débloquer, avec l’accord du kiné ;
    les crans de ce programme repartent alors de zéro. On peut toujours revenir à la version précédente. */
 const LADDERS = [
-  { id: 'pousser', name: 'Pousser', prog: 'haut', rungs: ['murpompe', 'planpompe', 'genoupompe'] },
-  { id: 'tirer', name: 'Tirer', prog: 'haut', rungs: ['rowserviette', 'rowpenche'] },
-  { id: 'pencher', name: 'Se pencher', prog: 'haut', rungs: ['charniere', 'charniereunejambe'] },
-  { id: 'squat', name: 'S’accroupir', prog: 'fessiers', rungs: ['assisdebout', 'squatchaise', 'fentesoutenue'] },
-  { id: 'gainage', name: 'Gainage', prog: 'milieu', rungs: ['planche', 'plancheplus'] }
+  { id: 'pousser', name: 'Pousser', prog: 'haut', rungs: ['murpompe', 'planpompe', 'genoupompe'], next: 'pompes' },
+  { id: 'tirer', name: 'Tirer', prog: 'haut', rungs: ['rowserviette', 'rowpenche'], next: 'rowtable' },
+  { id: 'pencher', name: 'Se pencher', prog: 'haut', rungs: ['charniere', 'charniereunejambe'], next: 'pontunejambe' },
+  { id: 'squat', name: 'S’accroupir', prog: 'fessiers', rungs: ['assisdebout', 'squatchaise', 'fentesoutenue'], next: 'bulgare' },
+  { id: 'gainage', name: 'Gainage', prog: 'milieu', rungs: ['planche', 'plancheplus'], next: 'ours' }
 ];
 function rungOf(s, l) { return Math.min(l.rungs.length - 1, (s.settings.rungs || {})[l.id] || 0); }
 function laddersOf(progId) { return LADDERS.filter(l => l.prog === progId); }
@@ -1179,6 +1195,8 @@ function progFor(s, id) {
   laddersOf(id).forEach(l => { const r = rungOf(s, l); if (r) swap[l.rungs[0]] = EX[l.rungs[r]]; });
   if (Object.keys(swap).length) exercises = exercises.map(ex => swap[ex.id] || ex);
   /* Sans porte adaptée, le rowing est remplacé par le tirage à la serviette. */
+  /* Sans table adaptée, le rowing sous la table redevient le rowing penché à la serviette (ou le tirage, sans porte). */
+  if (s.settings.noTable) exercises = exercises.map(ex => ex.id === 'rowtable' ? EX.rowpenche : ex);
   if (s.settings.noDoor) { const pull = LADDERS.find(l => l.id === 'tirer').rungs; exercises = exercises.map(ex => pull.includes(ex.id) ? EX.tirageserviette : ex); }
   if (lvl) exercises = exercises.map(ex => stepped(ex, id, lvl));
   return exercises === p.exercises ? p : Object.assign({}, p, { exercises, level: lvl });
@@ -1297,6 +1315,17 @@ function evalMaintenance(s, now = new Date()) {
   Object.keys(s.maint).forEach(k => { if (!keep.has(k.split(':')[0])) delete s.maint[k]; });
   return won;
 }
+/* Alertes selon la zone : le milieu du dos à 5/10 ou plus (rappel des signes à surveiller au ventre),
+   ou la fesse deux séances de suite (comme une douleur qui commence à descendre). Seulement sur les 7 derniers jours. */
+function zoneAlert(s, now = new Date()) {
+  const recent = s.history.filter(h => now.getTime() - Date.parse(h.d) < 7 * 86400000);
+  const has = (h, z) => (h.zone || []).includes(z) || (h.zoneNext || []).includes(z);
+  const top = h => Math.max(h.pain ?? 0, h.next ?? 0);
+  const last = recent[0];
+  if (last && has(last, 'milieu') && top(last) >= 5) return { zone: 'milieu', pain: top(last) };
+  if (recent.length >= 2 && has(recent[0], 'fesse') && has(recent[1], 'fesse')) return { zone: 'fesse' };
+  return null;
+}
 /* Repère cardio : minutes de vélo de la semaine en cours. */
 function weekBikeMin(s, now = new Date()) { return Math.round(weekEntries(s, now).reduce((a, h) => a + (h.veloMin || 0), 0) * 10) / 10; }
 function kineSummary(s, now = new Date()) {
@@ -1313,6 +1342,7 @@ function kineSummary(s, now = new Date()) {
   L.push(`Douleur acceptable pour progresser : ${st.painMax}/10${st.painMaxAt ? ' (réglée le ' + new Date(st.painMaxAt).toLocaleDateString('fr-FR') + (st.painMax > 3 ? ', accord kiné déclaré)' : ')') : ' (valeur par défaut)'}`);
   L.push('Progression automatique : ' + STEP_PROGS.map(id => PROGRAMS[id].name + ' palier ' + stepLevel(s, id) + '/' + STEP_MAX).join(', '));
   if (st.noDoor) L.push('Rowing à la porte remplacé par le tirage à la serviette (pas de porte adaptée)');
+  if (st.noTable) L.push('Rowing sous la table remplacé (pas de table adaptée)');
   L.push('Versions des exercices : ' + LADDERS.map(l => `${l.name} ${rungOf(s, l) + 1}/${l.rungs.length} (${exName(l.rungs[rungOf(s, l)])})`).join(', '));
   const tl = (s.tests || []).slice(0, 4).reverse();
   if (tl.length) L.push('Tests de forme : ' + tl.map(t => `${new Date(t.d).toLocaleDateString('fr-FR')} assis-debout ${t.chaise ?? '?'}, pompes au mur ${t.mur ?? '?'}${t.v === TEST_VERSION ? ` (au rythme, ${TEST_CAP} au plus${t.pain != null ? `, douleur après ${t.pain}/10` : ''})` : ' (ancien test : le plus possible en 30 s)'}`).join(' ; '));
@@ -1854,6 +1884,11 @@ function homeHTML() {
   if (backupDue(state, Date.now(), !!window.claude)) todos.push(todoRow('Sauvegarder ta progression', 'Tes séances ne sont que dans ce téléphone : exporte un fichier et range-le dans tes fichiers ou envoie-le-toi par mail.', '<button class="btn primary" data-action="export">Exporter</button><button class="btn ghost" data-action="backup-later">Plus tard</button>'));
   const readyProgs = [...new Set(LADDERS.map(l => l.prog))].filter(pid => rungsReady(state, pid).length && !(pid === 'milieu' && !state.settings.milieuOk));
   if (readyProgs.length) todos.push(todoRow(`Prêt pour la suite : ${readyProgs.map(pid => PROGRAMS[pid].name).join(', ')}`, 'Tu es au dernier palier : une version plus difficile t’attend dans l’arbre, avec l’accord de ton kiné.', '<button class="btn ghost" data-action="tab" data-tab="progress">Voir l’arbre</button>'));
+  if (state.history.length >= HISTORY_MAX - 100) todos.push(todoRow(`Carnet presque plein : ${state.history.length} / ${HISTORY_MAX} séances`, 'Exporte une sauvegarde : au-delà, les plus anciennes séances seront retirées du téléphone.', '<button class="btn primary" data-action="export">Exporter</button>'));
+  const za = zoneAlert(state);
+  if (za) notices += za.zone === 'milieu'
+    ? `<div class="notice warn"><b>Milieu du dos à ${za.pain}/10.</b><span>Si cette douleur s’accompagne de douleurs au ventre ou de fièvre, ou si elle ne se calme ni au repos ni la nuit, consulte un médecin. Sinon, place aux séances douces, et parles-en à ton kiné.</span></div>`
+    : '<div class="notice warn"><b>La fesse revient deux séances de suite.</b><span>Surveille : si ça descend dans la jambe ou si ça fourmille, arrête et vois ton kiné. Parles-en-lui à la prochaine séance.</span></div>';
   const todoHTML = todos.length ? `<section class="card todo" aria-label="À faire aujourd’hui"><h2 class="section-title">À faire aujourd’hui</h2>${todos.join('')}</section>` : '';
   const earned = BADGES.filter(b => state.badges[b.id]).length;
   const gear = `<button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button>`;
@@ -1993,6 +2028,7 @@ function ticketHTML(id) {
   const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(state, ex, setsFor(state, p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
   let foot;
   if (id === 'milieu' && !state.settings.milieuOk) foot = `<div class="unlock-progress"><span class="est">Avant ce programme, fais vérifier par un médecin l’origine de ta douleur au milieu du dos, surtout si elle s’accompagne de douleurs au ventre.</span><button class="btn ghost" data-action="milieu-ok">Un médecin a vérifié</button></div>`;
+  else if (id === 'cardio' && !state.settings.bike) foot = `<div class="t-row"><span class="est">Le vélo est mis de côté pour le moment.</span>${bikeChipHTML('cardio')}</div>`;
   else if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
   else if (id === 'calis' && !state.settings.solideUnlocked) foot = `<div class="t-row"><span class="est">Se débloque après Dos solide, quand ton dos ne fait plus mal.</span></div>`;
   else if (id === 'calis' && calisStreak(state) < CALIS_NEEDED) {
@@ -2016,7 +2052,7 @@ function ticketHTML(id) {
       <p${open ? '' : ' class="clamp"'}>${esc(p.blurb)}</p>
       ${open ? `<ul class="ex-list">${list}</ul>` : `<div class="ex-strip">${strip}</div>`}
       ${toggle}
-      ${locked ? '' : bikeChipHTML(id)}
+      ${locked || id === 'cardio' ? '' : bikeChipHTML(id)}
       ${foot}
     </div>
   </article>`;
@@ -2049,14 +2085,27 @@ function treeHTML() {
         const r = rungOf(state, l);
         const nodes = l.rungs.map((id, i) => `<li class="${i < r ? 'done' : i === r ? 'now' : 'next'}"><button class="tree-node" data-action="ex-open" data-prog="${pid}" data-ex="${id}" aria-label="${esc(exName(id))}, ${i < r ? 'déjà passée' : i === r ? 'version actuelle' : 'à venir'}">${illusMini(id)}</button><span>${esc(exName(id))}</span></li>`).join('');
         const noDoor = l.id === 'tirer' && state.settings.noDoor ? '<p class="muted">Sans porte adaptée : remplacé par le tirage à la serviette.</p>' : '';
-        return `<div class="tree-row"><span class="tree-name">${esc(l.name)}</span><ol class="tree-rungs">${nodes}</ol>${noDoor}${r > 0 ? `<button class="link-btn" data-action="rung-down" data-ladder="${l.id}">Revenir à la version précédente</button>` : ''}</div>`;
+        const open = state.settings.calisUnlocked;
+        const goal = l.next ? `<li class="goal ${open ? 'open' : 'locked'}"><button class="tree-node" data-action="ex-open" data-prog="calis" data-ex="${l.next}" aria-label="${esc(exName(l.next))}, dans Calisthénie${open ? '' : ', verrouillée'}">${illusMini(l.next)}</button><span>${esc(exName(l.next))}<small>Calisthénie</small></span></li>` : '';
+        return `<div class="tree-row"><span class="tree-name">${esc(l.name)}</span><ol class="tree-rungs">${nodes}${goal}</ol>${noDoor}${r > 0 ? `<button class="link-btn" data-action="rung-down" data-ladder="${l.id}">Revenir à la version précédente</button>` : ''}</div>`;
       }).join('');
       let foot = '';
       if (ready.length && !locked) foot = ui.unlockOpen === 'rung:' + pid ? unlockPanelHTML('rung:' + pid)
         : `<div class="t-row"><span class="est">Prêt pour la suite : ${esc(nextRungNames(pid))}</span><button class="btn primary" data-action="unlock-open" data-prog="rung:${pid}">${ICON.lock} Débloquer</button></div>`;
       return `<div class="tree-group"><div class="tree-head"><b>${esc(PROGRAMS[pid].name)}</b><span class="est">palier ${stepLevel(state, pid)}/${STEP_MAX}</span></div>${rows}${foot}</div>`;
     }).join('')}
+    ${calisTreeHTML()}
   </section>`;
+}
+function calisTreeHTML() {
+  const st = state.settings, open = st.calisUnlocked;
+  const status = open ? `palier ${stepLevel(state, 'calis')}/${STEP_MAX}` : st.solideUnlocked ? `${Math.min(calisStreak(state), CALIS_NEEDED)} / ${CALIS_NEEDED} séances à ${CALIS_PAIN}/10` : 'après Dos solide';
+  const nodes = progFor(state, 'calis').exercises.map(ex => `<li class="goal ${open ? 'open' : 'locked'}"><button class="tree-node" data-action="ex-open" data-prog="calis" data-ex="${ex.id}" aria-label="${esc(ex.name)}${open ? '' : ', verrouillée'}">${illusMini(ex.id)}</button><span>${esc(ex.name)}</span></li>`).join('');
+  return `<div class="tree-group tree-top">
+      <div class="tree-head"><b>Sommet : Calisthénie</b><span class="est">${esc(status)}</span></div>
+      <p class="muted">${open ? 'Débloquée : tu es au bout de l’arbre.' : `Le bout de l’arbre, pour quand ton dos ne fait plus mal : après Dos solide, ${CALIS_NEEDED} séances de renforcement d’affilée à ${CALIS_PAIN}/10 au plus, puis l’accord de ton kiné.`}</p>
+      <ol class="tree-rungs tree-goal">${nodes}</ol>
+    </div>`;
 }
 function rungPanelHTML(pid) {
   return `<div class="unlock">
@@ -2314,7 +2363,12 @@ function settingsHTML() {
       <div class="set-row">
         <div><b>Rowing à la porte</b><small>Désactive-le si tu n’as pas de porte qui s’ouvre de l’autre côté avec une poignée solide : il est remplacé par un tirage à la serviette, sans porte.</small></div>
         <button class="toggle" role="switch" aria-checked="${!s.noDoor}" aria-label="Rowing à la porte" data-action="door-toggle"></button>
-      </div>`;
+      </div>
+      ${s.calisUnlocked ? `<h3 class="set-sub">Calisthénie</h3>
+      <div class="set-row">
+        <div><b>Rowing sous la table</b><small>Désactive-le si tu n’as pas de table lourde et stable : il est remplacé par le rowing à la serviette.</small></div>
+        <button class="toggle" role="switch" aria-checked="${!s.noTable}" aria-label="Rowing sous la table" data-action="table-toggle"></button>
+      </div>` : ''}`;
   const douleur = `
       <div class="set-row">
         <div><b>Douleur acceptable pour progresser</b><small>Une séance compte pour Dos solide et les paliers si ta douleur reste à ce niveau ou en dessous, avant, après et le lendemain, sans augmenter. 3/10 par défaut ; à monter seulement avec ton kiné, par exemple si ta douleur de fond est souvent à 4 ou 5.</small></div>
@@ -2377,10 +2431,11 @@ function settingsHTML() {
 
 /* ---------- Avant la séance ---------- */
 function needsDoorCheck(prog) { return prog === 'haut' && !state.settings.noDoor && !state.settings.doorChecked; }
+function needsTableCheck(prog) { return prog === 'calis' && !state.settings.noTable && !state.settings.tableChecked; }
 function precheckHTML() {
   const pre = ui.pre, p = PROGRAMS[pre.prog];
-  const pend = pendingNextDay(state), door = needsDoorCheck(pre.prog);
-  const ready = pre.pain != null && pre.leg != null && !pend && !door;
+  const pend = pendingNextDay(state), door = needsDoorCheck(pre.prog), table = needsTableCheck(pre.prog);
+  const ready = pre.pain != null && pre.leg != null && !pend && !door && !table;
   let outcome = '';
   if (pre.step === 'leg') {
     outcome = `<div class="notice danger"><b>Pas de renforcement aujourd’hui.</b><span>Des symptômes dans la jambe avant même de commencer, c’est à montrer à ton kiné ou à ton médecin. La respiration du transverse reste possible si elle ne réveille rien.</span></div>
@@ -2420,7 +2475,16 @@ function precheckHTML() {
       </ul>
       <div class="row-btns"><button class="btn primary" data-action="door-ok">C’est vérifié</button><button class="btn ghost" data-action="door-none">Pas de porte adaptée</button></div>
     </section>` : ''}
-    ${hasBike(p) && !outcome ? `<section class="card set-card" aria-label="Vélo d’appartement">
+    ${table && !outcome ? `<section class="card set-card" aria-label="Rowing sous la table">
+      <h2 class="section-title">Avant ton premier rowing sous la table</h2>
+      <ul class="door-list">
+        <li>La table est <b>lourde et rigide</b> : ni pliante, ni sur roulettes, ni en verre.</li>
+        <li>Elle <b>ne bascule pas</b> : debout à côté, tire fort sur le bord avant de te glisser dessous.</li>
+        <li>Rien dessus qui puisse tomber, et de la place autour pour ta tête.</li>
+      </ul>
+      <div class="row-btns"><button class="btn primary" data-action="table-ok">C’est vérifié</button><button class="btn ghost" data-action="table-none">Pas de table adaptée</button></div>
+    </section>` : ''}
+    ${hasBike(p) && pre.prog !== 'cardio' && !outcome ? `<section class="card set-card" aria-label="Vélo d’appartement">
       <div class="set-row">
         <div><b>Vélo d’appartement aujourd’hui ?</b><small>${state.settings.bike ? 'Inclus à la fin de la séance.' : 'Mis de côté : la séance s’arrête après le pont. Remets-le quand tu auras un vélo.'}</small></div>
         <button class="toggle" role="switch" aria-checked="${state.settings.bike}" aria-label="Inclure le vélo d’appartement" data-action="bike-toggle"></button>
@@ -3031,7 +3095,7 @@ function finish(reason) {
   state.xp += xp;
   state.bestCombo = Math.max(state.bestCombo, G.bestCombo);
   state.history.unshift(entry);
-  if (state.history.length > 300) state.history.length = 300;
+  if (state.history.length > HISTORY_MAX) state.history.length = HISTORY_MAX;
   const fresh = evalBadges(state);
   const chal = evalChallenges(state);
   persist();
@@ -3239,7 +3303,7 @@ const ACTIONS = {
   'pre-pain'(b) { ui.pre.pain = Number(b.dataset.v); ui.pre.step = 'ask'; renderScreen(); },
   'pre-leg'(b) { ui.pre.leg = b.dataset.v === '1'; ui.pre.step = 'ask'; renderScreen(); },
   'pre-go'() {
-    const pre = ui.pre; if (pre.pain == null || pre.leg == null || pendingNextDay(state) || needsDoorCheck(pre.prog)) return;
+    const pre = ui.pre; if (pre.pain == null || pre.leg == null || pendingNextDay(state) || needsDoorCheck(pre.prog) || needsTableCheck(pre.prog)) return;
     if (pre.leg) { pre.step = 'leg'; renderScreen(); return; }
     if (pre.pain >= 7 && pre.prog !== 'difficile') { pre.step = 'high'; renderScreen(); return; }
     startGame(pre.prog, pre);
@@ -3384,6 +3448,13 @@ const ACTIONS = {
     toast(s.noDoor ? 'Rowing remplacé par le tirage à la serviette, sans porte.' : 'Rowing à la porte remis : l’appli te fera vérifier la porte avant la séance.');
   },
   'door-ok'() { state.settings.doorChecked = true; persist(); renderScreen({ still: true }); },
+  'table-ok'() { state.settings.tableChecked = true; persist(); renderScreen({ still: true }); },
+  'table-none'() { state.settings.noTable = true; persist(); renderScreen({ still: true }); toast('Rowing sous la table remplacé par le rowing à la serviette.'); },
+  'table-toggle'() {
+    const s = state.settings; s.noTable = !s.noTable; if (!s.noTable) s.tableChecked = false;
+    persist(); renderScreen({ still: true });
+    toast(s.noTable ? 'Rowing sous la table remplacé par le rowing à la serviette.' : 'Rowing sous la table remis : l’appli te fera vérifier la table avant la séance.');
+  },
   'door-none'() { state.settings.noDoor = true; persist(); renderScreen({ still: true }); toast('Rowing remplacé par le tirage à la serviette, sans porte.'); },
   'set-fsets'(b) { state.settings.fessiersSets = clamp(Number(b.dataset.v) || 1, 1, 2); persist(); renderScreen({ still: true }); },
   'rem-day'(b) {

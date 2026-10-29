@@ -222,6 +222,11 @@ function homeHTML() {
   if (backupDue(state, Date.now(), !!window.claude)) todos.push(todoRow('Sauvegarder ta progression', 'Tes séances ne sont que dans ce téléphone : exporte un fichier et range-le dans tes fichiers ou envoie-le-toi par mail.', '<button class="btn primary" data-action="export">Exporter</button><button class="btn ghost" data-action="backup-later">Plus tard</button>'));
   const readyProgs = [...new Set(LADDERS.map(l => l.prog))].filter(pid => rungsReady(state, pid).length && !(pid === 'milieu' && !state.settings.milieuOk));
   if (readyProgs.length) todos.push(todoRow(`Prêt pour la suite : ${readyProgs.map(pid => PROGRAMS[pid].name).join(', ')}`, 'Tu es au dernier palier : une version plus difficile t’attend dans l’arbre, avec l’accord de ton kiné.', '<button class="btn ghost" data-action="tab" data-tab="progress">Voir l’arbre</button>'));
+  if (state.history.length >= HISTORY_MAX - 100) todos.push(todoRow(`Carnet presque plein : ${state.history.length} / ${HISTORY_MAX} séances`, 'Exporte une sauvegarde : au-delà, les plus anciennes séances seront retirées du téléphone.', '<button class="btn primary" data-action="export">Exporter</button>'));
+  const za = zoneAlert(state);
+  if (za) notices += za.zone === 'milieu'
+    ? `<div class="notice warn"><b>Milieu du dos à ${za.pain}/10.</b><span>Si cette douleur s’accompagne de douleurs au ventre ou de fièvre, ou si elle ne se calme ni au repos ni la nuit, consulte un médecin. Sinon, place aux séances douces, et parles-en à ton kiné.</span></div>`
+    : '<div class="notice warn"><b>La fesse revient deux séances de suite.</b><span>Surveille : si ça descend dans la jambe ou si ça fourmille, arrête et vois ton kiné. Parles-en-lui à la prochaine séance.</span></div>';
   const todoHTML = todos.length ? `<section class="card todo" aria-label="À faire aujourd’hui"><h2 class="section-title">À faire aujourd’hui</h2>${todos.join('')}</section>` : '';
   const earned = BADGES.filter(b => state.badges[b.id]).length;
   const gear = `<button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button>`;
@@ -361,6 +366,7 @@ function ticketHTML(id) {
   const list = p.exercises.map(ex => `<li><button class="ex-row" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}<span class="ex-txt"><b>${esc(ex.name)}</b><span>${esc(presc(state, ex, setsFor(state, p, ex)))}</span></span>${ICON.chev}</button></li>`).join('');
   let foot;
   if (id === 'milieu' && !state.settings.milieuOk) foot = `<div class="unlock-progress"><span class="est">Avant ce programme, fais vérifier par un médecin l’origine de ta douleur au milieu du dos, surtout si elle s’accompagne de douleurs au ventre.</span><button class="btn ghost" data-action="milieu-ok">Un médecin a vérifié</button></div>`;
+  else if (id === 'cardio' && !state.settings.bike) foot = `<div class="t-row"><span class="est">Le vélo est mis de côté pour le moment.</span>${bikeChipHTML('cardio')}</div>`;
   else if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
   else if (id === 'calis' && !state.settings.solideUnlocked) foot = `<div class="t-row"><span class="est">Se débloque après Dos solide, quand ton dos ne fait plus mal.</span></div>`;
   else if (id === 'calis' && calisStreak(state) < CALIS_NEEDED) {
@@ -384,7 +390,7 @@ function ticketHTML(id) {
       <p${open ? '' : ' class="clamp"'}>${esc(p.blurb)}</p>
       ${open ? `<ul class="ex-list">${list}</ul>` : `<div class="ex-strip">${strip}</div>`}
       ${toggle}
-      ${locked ? '' : bikeChipHTML(id)}
+      ${locked || id === 'cardio' ? '' : bikeChipHTML(id)}
       ${foot}
     </div>
   </article>`;
@@ -417,14 +423,27 @@ function treeHTML() {
         const r = rungOf(state, l);
         const nodes = l.rungs.map((id, i) => `<li class="${i < r ? 'done' : i === r ? 'now' : 'next'}"><button class="tree-node" data-action="ex-open" data-prog="${pid}" data-ex="${id}" aria-label="${esc(exName(id))}, ${i < r ? 'déjà passée' : i === r ? 'version actuelle' : 'à venir'}">${illusMini(id)}</button><span>${esc(exName(id))}</span></li>`).join('');
         const noDoor = l.id === 'tirer' && state.settings.noDoor ? '<p class="muted">Sans porte adaptée : remplacé par le tirage à la serviette.</p>' : '';
-        return `<div class="tree-row"><span class="tree-name">${esc(l.name)}</span><ol class="tree-rungs">${nodes}</ol>${noDoor}${r > 0 ? `<button class="link-btn" data-action="rung-down" data-ladder="${l.id}">Revenir à la version précédente</button>` : ''}</div>`;
+        const open = state.settings.calisUnlocked;
+        const goal = l.next ? `<li class="goal ${open ? 'open' : 'locked'}"><button class="tree-node" data-action="ex-open" data-prog="calis" data-ex="${l.next}" aria-label="${esc(exName(l.next))}, dans Calisthénie${open ? '' : ', verrouillée'}">${illusMini(l.next)}</button><span>${esc(exName(l.next))}<small>Calisthénie</small></span></li>` : '';
+        return `<div class="tree-row"><span class="tree-name">${esc(l.name)}</span><ol class="tree-rungs">${nodes}${goal}</ol>${noDoor}${r > 0 ? `<button class="link-btn" data-action="rung-down" data-ladder="${l.id}">Revenir à la version précédente</button>` : ''}</div>`;
       }).join('');
       let foot = '';
       if (ready.length && !locked) foot = ui.unlockOpen === 'rung:' + pid ? unlockPanelHTML('rung:' + pid)
         : `<div class="t-row"><span class="est">Prêt pour la suite : ${esc(nextRungNames(pid))}</span><button class="btn primary" data-action="unlock-open" data-prog="rung:${pid}">${ICON.lock} Débloquer</button></div>`;
       return `<div class="tree-group"><div class="tree-head"><b>${esc(PROGRAMS[pid].name)}</b><span class="est">palier ${stepLevel(state, pid)}/${STEP_MAX}</span></div>${rows}${foot}</div>`;
     }).join('')}
+    ${calisTreeHTML()}
   </section>`;
+}
+function calisTreeHTML() {
+  const st = state.settings, open = st.calisUnlocked;
+  const status = open ? `palier ${stepLevel(state, 'calis')}/${STEP_MAX}` : st.solideUnlocked ? `${Math.min(calisStreak(state), CALIS_NEEDED)} / ${CALIS_NEEDED} séances à ${CALIS_PAIN}/10` : 'après Dos solide';
+  const nodes = progFor(state, 'calis').exercises.map(ex => `<li class="goal ${open ? 'open' : 'locked'}"><button class="tree-node" data-action="ex-open" data-prog="calis" data-ex="${ex.id}" aria-label="${esc(ex.name)}${open ? '' : ', verrouillée'}">${illusMini(ex.id)}</button><span>${esc(ex.name)}</span></li>`).join('');
+  return `<div class="tree-group tree-top">
+      <div class="tree-head"><b>Sommet : Calisthénie</b><span class="est">${esc(status)}</span></div>
+      <p class="muted">${open ? 'Débloquée : tu es au bout de l’arbre.' : `Le bout de l’arbre, pour quand ton dos ne fait plus mal : après Dos solide, ${CALIS_NEEDED} séances de renforcement d’affilée à ${CALIS_PAIN}/10 au plus, puis l’accord de ton kiné.`}</p>
+      <ol class="tree-rungs tree-goal">${nodes}</ol>
+    </div>`;
 }
 function rungPanelHTML(pid) {
   return `<div class="unlock">
@@ -682,7 +701,12 @@ function settingsHTML() {
       <div class="set-row">
         <div><b>Rowing à la porte</b><small>Désactive-le si tu n’as pas de porte qui s’ouvre de l’autre côté avec une poignée solide : il est remplacé par un tirage à la serviette, sans porte.</small></div>
         <button class="toggle" role="switch" aria-checked="${!s.noDoor}" aria-label="Rowing à la porte" data-action="door-toggle"></button>
-      </div>`;
+      </div>
+      ${s.calisUnlocked ? `<h3 class="set-sub">Calisthénie</h3>
+      <div class="set-row">
+        <div><b>Rowing sous la table</b><small>Désactive-le si tu n’as pas de table lourde et stable : il est remplacé par le rowing à la serviette.</small></div>
+        <button class="toggle" role="switch" aria-checked="${!s.noTable}" aria-label="Rowing sous la table" data-action="table-toggle"></button>
+      </div>` : ''}`;
   const douleur = `
       <div class="set-row">
         <div><b>Douleur acceptable pour progresser</b><small>Une séance compte pour Dos solide et les paliers si ta douleur reste à ce niveau ou en dessous, avant, après et le lendemain, sans augmenter. 3/10 par défaut ; à monter seulement avec ton kiné, par exemple si ta douleur de fond est souvent à 4 ou 5.</small></div>
@@ -745,10 +769,11 @@ function settingsHTML() {
 
 /* ---------- Avant la séance ---------- */
 function needsDoorCheck(prog) { return prog === 'haut' && !state.settings.noDoor && !state.settings.doorChecked; }
+function needsTableCheck(prog) { return prog === 'calis' && !state.settings.noTable && !state.settings.tableChecked; }
 function precheckHTML() {
   const pre = ui.pre, p = PROGRAMS[pre.prog];
-  const pend = pendingNextDay(state), door = needsDoorCheck(pre.prog);
-  const ready = pre.pain != null && pre.leg != null && !pend && !door;
+  const pend = pendingNextDay(state), door = needsDoorCheck(pre.prog), table = needsTableCheck(pre.prog);
+  const ready = pre.pain != null && pre.leg != null && !pend && !door && !table;
   let outcome = '';
   if (pre.step === 'leg') {
     outcome = `<div class="notice danger"><b>Pas de renforcement aujourd’hui.</b><span>Des symptômes dans la jambe avant même de commencer, c’est à montrer à ton kiné ou à ton médecin. La respiration du transverse reste possible si elle ne réveille rien.</span></div>
@@ -788,7 +813,16 @@ function precheckHTML() {
       </ul>
       <div class="row-btns"><button class="btn primary" data-action="door-ok">C’est vérifié</button><button class="btn ghost" data-action="door-none">Pas de porte adaptée</button></div>
     </section>` : ''}
-    ${hasBike(p) && !outcome ? `<section class="card set-card" aria-label="Vélo d’appartement">
+    ${table && !outcome ? `<section class="card set-card" aria-label="Rowing sous la table">
+      <h2 class="section-title">Avant ton premier rowing sous la table</h2>
+      <ul class="door-list">
+        <li>La table est <b>lourde et rigide</b> : ni pliante, ni sur roulettes, ni en verre.</li>
+        <li>Elle <b>ne bascule pas</b> : debout à côté, tire fort sur le bord avant de te glisser dessous.</li>
+        <li>Rien dessus qui puisse tomber, et de la place autour pour ta tête.</li>
+      </ul>
+      <div class="row-btns"><button class="btn primary" data-action="table-ok">C’est vérifié</button><button class="btn ghost" data-action="table-none">Pas de table adaptée</button></div>
+    </section>` : ''}
+    ${hasBike(p) && pre.prog !== 'cardio' && !outcome ? `<section class="card set-card" aria-label="Vélo d’appartement">
       <div class="set-row">
         <div><b>Vélo d’appartement aujourd’hui ?</b><small>${state.settings.bike ? 'Inclus à la fin de la séance.' : 'Mis de côté : la séance s’arrête après le pont. Remets-le quand tu auras un vélo.'}</small></div>
         <button class="toggle" role="switch" aria-checked="${state.settings.bike}" aria-label="Inclure le vélo d’appartement" data-action="bike-toggle"></button>
@@ -1399,7 +1433,7 @@ function finish(reason) {
   state.xp += xp;
   state.bestCombo = Math.max(state.bestCombo, G.bestCombo);
   state.history.unshift(entry);
-  if (state.history.length > 300) state.history.length = 300;
+  if (state.history.length > HISTORY_MAX) state.history.length = HISTORY_MAX;
   const fresh = evalBadges(state);
   const chal = evalChallenges(state);
   persist();
@@ -1607,7 +1641,7 @@ const ACTIONS = {
   'pre-pain'(b) { ui.pre.pain = Number(b.dataset.v); ui.pre.step = 'ask'; renderScreen(); },
   'pre-leg'(b) { ui.pre.leg = b.dataset.v === '1'; ui.pre.step = 'ask'; renderScreen(); },
   'pre-go'() {
-    const pre = ui.pre; if (pre.pain == null || pre.leg == null || pendingNextDay(state) || needsDoorCheck(pre.prog)) return;
+    const pre = ui.pre; if (pre.pain == null || pre.leg == null || pendingNextDay(state) || needsDoorCheck(pre.prog) || needsTableCheck(pre.prog)) return;
     if (pre.leg) { pre.step = 'leg'; renderScreen(); return; }
     if (pre.pain >= 7 && pre.prog !== 'difficile') { pre.step = 'high'; renderScreen(); return; }
     startGame(pre.prog, pre);
@@ -1752,6 +1786,13 @@ const ACTIONS = {
     toast(s.noDoor ? 'Rowing remplacé par le tirage à la serviette, sans porte.' : 'Rowing à la porte remis : l’appli te fera vérifier la porte avant la séance.');
   },
   'door-ok'() { state.settings.doorChecked = true; persist(); renderScreen({ still: true }); },
+  'table-ok'() { state.settings.tableChecked = true; persist(); renderScreen({ still: true }); },
+  'table-none'() { state.settings.noTable = true; persist(); renderScreen({ still: true }); toast('Rowing sous la table remplacé par le rowing à la serviette.'); },
+  'table-toggle'() {
+    const s = state.settings; s.noTable = !s.noTable; if (!s.noTable) s.tableChecked = false;
+    persist(); renderScreen({ still: true });
+    toast(s.noTable ? 'Rowing sous la table remplacé par le rowing à la serviette.' : 'Rowing sous la table remis : l’appli te fera vérifier la table avant la séance.');
+  },
   'door-none'() { state.settings.noDoor = true; persist(); renderScreen({ still: true }); toast('Rowing remplacé par le tirage à la serviette, sans porte.'); },
   'set-fsets'(b) { state.settings.fessiersSets = clamp(Number(b.dataset.v) || 1, 1, 2); persist(); renderScreen({ still: true }); },
   'rem-day'(b) {
