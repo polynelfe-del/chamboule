@@ -135,6 +135,7 @@ button{font:inherit;color:inherit}
 .ticket.fessiers{--t-color:var(--accent-deep);--t-ink:var(--accent-ink)}
 .ticket.calme{--t-color:var(--blush);--t-ink:var(--face-ink)}
 .ticket.solide{--t-color:var(--prize);--t-ink:var(--prize-ink)}
+.ticket.calis{--t-color:var(--ok);--t-ink:var(--ok-ink)}
 .unlock-progress{display:flex;flex-direction:column;gap:6px}
 .ticket.locked{--t-color:var(--surface-2);--t-ink:var(--ink-2)}
 .ticket-head{background:var(--t-color);color:var(--t-ink);padding:16px 18px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}

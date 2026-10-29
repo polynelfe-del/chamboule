@@ -165,6 +165,7 @@ button{font:inherit;color:inherit}
 .ticket.fessiers{--t-color:var(--accent-deep);--t-ink:var(--accent-ink)}
 .ticket.calme{--t-color:var(--blush);--t-ink:var(--face-ink)}
 .ticket.solide{--t-color:var(--prize);--t-ink:var(--prize-ink)}
+.ticket.calis{--t-color:var(--ok);--t-ink:var(--ok-ink)}
 .unlock-progress{display:flex;flex-direction:column;gap:6px}
 .ticket.locked{--t-color:var(--surface-2);--t-ink:var(--ink-2)}
 .ticket-head{background:var(--t-color);color:var(--t-ink);padding:16px 18px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
@@ -717,6 +718,28 @@ Object.assign(EX, {
     tip: 'Buste droit, genou avant au-dessus de la cheville. Ne descends que là où c’est confortable.' }
 });
 
+/* Calisthénie : pour quand le dos ne fait plus mal. Les mouvements de base des programmes de calisthénie
+   (pousser, tirer, une jambe, gainage), sans saut ni flexion du dos sous charge. */
+Object.assign(EX, {
+  pompes: { id: 'pompes', name: 'Pompes classiques', kind: 'reps', target: 6, sets: 2, tempo: 4,
+    cue: 'Mains sous les épaules, en appui sur les pieds, corps droit des talons à la tête. Descends la poitrine près du sol, coudes à 45° du corps, puis repousse.',
+    tip: 'Ventre et fesses serrés : le bas du dos ne se creuse jamais. S’il se creuse, reviens aux pompes sur les genoux.' },
+  rowtable: { id: 'rowtable', name: 'Rowing sous la table', kind: 'reps', target: 6, sets: 2, tempo: 4,
+    cue: 'Allongé sous une table lourde et stable, mains au bord. Corps droit, talons au sol, tire la poitrine vers le bord de la table, puis redescends lentement.',
+    tip: 'Teste d’abord la table : elle ne doit ni bouger ni basculer. Genoux pliés, c’est plus facile.' },
+  bulgare: { id: 'bulgare', name: 'Fente bulgare', kind: 'reps', target: 6, sides: true, sideLabel: 'jambe', sets: 2, tempo: 4,
+    cue: 'Dos à une chaise calée contre un mur, pose le dessus du pied arrière sur l’assise. Descends doucement en pliant le genou avant, buste droit, puis remonte en poussant dans le talon.',
+    tip: 'Une main sur un meuble au début pour l’équilibre. Le genou avant reste dans l’axe du pied.' },
+  pontunejambe: { id: 'pontunejambe', name: 'Pont sur une jambe', kind: 'reps', target: 6, sides: true, sets: 2, tempo: 4,
+    cue: 'Sur le dos, un pied à plat, l’autre jambe tendue en l’air. Pousse dans le talon et monte le bassin sans qu’il penche, puis redescends lentement.',
+    tip: 'Le bassin reste horizontal. Si le dos tire, reviens au pont marché.' },
+  lateralpieds: { id: 'lateralpieds', name: 'Planche latérale sur les pieds', kind: 'hold', target: 2, hold: 15, sides: true,
+    cue: 'Sur le côté, coude sous l’épaule, jambes tendues, pieds l’un sur l’autre. Soulève les hanches pour aligner chevilles, hanches et épaules, et tiens.',
+    tip: 'Respire calmement. Si les hanches descendent, repose les genoux.' },
+  ours: { id: 'ours', name: 'Ours, genoux décollés', kind: 'hold', target: 3, hold: 15,
+    cue: 'À quatre pattes, mains sous les épaules, genoux sous les hanches. Rentre le ventre et décolle les genoux de 2 ou 3 cm, dos plat, puis tiens en respirant.',
+    tip: 'Le dos ne bouge pas, comme une table. Repose les genoux dès que ça tremble trop.' }
+});
 EX.tirageserviette = { id: 'tirageserviette', name: 'Tirage à la serviette, sans porte', kind: 'reps', target: 8, sets: 2, tempo: 5,
   cue: 'Debout, bras tendus devant toi à hauteur de poitrine, une serviette tenue à deux mains par les bouts. Tire les coudes vers l’arrière en écartant la serviette comme pour la déchirer, serre les omoplates 2 secondes, puis relâche.',
   tip: 'Épaules basses, loin des oreilles. Le bas du dos ne bouge pas.' };
@@ -743,6 +766,9 @@ const PROGRAMS = {
   difficile: { id: 'difficile', name: 'Jour difficile', tag: 'Séance douce · 3 min', rest: 30,
     blurb: 'Juste la respiration, pour garder le rythme sans rien forcer. Pour les jours où le dos est sensible.',
     exercises: [{ ...EX.transverse, sets: 2 }] },
+  calis: { id: 'calis', name: 'Calisthénie', tag: 'Quand le dos ne fait plus mal', rest: 45,
+    blurb: 'Les mouvements de base de la calisthénie, au poids du corps : pompes, rowing, fente bulgare, pont sur une jambe, gainage. Se débloque après Dos solide, puis 10 séances de renforcement d’affilée à 2/10 de douleur au plus (avant, après et le lendemain), et l’accord de ton kiné. Se reverrouille si la douleur revient dans la jambe.',
+    exercises: [EX.pompes, EX.rowtable, EX.bulgare, EX.pontunejambe, EX.lateralpieds, EX.ours] },
   boule: { id: 'boule', name: 'Boule qui chamboule', tag: 'Programme fessiers · nov. 2025', rest: 45,
     blurb: 'Ton ancien programme fessiers. Il date d’avant les adaptations pour ton dos et n’a pas été revalidé.',
     exercises: [EX.hipthrust, EX.fentes, EX.donkey, EX.sumo, EX.hydrant] },
@@ -751,7 +777,7 @@ const PROGRAMS = {
       cue: 'Pas besoin de bouger. Regarde le cercle se remplir. Quand il devient jaune et que ça bipe, tape : la balle part sur les boîtes.',
       tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
 };
-const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'haut', 'calme', 'difficile', 'solide', 'boule'];
+const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'haut', 'calme', 'difficile', 'solide', 'calis', 'boule'];
 const SOLIDE_NEEDED = 10;
 
 const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Cœur de la fête', 'Grande roue', 'Feu d’artifice', 'Légende de la foire'];
@@ -838,7 +864,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {} };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, calisUnlocked: false, calisUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {} };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -916,6 +942,7 @@ function cleanSettings(s, d) {
     sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
     bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
     solideUnlocked: s.solideUnlocked === true, solideUnlockedAt: isoOr(s.solideUnlockedAt),
+    calisUnlocked: s.calisUnlocked === true && s.solideUnlocked === true, calisUnlockedAt: isoOr(s.calisUnlockedAt),
     milieuOk: s.milieuOk === true, milieuOkAt: isoOr(s.milieuOkAt),
     lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
     reminderDays: Array.isArray(s.reminderDays) ? [...new Set(s.reminderDays.filter(x => Number.isInteger(x) && x >= 0 && x <= 6))].sort((a, b) => a - b) : d.reminderDays.slice(),
@@ -979,7 +1006,7 @@ function backCat(h) {
   return ['ok', 'sensible', 'douleur'][worst];
 }
 /* Programmes qui prouvent que le dos encaisse du renforcement. La respiration et la mobilité ne comptent pas. */
-const STRENGTH_PROGS = ['dos', 'milieu', 'fessiers', 'solide', 'boule'];
+const STRENGTH_PROGS = ['dos', 'milieu', 'fessiers', 'solide', 'calis', 'boule'];
 /* Une séance « sans douleur » : douleur acceptable au plus (3/10 par défaut, réglable avec le kiné) avant, après et le lendemain,
    sans aggravation par rapport au départ, sans symptôme dans la jambe
    ni exercice passé pour douleur. Renvoie 'count' quand le lendemain est noté, 'wait' tant qu’il manque, 'break' sinon,
@@ -1021,7 +1048,7 @@ function suggestToday(s, now = new Date()) {
     return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : aujourd’hui, je te conseille le repos. La balade du chien suffit, et si le dos est raide, quelques minutes de Dos calme.' };
   }
   /* Dos du milieu n’est proposé qu’une fois l’avis médical déclaré. */
-  const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : []);
+  const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : [], s.settings.calisUnlocked ? ['calis'] : []);
   const lastDone = id => { const h = s.history.find(x => x.prog === id); return h ? new Date(h.d).getTime() : 0; };
   const prog = pool.slice().sort((a, b) => lastDone(a) - lastDone(b))[0];
   const why = {
@@ -1029,7 +1056,8 @@ function suggestToday(s, now = new Date()) {
     fessiers: 'Au tour des fessiers, sans charger le dos.',
     milieu: 'Un peu de mobilité et de gainage pour le dos du milieu.',
     haut: 'Au tour du haut du corps : bras, épaules et haut du dos, debout.',
-    solide: 'Ton dos va bien : on passe un cran au-dessus.'
+    solide: 'Ton dos va bien : on passe un cran au-dessus.',
+    calis: 'Ton dos ne fait plus mal : place à la calisthénie.'
   }[prog];
   return { prog, why: why + ' C’est celui que tu as fait le moins récemment.' };
 }
@@ -1089,7 +1117,22 @@ function hasBike(p) { return !!p && p.exercises.some(ex => ex.id === 'velo'); }
 /* Progression automatique : un cran de plus toutes les 3 séances calmes et complètes du programme (2 crans au plus),
    un cran de moins dès qu’une séance, quel que soit le programme, dépasse 3/10. Dans Reprise dos, la routine du kiné
    ne progresse que dans la fourchette qu’il a donnée (pont : 6 à 8). La mobilité et la respiration ne progressent pas. */
-const STEP_PROGS = ['dos', 'fessiers', 'milieu', 'haut', 'solide'];
+const STEP_PROGS = ['dos', 'fessiers', 'milieu', 'haut', 'solide', 'calis'];
+/* Calisthénie : seulement après Dos solide, puis 10 séances de renforcement d’affilée faites depuis, à 2/10 au plus
+   avant, après et le lendemain (même si le seuil de progression a été monté avec le kiné). */
+const CALIS_NEEDED = 10, CALIS_PAIN = 2;
+function calisStreak(s) {
+  if (!s.settings.solideUnlocked) return 0;
+  const since = Date.parse(s.settings.solideUnlockedAt || '') || 0;
+  let n = 0;
+  for (const h of s.history) {
+    if (Date.parse(h.d) <= since) break;
+    const q = quietState(h, Math.min(CALIS_PAIN, s.settings.painMax));
+    if (q === 'break') break;
+    if (q === 'count' && STRENGTH_PROGS.includes(h.prog)) n++;
+  }
+  return n;
+}
 const STEP_EVERY = 3, STEP_MAX = 2;
 function stepLevel(s, progId) {
   if (!STEP_PROGS.includes(progId)) return 0;
@@ -1275,6 +1318,7 @@ function kineSummary(s, now = new Date()) {
   if (tl.length) L.push('Tests de forme : ' + tl.map(t => `${new Date(t.d).toLocaleDateString('fr-FR')} assis-debout ${t.chaise ?? '?'}, pompes au mur ${t.mur ?? '?'}${t.v === TEST_VERSION ? ` (au rythme, ${TEST_CAP} au plus${t.pain != null ? `, douleur après ${t.pain}/10` : ''})` : ' (ancien test : le plus possible en 30 s)'}`).join(' ; '));
   L.push(`Programme Dos solide : ${st.solideUnlocked ? 'débloqué' + (st.solideUnlockedAt ? ' le ' + new Date(st.solideUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : 'verrouillé (' + solidStreak(s) + ' / ' + SOLIDE_NEEDED + ' séances de renforcement d’affilée à ' + st.painMax + '/10 au plus, lendemain compris)'}`);
   L.push(`Programme Dos du milieu : ${st.milieuOk ? 'ouvert après vérification médicale déclarée' + (st.milieuOkAt ? ' le ' + new Date(st.milieuOkAt).toLocaleDateString('fr-FR') : '') : 'en attente d’une vérification médicale'}`);
+  L.push(`Programme Calisthénie : ${st.calisUnlocked ? 'débloqué' + (st.calisUnlockedAt ? ' le ' + new Date(st.calisUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : st.solideUnlocked ? 'verrouillé (' + calisStreak(s) + ' / ' + CALIS_NEEDED + ' séances de renforcement d’affilée à ' + CALIS_PAIN + '/10 au plus)' : 'verrouillé (après Dos solide)'}`);
   L.push(`Programme Boule qui chamboule : ${st.bouleUnlocked ? 'débloqué' + (st.bouleUnlockedAt ? ' le ' + new Date(st.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);
   L.push('');
   L.push('Douleur de dos notée de 0 à 10 : avant la séance → juste après → le lendemain.');
@@ -1497,6 +1541,34 @@ ILLUS.tirageserviette = { labels: ['Serviette tendue devant la poitrine', 'Écar
   { h: [80, 16], b: FRONT.b, n: FRONT.legs.concat([[[66, 32], [68, 42], [74, 44]], [[94, 32], [92, 42], [86, 44]]]), over: '<path class="il-cue" d="M74 44 L86 44 M74 44 L72 56 M86 44 L88 56"/>' },
   { h: [80, 16], b: FRONT.b, n: FRONT.legs, a: [[[66, 32], [54, 42], [62, 46]], [[94, 32], [106, 42], [98, 46]]], over: '<path class="il-cue" d="M62 46 L98 46"/><path class="il-arrow" d="M44 50 H32 M37 45 L32 50 L37 55 M116 50 H128 M123 45 L128 50 L123 55"/>' }
 ]};
+/* Calisthénie. */
+const TABLE = '<path class="il-prop" d="M88 46h66v6H88z"/><path class="il-bike" d="M94 52v60M148 52v60"/>';
+Object.assign(ILLUS, {
+  pompes: { labels: ['Bras tendus, corps droit', 'Poitrine près du sol'], poses: [
+    { h: [113, 66], b: [[[69.8, 85.3], [104, 70]], [[104, 70], [106.5, 69]]], f: [[[67.8, 85.5], [47, 95.5], [26, 104], [22, 108]], [[101, 72], [101, 90], [101, 108]]], n: [[[69.8, 85.3], [49, 95], [28, 104], [24, 108]], [[104, 72], [104, 90], [104, 108]]] },
+    { h: [114, 93], b: [[[104, 95], [106.5, 94.5]]], f: [[[67.8, 98.7], [47, 101.5], [26, 104], [22, 108]]], n: [[[69.8, 98.5], [49, 101.3], [28, 104], [24, 108]]], a: [[[69.8, 98.5], [104, 95]], [[104, 96], [90, 101], [104, 108]]], over: down(128, 62, 80) }
+  ]},
+  rowtable: { labels: ['Sous la table, bras tendus', 'Tire la poitrine vers le bord'], poses: [
+    { prop: TABLE, h: [99.7, 85.7], b: [[[55.8, 96.1], [90, 88]], [[90, 88], [92, 87.5]]], f: [[[53.8, 97], [33, 102], [12, 106], [10, 100]]], n: [[[55.8, 96.1], [35, 101], [14, 106], [16, 100]], [[90, 88], [89, 69], [88, 50]]] },
+    { prop: TABLE, h: [84.5, 57], b: [[[77.9, 61.3], [80, 60]]], f: [[[47, 82], [29, 94], [12, 106], [10, 100]]], n: [[[49.1, 81.4], [31.5, 93.7], [14, 106], [16, 100]]], a: [[[49.1, 81.4], [77.9, 61.3]], [[77.9, 62], [94, 66], [88, 50]]], over: up(62, 44, 28) }
+  ]},
+  bulgare: { labels: ['Pied arrière sur la chaise', 'Descends, buste droit'], poses: [
+    { prop: CHAIR_SIDE, h: [88, 12], b: [[[88, 58], [88, 22]]], f: [[[88, 58], [72, 78], [52, 72]]], n: [[[88, 58], [92, 82], [94, 106], [102, 108]], [[88, 26], [94, 40], [90, 52]]] },
+    { prop: CHAIR_SIDE, h: [86, 32], b: [[[86, 78], [86, 42]]], n: [[[86, 46], [92, 60], [88, 70]]], a: [[[86, 78], [104, 84], [98, 106], [106, 108]], [[86, 78], [70, 100], [52, 74]]], over: down(132, 30, 48) }
+  ]},
+  pontunejambe: { labels: ['Un pied au sol, l’autre jambe tendue', 'Monte le bassin, bien horizontal'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [[[88, 106], [108, 95], [128, 84]], SUP2.arm] },
+    { h: SUP2.head, b: [SUP2.neck], f: [BRIDGE_UP.legF], n: [SUP2.arm], a: [BRIDGE_UP.torso, [[86, 91], [104.5, 83.3], [122.9, 75.6]]], over: up(86, 110, 99) }
+  ]},
+  lateralpieds: { labels: ['Sur l’avant-bras, jambes tendues', 'Hanches levées, corps droit'], poses: [
+    { h: [32, 82], b: [[[40, 90], [80, 106], [128, 107]]], n: [[[40, 90], [40, 108], [62, 108]], [[40, 90], [54, 84], [66, 98]]] },
+    { h: [32, 82], n: [[[40, 90], [40, 108], [62, 108]], [[40, 90], [54, 80], [70, 92]]], a: [[[40, 90], [84, 98.5], [128, 107]]], over: '<text class="il-t" x="84" y="80" text-anchor="middle">15 s</text>' }
+  ]},
+  ours: { labels: ['À quatre pattes', 'Genoux décollés de 2 cm, tiens'], poses: [
+    { h: Q.head, b: [Q.neck, Q.torso], f: [Q.armF, Q.legF], n: [Q.armN, Q.legN] },
+    { h: Q.head, b: [Q.neck], f: [Q.armF, [[57, 79], [55, 102], [33, 106]]], n: [Q.armN], a: [[[60, 79], [96, 74]], [[60, 79], [60, 102], [37, 106]]], over: up(46, 110, 100) + '<text class="il-t" x="78" y="58" text-anchor="middle">15 s</text>' }
+  ]}
+});
 function poseSVG(p) {
   const pl = list => (list || []).map(pts => `<polyline points="${pts.map(q => q.join(',')).join(' ')}"/>`).join('');
   return `${p.prop || ''}<g class="il-far">${pl(p.f)}</g><g class="il-body">${pl(p.b)}${pl(p.n)}</g><g class="il-move">${pl(p.a)}</g><circle class="il-head" cx="${p.h[0]}" cy="${p.h[1]}" r="8"/>${p.over || ''}`;
@@ -1871,6 +1943,7 @@ function homeHTML() {
       ${state.settings.bike ? `<p class="week-bike">Vélo cette semaine : <b>${fmtMin(weekBikeMin(state, new Date()))}</b> / ${state.settings.veloMin * state.settings.weeklyGoal} min</p>` : ''}
       <p class="week-meta">${wk >= goal ? 'Objectif atteint. Profite aussi des jours de repos, ils font partie du programme.' : `Chaque jour d’entraînement remplit un cœur, un seul par jour. Encore ${goal - wk} pour l’objectif.`}</p>
       <button class="link-row" data-action="tab" data-tab="progress"><span>Défis de la semaine : <b>${chalWon} / 3</b> gagnés</span>${ICON.chev}</button>
+      ${state.settings.solideUnlocked && !state.settings.calisUnlocked ? `<button class="link-row" data-action="show-calis"><span>Calisthénie : <b>${Math.min(calisStreak(state), CALIS_NEEDED)} / ${CALIS_NEEDED}</b> séances à ${CALIS_PAIN}/10 au plus</span>${ICON.chev}</button>` : ''}
       ${state.settings.solideUnlocked ? '' : `<button class="link-row" data-action="show-solide"><span>Dos solide : <b>${Math.min(solidStreak(state), SOLIDE_NEEDED)} / ${SOLIDE_NEEDED}</b> séances de renfo calmes</span>${ICON.chev}</button>`}
     </section>
 
@@ -1913,7 +1986,7 @@ function todayCardHTML() {
 }
 function ticketHTML(id) {
   const p = progFor(state, id);
-  const locked = (id === 'boule' && !state.settings.bouleUnlocked) || (id === 'solide' && !state.settings.solideUnlocked);
+  const locked = (id === 'boule' && !state.settings.bouleUnlocked) || (id === 'solide' && !state.settings.solideUnlocked) || (id === 'calis' && !state.settings.calisUnlocked);
   const n = p.exercises.length, open = n === 1 || ui.openTickets.has(id);
   const strip = p.exercises.map(ex => `<button class="ex-thumb" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}</button>`).join('');
   const toggle = n > 1 ? `<button class="link-btn ticket-toggle" data-action="ticket-toggle" data-prog="${id}" aria-expanded="${open}">${open ? 'Masquer le détail' : `Voir le détail des ${n} exercices`}</button>` : '';
@@ -1921,11 +1994,16 @@ function ticketHTML(id) {
   let foot;
   if (id === 'milieu' && !state.settings.milieuOk) foot = `<div class="unlock-progress"><span class="est">Avant ce programme, fais vérifier par un médecin l’origine de ta douleur au milieu du dos, surtout si elle s’accompagne de douleurs au ventre.</span><button class="btn ghost" data-action="milieu-ok">Un médecin a vérifié</button></div>`;
   else if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
+  else if (id === 'calis' && !state.settings.solideUnlocked) foot = `<div class="t-row"><span class="est">Se débloque après Dos solide, quand ton dos ne fait plus mal.</span></div>`;
+  else if (id === 'calis' && calisStreak(state) < CALIS_NEEDED) {
+    const k = calisStreak(state);
+    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement à 2 sur 10 au plus, d’affilée" aria-valuemin="0" aria-valuemax="${CALIS_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / CALIS_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${CALIS_NEEDED} séances de renforcement d’affilée à ${CALIS_PAIN}/10 au plus, lendemain compris, depuis le déblocage de Dos solide</span></div>`;
+  }
   else if (id === 'solide' && solidStreak(state) < SOLIDE_NEEDED) {
     const k = solidStreak(state);
     foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances de renforcement d’affilée à ${state.settings.painMax}/10 au plus, lendemain compris (Reprise dos, Dos du milieu, Fessiers doux)</span></div>`;
   }
-  else if (ui.unlockOpen !== id) foot = `<div class="t-row"><span class="est">${id === 'solide' ? 'Ton dos va bien : prêt à débloquer' : 'À débloquer avec ton kiné'}</span><button class="btn ${id === 'solide' ? 'primary' : 'ghost'}" data-action="unlock-open" data-prog="${id}">${ICON.lock} Débloquer</button></div>`;
+  else if (ui.unlockOpen !== id) foot = `<div class="t-row"><span class="est">${id === 'solide' ? 'Ton dos va bien : prêt à débloquer' : id === 'calis' ? 'Ton dos ne fait plus mal : prêt à débloquer' : 'À débloquer avec ton kiné'}</span><button class="btn ${id === 'solide' || id === 'calis' ? 'primary' : 'ghost'}" data-action="unlock-open" data-prog="${id}">${ICON.lock} Débloquer</button></div>`;
   else foot = unlockPanelHTML(id);
   return `
   <article class="ticket ${id}${locked ? ' locked' : ''}">
@@ -2078,6 +2156,14 @@ function unlockPanelHTML(id) {
     <div class="t-row">
       <button class="btn primary" id="unlock-confirm" data-action="seuil-confirm" ${ui.unlockChecked ? '' : 'disabled'}>Monter le seuil</button>
       <button class="btn ghost" data-action="unlock-cancel">Annuler</button>
+    </div>
+  </div>`;
+  if (id === 'calis') return `<div class="unlock">
+    <p>Ton dos est à ${CALIS_PAIN}/10 au plus depuis ${calisStreak(state)} séances de renforcement d’affilée. La calisthénie demande plus à ton dos (pompes classiques, fente bulgare, gainage sur les pieds) : demande d’abord l’accord de ton kiné, et reviens à Dos solide au moindre doute.</p>
+    <label class="check"><input type="checkbox" id="unlock-check" ${ui.unlockChecked ? 'checked' : ''}> Mon kiné est d’accord pour la calisthénie</label>
+    <div class="t-row">
+      <button class="btn primary" id="unlock-confirm" data-action="unlock-confirm" data-prog="calis" ${ui.unlockChecked ? '' : 'disabled'}>Débloquer</button>
+      <button class="btn ghost" data-action="unlock-cancel">Plus tard</button>
     </div>
   </div>`;
   const solide = id === 'solide';
@@ -3024,7 +3110,7 @@ function renderResult() {
     ${(R.challenges || []).map(c => `<div class="notice good"><b>Défi réussi : ${esc(c.name)} · +50 XP</b><span>${esc(c.desc)}</span></div>`).join('')}
     ${(R.outfits || []).map(o => `<div class="notice good new-outfit">${mascot('wow', o.id)}<div><b>Nouvelle tenue pour Chouquette : ${esc(o.name)}</b><span>Mets-la-lui dans l’onglet Progrès.</span></div></div>`).join('')}
     ${badges}
-    ${R.relocked ? '<div class="notice warn"><b>Dos solide est reverrouillé.</b><span>La douleur est revenue dans la jambe : on revient aux programmes doux. Il se débloquera de nouveau après 10 séances de renforcement sans douleur et l’accord de ton kiné.</span></div>' : ''}
+    ${R.relocked ? `<div class="notice warn"><b>${esc(R.relocked)} ${/ et /.test(R.relocked) ? 'sont reverrouillés' : 'est reverrouillé'}.</b><span>La douleur est revenue dans la jambe : on revient aux programmes doux. Ils se débloqueront de nouveau après des séances calmes d’affilée et l’accord de ton kiné.</span></div>` : ''}
     ${R.sameDay ? '<div class="notice warn"><b>Deuxième séance aujourd’hui.</b><span>Elle ne remplit pas de nouveau cœur : ton dos a aussi besoin de jours de récupération.</span></div>' : ''}
     ${painExNames.length ? `<div class="notice warn"><b>Passé pour douleur, sans perte d’étoile</b><span>${esc(painExNames.join(', '))}. À signaler à ton kiné.</span></div>` : ''}
     <button class="btn primary big" data-action="home">Retour à l’accueil</button>
@@ -3037,7 +3123,7 @@ function applyCheckin() {
   const first = R.entry.pain == null;
   objs.forEach(o => {
     o.pain = R.ci.pain; o.leg = !!R.ci.leg; o.zone = (R.ci.zones ?? o.zone ?? []).slice();
-    if (o.leg && relockSolide()) R.relocked = true;
+    const rl = o.leg && relockSolide(); if (rl) R.relocked = rl;
     o.back = backCat(o);
     if (first) o.xp = (o.xp || 0) + 20;
   });
@@ -3054,10 +3140,13 @@ function applyCheckin() {
 }
 
 /* ---------- Actions ---------- */
+/* Douleur dans la jambe : les programmes avancés se reverrouillent. Renvoie leurs noms, ou false. */
 function relockSolide() {
-  if (!state.settings.solideUnlocked) return false;
-  state.settings.solideUnlocked = false; state.settings.solideUnlockedAt = null;
-  return true;
+  const st = state.settings;
+  if (!st.solideUnlocked) return false;
+  const both = st.calisUnlocked;
+  st.solideUnlocked = false; st.solideUnlockedAt = null; st.calisUnlocked = false; st.calisUnlockedAt = null;
+  return both ? 'Dos solide et Calisthénie' : 'Dos solide';
 }
 function goHome() { ui.screen = 'home'; ui.resetArm = false; ui.pre = null; R = null; renderScreen(); window.scrollTo(0, 0); }
 function openPrecheck(prog) { ui.pre = { prog, pain: null, leg: null, zones: [], step: 'ask' }; ui.screen = 'precheck'; renderScreen(); window.scrollTo(0, 0); }
@@ -3124,6 +3213,10 @@ const ACTIONS = {
     state.settings.outfit = o.id; persist(); renderScreen({ still: true }); toast(`Chouquette porte : ${o.name}`);
   },
   'all-progs'() { ui.allProgs = !ui.allProgs; renderScreen({ still: true }); },
+  'show-calis'() {
+    ui.tab = 'play'; ui.allProgs = true; renderScreen({ still: true });
+    const t = $('.ticket.calis'); if (t) t.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
+  },
   'show-solide'() {
     ui.allProgs = true; renderScreen({ still: true });
     const t = $('.ticket.solide'); if (t) t.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
@@ -3217,10 +3310,15 @@ const ACTIONS = {
     if (id === 'solide') {
       if (solidStreak(state) < SOLIDE_NEEDED) return;
       state.settings.solideUnlocked = true; state.settings.solideUnlockedAt = new Date().toISOString();
+    } else if (id === 'calis') {
+      if (calisStreak(state) < CALIS_NEEDED) return;
+      state.settings.calisUnlocked = true; state.settings.calisUnlockedAt = new Date().toISOString();
     } else { state.settings.bouleUnlocked = true; state.settings.bouleUnlockedAt = new Date().toISOString(); }
     ui.unlockOpen = null; ui.unlockChecked = false;
     persist(); renderScreen({ still: true });
-    toast(id === 'solide' ? 'Dos solide débloqué ! Au moindre retour de douleur dans la jambe, il se reverrouille.' : 'Boule qui chamboule débloqué. Arrête au moindre fourmillement.');
+    toast(id === 'solide' ? 'Dos solide débloqué ! Au moindre retour de douleur dans la jambe, il se reverrouille.'
+      : id === 'calis' ? 'Calisthénie débloquée ! Commence doucement ; au moindre retour de douleur dans la jambe, elle se reverrouille.'
+      : 'Boule qui chamboule débloqué. Arrête au moindre fourmillement.');
   },
   'milieu-ok'() {
     state.settings.milieuOk = true; state.settings.milieuOkAt = new Date().toISOString();

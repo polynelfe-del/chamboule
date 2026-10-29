@@ -463,6 +463,27 @@ test('mode entretien et repère vélo', () => {
   same(api.normalize({ maint: { '2026-10:fessiers': '2026-10-18', x: '2026-10-18', '2026-10:inconnu': '2026-10-18' } }).maint, { '2026-10:fessiers': '2026-10-18' });
 });
 
+test('Calisthénie : quand le dos ne fait plus mal', () => {
+  assert.equal(api.PROGRAMS.calis.exercises.length, 6);
+  assert.ok(api.PROG_ORDER.includes('calis'));
+  const calm = (n, o) => entry(Object.assign({ prog: ['dos', 'fessiers', 'solide'][n % 3], d: iso(2026, 10, 18 - n), painBefore: 1, pain: 1, next: 1 }, o));
+  const s = state({ history: Array.from({ length: 12 }, (_, i) => calm(i + 1)) });
+  assert.equal(api.calisStreak(s), 0, 'rien tant que Dos solide n’est pas débloqué');
+  s.settings.solideUnlocked = true; s.settings.solideUnlockedAt = iso(2026, 10, 6, 12);
+  assert.equal(api.calisStreak(s), 12 - 1, 'seulement les séances faites depuis le déblocage de Dos solide');
+  s.history[3].pain = 3; s.history[3].painBefore = 3; s.history[3].next = 3;
+  s.settings.painMax = 4;
+  assert.equal(api.calisStreak(s), 3, '3/10 casse la série, même avec un seuil de progression monté à 4');
+  assert.equal(api.normalize({ settings: { calisUnlocked: true } }).settings.calisUnlocked, false, 'jamais sans Dos solide');
+  assert.equal(api.normalize({ settings: { calisUnlocked: true, solideUnlocked: true } }).settings.calisUnlocked, true);
+  const u = state({ history: [entry({ prog: 'dos', d: iso(2026, 10, 17), painBefore: 1, pain: 1, next: 1 }), entry({ prog: 'haut', d: iso(2026, 10, 16), painBefore: 1, pain: 1, next: 1 }),
+    entry({ prog: 'fessiers', d: iso(2026, 10, 14), painBefore: 1, pain: 1, next: 1 }), entry({ prog: 'solide', d: iso(2026, 10, 13), painBefore: 1, pain: 1, next: 1 })] });
+  u.settings.solideUnlocked = true; u.settings.calisUnlocked = true;
+  assert.equal(api.suggestToday(u, NOW).prog, 'calis', 'proposée par Chouquette une fois débloquée');
+  assert.match(api.kineSummary(s, NOW), /Programme Calisthénie : verrouillé \(3 \/ 10/);
+  assert.match(api.kineSummary(state(), NOW), /Programme Calisthénie : verrouillé \(après Dos solide\)/);
+});
+
 test('séances de suite sans douleur', () => {
   const s = state({ history: [entry({ pain: 2, next: 2 }), entry({ pain: 3, prog: 'boule', next: 2 }), entry({ pain: 2, next: 2 }), entry({ pain: 7, next: 2 }), entry({ pain: 1, next: 1 })] });
   assert.equal(api.painFreeRun(s), 2, 's’arrête à la première séance douloureuse ; les autres programmes ne comptent pas');

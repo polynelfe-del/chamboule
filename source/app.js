@@ -311,6 +311,7 @@ function homeHTML() {
       ${state.settings.bike ? `<p class="week-bike">Vélo cette semaine : <b>${fmtMin(weekBikeMin(state, new Date()))}</b> / ${state.settings.veloMin * state.settings.weeklyGoal} min</p>` : ''}
       <p class="week-meta">${wk >= goal ? 'Objectif atteint. Profite aussi des jours de repos, ils font partie du programme.' : `Chaque jour d’entraînement remplit un cœur, un seul par jour. Encore ${goal - wk} pour l’objectif.`}</p>
       <button class="link-row" data-action="tab" data-tab="progress"><span>Défis de la semaine : <b>${chalWon} / 3</b> gagnés</span>${ICON.chev}</button>
+      ${state.settings.solideUnlocked && !state.settings.calisUnlocked ? `<button class="link-row" data-action="show-calis"><span>Calisthénie : <b>${Math.min(calisStreak(state), CALIS_NEEDED)} / ${CALIS_NEEDED}</b> séances à ${CALIS_PAIN}/10 au plus</span>${ICON.chev}</button>` : ''}
       ${state.settings.solideUnlocked ? '' : `<button class="link-row" data-action="show-solide"><span>Dos solide : <b>${Math.min(solidStreak(state), SOLIDE_NEEDED)} / ${SOLIDE_NEEDED}</b> séances de renfo calmes</span>${ICON.chev}</button>`}
     </section>
 
@@ -353,7 +354,7 @@ function todayCardHTML() {
 }
 function ticketHTML(id) {
   const p = progFor(state, id);
-  const locked = (id === 'boule' && !state.settings.bouleUnlocked) || (id === 'solide' && !state.settings.solideUnlocked);
+  const locked = (id === 'boule' && !state.settings.bouleUnlocked) || (id === 'solide' && !state.settings.solideUnlocked) || (id === 'calis' && !state.settings.calisUnlocked);
   const n = p.exercises.length, open = n === 1 || ui.openTickets.has(id);
   const strip = p.exercises.map(ex => `<button class="ex-thumb" data-action="ex-open" data-ex="${ex.id}" data-prog="${id}" aria-label="Voir l’exercice ${esc(ex.name)} en images">${illusMini(ex.id)}</button>`).join('');
   const toggle = n > 1 ? `<button class="link-btn ticket-toggle" data-action="ticket-toggle" data-prog="${id}" aria-expanded="${open}">${open ? 'Masquer le détail' : `Voir le détail des ${n} exercices`}</button>` : '';
@@ -361,11 +362,16 @@ function ticketHTML(id) {
   let foot;
   if (id === 'milieu' && !state.settings.milieuOk) foot = `<div class="unlock-progress"><span class="est">Avant ce programme, fais vérifier par un médecin l’origine de ta douleur au milieu du dos, surtout si elle s’accompagne de douleurs au ventre.</span><button class="btn ghost" data-action="milieu-ok">Un médecin a vérifié</button></div>`;
   else if (!locked) foot = `<div class="t-row"><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span><button class="btn play" data-action="play" data-prog="${id}">${ICON.play} Jouer</button></div>`;
+  else if (id === 'calis' && !state.settings.solideUnlocked) foot = `<div class="t-row"><span class="est">Se débloque après Dos solide, quand ton dos ne fait plus mal.</span></div>`;
+  else if (id === 'calis' && calisStreak(state) < CALIS_NEEDED) {
+    const k = calisStreak(state);
+    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement à 2 sur 10 au plus, d’affilée" aria-valuemin="0" aria-valuemax="${CALIS_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / CALIS_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${CALIS_NEEDED} séances de renforcement d’affilée à ${CALIS_PAIN}/10 au plus, lendemain compris, depuis le déblocage de Dos solide</span></div>`;
+  }
   else if (id === 'solide' && solidStreak(state) < SOLIDE_NEEDED) {
     const k = solidStreak(state);
     foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances de renforcement d’affilée à ${state.settings.painMax}/10 au plus, lendemain compris (Reprise dos, Dos du milieu, Fessiers doux)</span></div>`;
   }
-  else if (ui.unlockOpen !== id) foot = `<div class="t-row"><span class="est">${id === 'solide' ? 'Ton dos va bien : prêt à débloquer' : 'À débloquer avec ton kiné'}</span><button class="btn ${id === 'solide' ? 'primary' : 'ghost'}" data-action="unlock-open" data-prog="${id}">${ICON.lock} Débloquer</button></div>`;
+  else if (ui.unlockOpen !== id) foot = `<div class="t-row"><span class="est">${id === 'solide' ? 'Ton dos va bien : prêt à débloquer' : id === 'calis' ? 'Ton dos ne fait plus mal : prêt à débloquer' : 'À débloquer avec ton kiné'}</span><button class="btn ${id === 'solide' || id === 'calis' ? 'primary' : 'ghost'}" data-action="unlock-open" data-prog="${id}">${ICON.lock} Débloquer</button></div>`;
   else foot = unlockPanelHTML(id);
   return `
   <article class="ticket ${id}${locked ? ' locked' : ''}">
@@ -518,6 +524,14 @@ function unlockPanelHTML(id) {
     <div class="t-row">
       <button class="btn primary" id="unlock-confirm" data-action="seuil-confirm" ${ui.unlockChecked ? '' : 'disabled'}>Monter le seuil</button>
       <button class="btn ghost" data-action="unlock-cancel">Annuler</button>
+    </div>
+  </div>`;
+  if (id === 'calis') return `<div class="unlock">
+    <p>Ton dos est à ${CALIS_PAIN}/10 au plus depuis ${calisStreak(state)} séances de renforcement d’affilée. La calisthénie demande plus à ton dos (pompes classiques, fente bulgare, gainage sur les pieds) : demande d’abord l’accord de ton kiné, et reviens à Dos solide au moindre doute.</p>
+    <label class="check"><input type="checkbox" id="unlock-check" ${ui.unlockChecked ? 'checked' : ''}> Mon kiné est d’accord pour la calisthénie</label>
+    <div class="t-row">
+      <button class="btn primary" id="unlock-confirm" data-action="unlock-confirm" data-prog="calis" ${ui.unlockChecked ? '' : 'disabled'}>Débloquer</button>
+      <button class="btn ghost" data-action="unlock-cancel">Plus tard</button>
     </div>
   </div>`;
   const solide = id === 'solide';
@@ -1464,7 +1478,7 @@ function renderResult() {
     ${(R.challenges || []).map(c => `<div class="notice good"><b>Défi réussi : ${esc(c.name)} · +50 XP</b><span>${esc(c.desc)}</span></div>`).join('')}
     ${(R.outfits || []).map(o => `<div class="notice good new-outfit">${mascot('wow', o.id)}<div><b>Nouvelle tenue pour Chouquette : ${esc(o.name)}</b><span>Mets-la-lui dans l’onglet Progrès.</span></div></div>`).join('')}
     ${badges}
-    ${R.relocked ? '<div class="notice warn"><b>Dos solide est reverrouillé.</b><span>La douleur est revenue dans la jambe : on revient aux programmes doux. Il se débloquera de nouveau après 10 séances de renforcement sans douleur et l’accord de ton kiné.</span></div>' : ''}
+    ${R.relocked ? `<div class="notice warn"><b>${esc(R.relocked)} ${/ et /.test(R.relocked) ? 'sont reverrouillés' : 'est reverrouillé'}.</b><span>La douleur est revenue dans la jambe : on revient aux programmes doux. Ils se débloqueront de nouveau après des séances calmes d’affilée et l’accord de ton kiné.</span></div>` : ''}
     ${R.sameDay ? '<div class="notice warn"><b>Deuxième séance aujourd’hui.</b><span>Elle ne remplit pas de nouveau cœur : ton dos a aussi besoin de jours de récupération.</span></div>' : ''}
     ${painExNames.length ? `<div class="notice warn"><b>Passé pour douleur, sans perte d’étoile</b><span>${esc(painExNames.join(', '))}. À signaler à ton kiné.</span></div>` : ''}
     <button class="btn primary big" data-action="home">Retour à l’accueil</button>
@@ -1477,7 +1491,7 @@ function applyCheckin() {
   const first = R.entry.pain == null;
   objs.forEach(o => {
     o.pain = R.ci.pain; o.leg = !!R.ci.leg; o.zone = (R.ci.zones ?? o.zone ?? []).slice();
-    if (o.leg && relockSolide()) R.relocked = true;
+    const rl = o.leg && relockSolide(); if (rl) R.relocked = rl;
     o.back = backCat(o);
     if (first) o.xp = (o.xp || 0) + 20;
   });
@@ -1494,10 +1508,13 @@ function applyCheckin() {
 }
 
 /* ---------- Actions ---------- */
+/* Douleur dans la jambe : les programmes avancés se reverrouillent. Renvoie leurs noms, ou false. */
 function relockSolide() {
-  if (!state.settings.solideUnlocked) return false;
-  state.settings.solideUnlocked = false; state.settings.solideUnlockedAt = null;
-  return true;
+  const st = state.settings;
+  if (!st.solideUnlocked) return false;
+  const both = st.calisUnlocked;
+  st.solideUnlocked = false; st.solideUnlockedAt = null; st.calisUnlocked = false; st.calisUnlockedAt = null;
+  return both ? 'Dos solide et Calisthénie' : 'Dos solide';
 }
 function goHome() { ui.screen = 'home'; ui.resetArm = false; ui.pre = null; R = null; renderScreen(); window.scrollTo(0, 0); }
 function openPrecheck(prog) { ui.pre = { prog, pain: null, leg: null, zones: [], step: 'ask' }; ui.screen = 'precheck'; renderScreen(); window.scrollTo(0, 0); }
@@ -1564,6 +1581,10 @@ const ACTIONS = {
     state.settings.outfit = o.id; persist(); renderScreen({ still: true }); toast(`Chouquette porte : ${o.name}`);
   },
   'all-progs'() { ui.allProgs = !ui.allProgs; renderScreen({ still: true }); },
+  'show-calis'() {
+    ui.tab = 'play'; ui.allProgs = true; renderScreen({ still: true });
+    const t = $('.ticket.calis'); if (t) t.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
+  },
   'show-solide'() {
     ui.allProgs = true; renderScreen({ still: true });
     const t = $('.ticket.solide'); if (t) t.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
@@ -1657,10 +1678,15 @@ const ACTIONS = {
     if (id === 'solide') {
       if (solidStreak(state) < SOLIDE_NEEDED) return;
       state.settings.solideUnlocked = true; state.settings.solideUnlockedAt = new Date().toISOString();
+    } else if (id === 'calis') {
+      if (calisStreak(state) < CALIS_NEEDED) return;
+      state.settings.calisUnlocked = true; state.settings.calisUnlockedAt = new Date().toISOString();
     } else { state.settings.bouleUnlocked = true; state.settings.bouleUnlockedAt = new Date().toISOString(); }
     ui.unlockOpen = null; ui.unlockChecked = false;
     persist(); renderScreen({ still: true });
-    toast(id === 'solide' ? 'Dos solide débloqué ! Au moindre retour de douleur dans la jambe, il se reverrouille.' : 'Boule qui chamboule débloqué. Arrête au moindre fourmillement.');
+    toast(id === 'solide' ? 'Dos solide débloqué ! Au moindre retour de douleur dans la jambe, il se reverrouille.'
+      : id === 'calis' ? 'Calisthénie débloquée ! Commence doucement ; au moindre retour de douleur dans la jambe, elle se reverrouille.'
+      : 'Boule qui chamboule débloqué. Arrête au moindre fourmillement.');
   },
   'milieu-ok'() {
     state.settings.milieuOk = true; state.settings.milieuOkAt = new Date().toISOString();

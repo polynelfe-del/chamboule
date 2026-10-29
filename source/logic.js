@@ -123,6 +123,28 @@ Object.assign(EX, {
     tip: 'Buste droit, genou avant au-dessus de la cheville. Ne descends que là où c’est confortable.' }
 });
 
+/* Calisthénie : pour quand le dos ne fait plus mal. Les mouvements de base des programmes de calisthénie
+   (pousser, tirer, une jambe, gainage), sans saut ni flexion du dos sous charge. */
+Object.assign(EX, {
+  pompes: { id: 'pompes', name: 'Pompes classiques', kind: 'reps', target: 6, sets: 2, tempo: 4,
+    cue: 'Mains sous les épaules, en appui sur les pieds, corps droit des talons à la tête. Descends la poitrine près du sol, coudes à 45° du corps, puis repousse.',
+    tip: 'Ventre et fesses serrés : le bas du dos ne se creuse jamais. S’il se creuse, reviens aux pompes sur les genoux.' },
+  rowtable: { id: 'rowtable', name: 'Rowing sous la table', kind: 'reps', target: 6, sets: 2, tempo: 4,
+    cue: 'Allongé sous une table lourde et stable, mains au bord. Corps droit, talons au sol, tire la poitrine vers le bord de la table, puis redescends lentement.',
+    tip: 'Teste d’abord la table : elle ne doit ni bouger ni basculer. Genoux pliés, c’est plus facile.' },
+  bulgare: { id: 'bulgare', name: 'Fente bulgare', kind: 'reps', target: 6, sides: true, sideLabel: 'jambe', sets: 2, tempo: 4,
+    cue: 'Dos à une chaise calée contre un mur, pose le dessus du pied arrière sur l’assise. Descends doucement en pliant le genou avant, buste droit, puis remonte en poussant dans le talon.',
+    tip: 'Une main sur un meuble au début pour l’équilibre. Le genou avant reste dans l’axe du pied.' },
+  pontunejambe: { id: 'pontunejambe', name: 'Pont sur une jambe', kind: 'reps', target: 6, sides: true, sets: 2, tempo: 4,
+    cue: 'Sur le dos, un pied à plat, l’autre jambe tendue en l’air. Pousse dans le talon et monte le bassin sans qu’il penche, puis redescends lentement.',
+    tip: 'Le bassin reste horizontal. Si le dos tire, reviens au pont marché.' },
+  lateralpieds: { id: 'lateralpieds', name: 'Planche latérale sur les pieds', kind: 'hold', target: 2, hold: 15, sides: true,
+    cue: 'Sur le côté, coude sous l’épaule, jambes tendues, pieds l’un sur l’autre. Soulève les hanches pour aligner chevilles, hanches et épaules, et tiens.',
+    tip: 'Respire calmement. Si les hanches descendent, repose les genoux.' },
+  ours: { id: 'ours', name: 'Ours, genoux décollés', kind: 'hold', target: 3, hold: 15,
+    cue: 'À quatre pattes, mains sous les épaules, genoux sous les hanches. Rentre le ventre et décolle les genoux de 2 ou 3 cm, dos plat, puis tiens en respirant.',
+    tip: 'Le dos ne bouge pas, comme une table. Repose les genoux dès que ça tremble trop.' }
+});
 EX.tirageserviette = { id: 'tirageserviette', name: 'Tirage à la serviette, sans porte', kind: 'reps', target: 8, sets: 2, tempo: 5,
   cue: 'Debout, bras tendus devant toi à hauteur de poitrine, une serviette tenue à deux mains par les bouts. Tire les coudes vers l’arrière en écartant la serviette comme pour la déchirer, serre les omoplates 2 secondes, puis relâche.',
   tip: 'Épaules basses, loin des oreilles. Le bas du dos ne bouge pas.' };
@@ -149,6 +171,9 @@ const PROGRAMS = {
   difficile: { id: 'difficile', name: 'Jour difficile', tag: 'Séance douce · 3 min', rest: 30,
     blurb: 'Juste la respiration, pour garder le rythme sans rien forcer. Pour les jours où le dos est sensible.',
     exercises: [{ ...EX.transverse, sets: 2 }] },
+  calis: { id: 'calis', name: 'Calisthénie', tag: 'Quand le dos ne fait plus mal', rest: 45,
+    blurb: 'Les mouvements de base de la calisthénie, au poids du corps : pompes, rowing, fente bulgare, pont sur une jambe, gainage. Se débloque après Dos solide, puis 10 séances de renforcement d’affilée à 2/10 de douleur au plus (avant, après et le lendemain), et l’accord de ton kiné. Se reverrouille si la douleur revient dans la jambe.',
+    exercises: [EX.pompes, EX.rowtable, EX.bulgare, EX.pontunejambe, EX.lateralpieds, EX.ours] },
   boule: { id: 'boule', name: 'Boule qui chamboule', tag: 'Programme fessiers · nov. 2025', rest: 45,
     blurb: 'Ton ancien programme fessiers. Il date d’avant les adaptations pour ton dos et n’a pas été revalidé.',
     exercises: [EX.hipthrust, EX.fentes, EX.donkey, EX.sumo, EX.hydrant] },
@@ -157,7 +182,7 @@ const PROGRAMS = {
       cue: 'Pas besoin de bouger. Regarde le cercle se remplir. Quand il devient jaune et que ça bipe, tape : la balle part sur les boîtes.',
       tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
 };
-const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'haut', 'calme', 'difficile', 'solide', 'boule'];
+const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'haut', 'calme', 'difficile', 'solide', 'calis', 'boule'];
 const SOLIDE_NEEDED = 10;
 
 const LEVELS = ['Ticket d’entrée', 'Barbe à papa', 'Pomme d’amour', 'As du chamboule-tout', 'Étoile du manège', 'Cœur de la fête', 'Grande roue', 'Feu d’artifice', 'Légende de la foire'];
@@ -244,7 +269,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {} };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', sound: true, handsFree: false, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, calisUnlocked: false, calisUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {} };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -322,6 +347,7 @@ function cleanSettings(s, d) {
     sound: typeof s.sound === 'boolean' ? s.sound : d.sound, handsFree: s.handsFree === true, tutorialDone: s.tutorialDone === true,
     bouleUnlocked: s.bouleUnlocked === true, bouleUnlockedAt: isoOr(s.bouleUnlockedAt),
     solideUnlocked: s.solideUnlocked === true, solideUnlockedAt: isoOr(s.solideUnlockedAt),
+    calisUnlocked: s.calisUnlocked === true && s.solideUnlocked === true, calisUnlockedAt: isoOr(s.calisUnlockedAt),
     milieuOk: s.milieuOk === true, milieuOkAt: isoOr(s.milieuOkAt),
     lastExport: isoOr(s.lastExport), exportSnooze: isoOr(s.exportSnooze),
     reminderDays: Array.isArray(s.reminderDays) ? [...new Set(s.reminderDays.filter(x => Number.isInteger(x) && x >= 0 && x <= 6))].sort((a, b) => a - b) : d.reminderDays.slice(),
@@ -385,7 +411,7 @@ function backCat(h) {
   return ['ok', 'sensible', 'douleur'][worst];
 }
 /* Programmes qui prouvent que le dos encaisse du renforcement. La respiration et la mobilité ne comptent pas. */
-const STRENGTH_PROGS = ['dos', 'milieu', 'fessiers', 'solide', 'boule'];
+const STRENGTH_PROGS = ['dos', 'milieu', 'fessiers', 'solide', 'calis', 'boule'];
 /* Une séance « sans douleur » : douleur acceptable au plus (3/10 par défaut, réglable avec le kiné) avant, après et le lendemain,
    sans aggravation par rapport au départ, sans symptôme dans la jambe
    ni exercice passé pour douleur. Renvoie 'count' quand le lendemain est noté, 'wait' tant qu’il manque, 'break' sinon,
@@ -427,7 +453,7 @@ function suggestToday(s, now = new Date()) {
     return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : aujourd’hui, je te conseille le repos. La balade du chien suffit, et si le dos est raide, quelques minutes de Dos calme.' };
   }
   /* Dos du milieu n’est proposé qu’une fois l’avis médical déclaré. */
-  const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : []);
+  const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : [], s.settings.calisUnlocked ? ['calis'] : []);
   const lastDone = id => { const h = s.history.find(x => x.prog === id); return h ? new Date(h.d).getTime() : 0; };
   const prog = pool.slice().sort((a, b) => lastDone(a) - lastDone(b))[0];
   const why = {
@@ -435,7 +461,8 @@ function suggestToday(s, now = new Date()) {
     fessiers: 'Au tour des fessiers, sans charger le dos.',
     milieu: 'Un peu de mobilité et de gainage pour le dos du milieu.',
     haut: 'Au tour du haut du corps : bras, épaules et haut du dos, debout.',
-    solide: 'Ton dos va bien : on passe un cran au-dessus.'
+    solide: 'Ton dos va bien : on passe un cran au-dessus.',
+    calis: 'Ton dos ne fait plus mal : place à la calisthénie.'
   }[prog];
   return { prog, why: why + ' C’est celui que tu as fait le moins récemment.' };
 }
@@ -495,7 +522,22 @@ function hasBike(p) { return !!p && p.exercises.some(ex => ex.id === 'velo'); }
 /* Progression automatique : un cran de plus toutes les 3 séances calmes et complètes du programme (2 crans au plus),
    un cran de moins dès qu’une séance, quel que soit le programme, dépasse 3/10. Dans Reprise dos, la routine du kiné
    ne progresse que dans la fourchette qu’il a donnée (pont : 6 à 8). La mobilité et la respiration ne progressent pas. */
-const STEP_PROGS = ['dos', 'fessiers', 'milieu', 'haut', 'solide'];
+const STEP_PROGS = ['dos', 'fessiers', 'milieu', 'haut', 'solide', 'calis'];
+/* Calisthénie : seulement après Dos solide, puis 10 séances de renforcement d’affilée faites depuis, à 2/10 au plus
+   avant, après et le lendemain (même si le seuil de progression a été monté avec le kiné). */
+const CALIS_NEEDED = 10, CALIS_PAIN = 2;
+function calisStreak(s) {
+  if (!s.settings.solideUnlocked) return 0;
+  const since = Date.parse(s.settings.solideUnlockedAt || '') || 0;
+  let n = 0;
+  for (const h of s.history) {
+    if (Date.parse(h.d) <= since) break;
+    const q = quietState(h, Math.min(CALIS_PAIN, s.settings.painMax));
+    if (q === 'break') break;
+    if (q === 'count' && STRENGTH_PROGS.includes(h.prog)) n++;
+  }
+  return n;
+}
 const STEP_EVERY = 3, STEP_MAX = 2;
 function stepLevel(s, progId) {
   if (!STEP_PROGS.includes(progId)) return 0;
@@ -681,6 +723,7 @@ function kineSummary(s, now = new Date()) {
   if (tl.length) L.push('Tests de forme : ' + tl.map(t => `${new Date(t.d).toLocaleDateString('fr-FR')} assis-debout ${t.chaise ?? '?'}, pompes au mur ${t.mur ?? '?'}${t.v === TEST_VERSION ? ` (au rythme, ${TEST_CAP} au plus${t.pain != null ? `, douleur après ${t.pain}/10` : ''})` : ' (ancien test : le plus possible en 30 s)'}`).join(' ; '));
   L.push(`Programme Dos solide : ${st.solideUnlocked ? 'débloqué' + (st.solideUnlockedAt ? ' le ' + new Date(st.solideUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : 'verrouillé (' + solidStreak(s) + ' / ' + SOLIDE_NEEDED + ' séances de renforcement d’affilée à ' + st.painMax + '/10 au plus, lendemain compris)'}`);
   L.push(`Programme Dos du milieu : ${st.milieuOk ? 'ouvert après vérification médicale déclarée' + (st.milieuOkAt ? ' le ' + new Date(st.milieuOkAt).toLocaleDateString('fr-FR') : '') : 'en attente d’une vérification médicale'}`);
+  L.push(`Programme Calisthénie : ${st.calisUnlocked ? 'débloqué' + (st.calisUnlockedAt ? ' le ' + new Date(st.calisUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (accord kiné déclaré)' : st.solideUnlocked ? 'verrouillé (' + calisStreak(s) + ' / ' + CALIS_NEEDED + ' séances de renforcement d’affilée à ' + CALIS_PAIN + '/10 au plus)' : 'verrouillé (après Dos solide)'}`);
   L.push(`Programme Boule qui chamboule : ${st.bouleUnlocked ? 'débloqué' + (st.bouleUnlockedAt ? ' le ' + new Date(st.bouleUnlockedAt).toLocaleDateString('fr-FR') : '') + ' (validation kiné déclarée)' : 'verrouillé'}`);
   L.push('');
   L.push('Douleur de dos notée de 0 à 10 : avant la séance → juste après → le lendemain.');
