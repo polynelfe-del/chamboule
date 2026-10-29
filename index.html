@@ -167,6 +167,9 @@ button{font:inherit;color:inherit}
 .ticket.solide{--t-color:var(--prize);--t-ink:var(--prize-ink)}
 .ticket.calis{--t-color:var(--ok);--t-ink:var(--ok-ink)}
 .ticket.cardio{--t-color:var(--accent);--t-ink:var(--accent-ink)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ticket.fessiers{--t-color:#A93C70;--t-ink:#FFFFFF}}
+:root[data-theme="dark"] .ticket.fessiers{--t-color:#A93C70;--t-ink:#FFFFFF}
+.prog-group{margin:14px 2px 2px;font-size:14px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
 .unlock-progress{display:flex;flex-direction:column;gap:6px}
 .ticket.locked{--t-color:var(--surface-2);--t-ink:var(--ink-2)}
 .ticket-head{background:var(--t-color);color:var(--t-ink);padding:16px 18px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
@@ -790,6 +793,13 @@ const PROGRAMS = {
       tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
 };
 const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'haut', 'cardio', 'calme', 'difficile', 'solide', 'calis', 'boule'];
+/* Les programmes rangés par famille dans « Tous les programmes ». */
+const PROG_GROUPS = [
+  { name: 'La base', ids: ['dos', 'fessiers', 'haut', 'milieu'] },
+  { name: 'Les jours doux', ids: ['calme', 'difficile', 'cardio'] },
+  { name: 'Pour aller plus loin', ids: ['solide', 'calis'] },
+  { name: 'Ancien programme', ids: ['boule'] }
+];
 /* Le carnet garde jusqu’à 2 000 séances (des années d’entraînement) ; l’appli prévient bien avant. */
 const HISTORY_MAX = 2000;
 const SOLIDE_NEEDED = 10;
@@ -1062,6 +1072,11 @@ function suggestToday(s, now = new Date()) {
   if ([1, 2, 3].every(n => s.history.some(h => dayKey(h.d) === dayBefore(n)))) {
     return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : aujourd’hui, je te conseille le repos. La balade du chien suffit ; si tu as envie de bouger, un peu de Vélo seul, et si le dos est raide, quelques minutes de Dos calme.' };
   }
+  /* Cardio : si tu as un vélo et que tu n’as pas pédalé depuis 4 jours, Chouquette propose le Vélo seul. */
+  const rode = h => (h.veloMin || 0) > 0;
+  if (s.settings.bike && s.history.some(rode) && !s.history.some(h => rode(h) && now.getTime() - Date.parse(h.d) < 4 * 86400000)) {
+    return { prog: 'cardio', why: 'Pas de vélo depuis 4 jours : un peu de cardio doux aujourd’hui, à ton rythme.' };
+  }
   /* Dos du milieu n’est proposé qu’une fois l’avis médical déclaré. */
   const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : [], s.settings.calisUnlocked ? ['calis'] : []);
   const lastDone = id => { const h = s.history.find(x => x.prog === id); return h ? new Date(h.d).getTime() : 0; };
@@ -1149,7 +1164,18 @@ function calisStreak(s) {
   return n;
 }
 const STEP_EVERY = 3, STEP_MAX = 2;
+/* Pendant qu’un écran se dessine, chaque palier n’est calculé qu’une fois (l’état ne change pas pendant ce temps).
+   L’appli ouvre ce petit cache avant de dessiner et le ferme juste après ; ailleurs, le calcul est toujours refait. */
+let STEP_MEMO = null;
+function memoStart() { STEP_MEMO = new Map(); }
+function memoEnd() { STEP_MEMO = null; }
 function stepLevel(s, progId) {
+  if (STEP_MEMO && STEP_MEMO.has(progId)) return STEP_MEMO.get(progId);
+  const lvl = stepLevelRaw(s, progId);
+  if (STEP_MEMO) STEP_MEMO.set(progId, lvl);
+  return lvl;
+}
+function stepLevelRaw(s, progId) {
   if (!STEP_PROGS.includes(progId)) return 0;
   const since = Date.parse((s.settings.stepReset || {})[progId] || '') || 0;
   let lvl = 0, run = 0;
@@ -1315,14 +1341,15 @@ function evalMaintenance(s, now = new Date()) {
   Object.keys(s.maint).forEach(k => { if (!keep.has(k.split(':')[0])) delete s.maint[k]; });
   return won;
 }
-/* Alertes selon la zone : le milieu du dos à 5/10 ou plus (rappel des signes à surveiller au ventre),
-   ou la fesse deux séances de suite (comme une douleur qui commence à descendre). Seulement sur les 7 derniers jours. */
+/* Alertes selon la zone : le milieu du dos à 5/10 ou plus sur n’importe quelle séance des 3 derniers jours
+   (rappel des signes à surveiller au ventre), ou la fesse deux séances de suite dans les 7 derniers jours
+   (comme une douleur qui commence à descendre). */
 function zoneAlert(s, now = new Date()) {
   const recent = s.history.filter(h => now.getTime() - Date.parse(h.d) < 7 * 86400000);
   const has = (h, z) => (h.zone || []).includes(z) || (h.zoneNext || []).includes(z);
   const top = h => Math.max(h.pain ?? 0, h.next ?? 0);
-  const last = recent[0];
-  if (last && has(last, 'milieu') && top(last) >= 5) return { zone: 'milieu', pain: top(last) };
+  const mid = recent.find(h => now.getTime() - Date.parse(h.d) < 3 * 86400000 && has(h, 'milieu') && top(h) >= 5);
+  if (mid) return { zone: 'milieu', pain: top(mid) };
   if (recent.length >= 2 && has(recent[0], 'fesse') && has(recent[1], 'fesse')) return { zone: 'fesse' };
   return null;
 }
@@ -1842,12 +1869,15 @@ function legHTML(action, value) {
 const ui = { nextZones: [], setOpen: new Set(['seances']), screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set(), allProgs: false };
 
 function renderScreen(opts = {}) {
-  if (ui.screen === 'home') app.innerHTML = homeHTML();
-  else if (ui.screen === 'settings') app.innerHTML = settingsHTML();
-  else if (ui.screen === 'precheck') { if (!opts.fromSync) app.innerHTML = precheckHTML(); }
-  else if (ui.screen === 'summary') app.innerHTML = summaryHTML();
-  else if (ui.screen === 'test') app.innerHTML = testHTML();
-  else if (ui.screen === 'result' && !opts.fromSync) renderResult();
+  memoStart();
+  try {
+    if (ui.screen === 'home') app.innerHTML = homeHTML();
+    else if (ui.screen === 'settings') app.innerHTML = settingsHTML();
+    else if (ui.screen === 'precheck') { if (!opts.fromSync) app.innerHTML = precheckHTML(); }
+    else if (ui.screen === 'summary') app.innerHTML = summaryHTML();
+    else if (ui.screen === 'test') app.innerHTML = testHTML();
+    else if (ui.screen === 'result' && !opts.fromSync) renderResult();
+  } finally { memoEnd(); }
   const xpEl = ui.screen === 'home' ? $('#home-xp') : null;
   if (xpEl) {
     if (opts.fromSync || opts.still || reduceMotion) { xpEl.style.transition = 'none'; xpEl.style.width = xpEl.dataset.w + '%'; }
@@ -1984,7 +2014,7 @@ function homeHTML() {
 
     <section class="programs" aria-label="Tous les programmes">
       <button class="link-row big" data-action="all-progs" aria-expanded="${ui.allProgs}"><span>${ui.allProgs ? 'Masquer les programmes' : `Tous les programmes (${PROG_ORDER.length})`}</span>${ICON.chev}</button>
-      ${ui.allProgs ? PROG_ORDER.map(ticketHTML).join('') : ''}
+      ${ui.allProgs ? PROG_GROUPS.map(g => `<h3 class="prog-group">${esc(g.name)}</h3>${g.ids.map(ticketHTML).join('')}`).join('') : ''}
     </section>
 
     ${redFlagsHTML(false)}`;

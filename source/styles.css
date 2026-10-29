@@ -137,6 +137,9 @@ button{font:inherit;color:inherit}
 .ticket.solide{--t-color:var(--prize);--t-ink:var(--prize-ink)}
 .ticket.calis{--t-color:var(--ok);--t-ink:var(--ok-ink)}
 .ticket.cardio{--t-color:var(--accent);--t-ink:var(--accent-ink)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ticket.fessiers{--t-color:#A93C70;--t-ink:#FFFFFF}}
+:root[data-theme="dark"] .ticket.fessiers{--t-color:#A93C70;--t-ink:#FFFFFF}
+.prog-group{margin:14px 2px 2px;font-size:14px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
 .unlock-progress{display:flex;flex-direction:column;gap:6px}
 .ticket.locked{--t-color:var(--surface-2);--t-ink:var(--ink-2)}
 .ticket-head{background:var(--t-color);color:var(--t-ink);padding:16px 18px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}

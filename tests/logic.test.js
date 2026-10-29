@@ -506,6 +506,8 @@ test('alertes selon la zone de douleur', () => {
   assert.equal(api.zoneAlert(state({ history: [e(1, { pain: 4, zone: ['milieu'] })] }), NOW), null, 'milieu du dos à 4/10 : pas d’alerte');
   const m = api.zoneAlert(state({ history: [e(1, { next: 6, zoneNext: ['milieu'] })] }), NOW);
   assert.equal(m.zone, 'milieu'); assert.equal(m.pain, 6);
+  assert.equal(api.zoneAlert(state({ history: [e(1, { prog: 'haut' }), e(2, { pain: 6, zone: ['milieu'] })] }), NOW).zone, 'milieu', 'l’alerte tient malgré une séance depuis');
+  assert.equal(api.zoneAlert(state({ history: [e(1, { prog: 'haut' }), e(4, { pain: 6, zone: ['milieu'] })] }), NOW), null, 'au-delà de 3 jours');
 });
 
 test('carnet de 2 000 séances et Vélo seul', () => {
@@ -518,6 +520,34 @@ test('carnet de 2 000 séances et Vélo seul', () => {
   s.settings.bike = false;
   assert.equal(api.progFor(s, 'cardio').exercises.length, 0, 'sans vélo, rien à jouer : le ticket le dit');
   assert.ok(!api.STRENGTH_PROGS.includes('cardio'), 'le vélo seul ne compte pas pour Dos solide');
+});
+
+test('Chouquette propose le Vélo seul', () => {
+  const e = (prog, n, o) => entry(Object.assign({ prog, d: iso(2026, 10, 18 - n), painBefore: 2, pain: 2, next: 2 }, o));
+  const s = state({ history: [e('fessiers', 1), e('haut', 3), e('dos', 6, { veloMin: 10 })] });
+  assert.equal(api.suggestToday(s, NOW).prog, 'cardio', 'pas de vélo depuis 4 jours');
+  s.settings.bike = false;
+  assert.notEqual(api.suggestToday(s, NOW).prog, 'cardio', 'vélo mis de côté');
+  const r = state({ history: [e('fessiers', 1), e('dos', 2, { veloMin: 10 }), e('haut', 6)] });
+  assert.notEqual(api.suggestToday(r, NOW).prog, 'cardio', 'vélo il y a 2 jours');
+  const n = state({ history: [e('fessiers', 1), e('haut', 3)] });
+  assert.notEqual(api.suggestToday(n, NOW).prog, 'cardio', 'jamais de vélo : on n’insiste pas');
+  const p = state({ history: [e('fessiers', 1, { pain: 7 }), e('dos', 6, { veloMin: 10 })] });
+  assert.equal(api.suggestToday(p, NOW).prog, 'difficile', 'la douleur passe avant le cardio');
+});
+
+test('écrans : paliers calculés une fois, programmes rangés', () => {
+  const calm = d => entry({ prog: 'fessiers', d: iso(2026, 10, d), painBefore: 2, pain: 2, next: 2 });
+  const s = state({ history: [16, 14, 12].map(calm) });
+  api.memoStart();
+  assert.equal(api.stepLevel(s, 'fessiers'), 1);
+  s.history = [];
+  assert.equal(api.stepLevel(s, 'fessiers'), 1, 'gardé le temps de dessiner l’écran');
+  api.memoEnd();
+  assert.equal(api.stepLevel(s, 'fessiers'), 0, 'recalculé ensuite');
+  const ids = api.PROG_GROUPS.flatMap(g => g.ids);
+  same(ids.slice().sort(), api.PROG_ORDER.slice().sort(), 'chaque programme dans une seule famille');
+  assert.equal(new Set(ids).size, ids.length);
 });
 
 test('séances de suite sans douleur', () => {

@@ -8,7 +8,7 @@ const NAMES = [
   'weekChallenges', 'esc', 'dayKey', 'weekKey', 'startOfWeek', 'defaultState', 'normalize', 'cleanEntry',
   'threshold', 'levelInfo', 'weekDays', 'weekStreak', 'backCat', 'painFreeRun', 'pendingNextDay', 'chalProgress',
   'evalChallenges', 'evalBadges', 'unlockedOutfits', 'setsFor', 'sideText', 'presc', 'timerMin', 'estMin',
-  'buildSteps', 'solidStreak', 'SOLIDE_NEEDED', 'STRENGTH_PROGS', 'SUGGEST_ROTATION', 'quietState', 'suggestToday', 'applyNext', 'stepLevel', 'STEP_MAX', 'STEP_PROGS', 'suggestBonus', 'SUGGEST_BONUS', 'reminderICS', 'LADDERS', 'rungOf', 'rungsReady', 'laddersOf', 'FIT_TESTS', 'testDue', 'TEST_XP', 'TEST_CAP', 'TEST_VERSION', 'ZONES', 'zoneName', 'kineDue', 'routineTag', 'atTop', 'maintProgress', 'evalMaintenance', 'weekBikeMin', 'MAINT_GOAL', 'MAINT_XP', 'calisStreak', 'CALIS_NEEDED', 'CALIS_PAIN', 'zoneAlert', 'HISTORY_MAX', 'progFor', 'hasBike', 'computeXP', 'computeStars', 'canRows', 'backupDue', 'kineSummary', 'illusFull', 'illusMini', 'mascotSVG'
+  'buildSteps', 'solidStreak', 'SOLIDE_NEEDED', 'STRENGTH_PROGS', 'SUGGEST_ROTATION', 'quietState', 'suggestToday', 'applyNext', 'stepLevel', 'STEP_MAX', 'STEP_PROGS', 'suggestBonus', 'SUGGEST_BONUS', 'reminderICS', 'LADDERS', 'rungOf', 'rungsReady', 'laddersOf', 'FIT_TESTS', 'testDue', 'TEST_XP', 'TEST_CAP', 'TEST_VERSION', 'ZONES', 'zoneName', 'kineDue', 'routineTag', 'atTop', 'maintProgress', 'evalMaintenance', 'weekBikeMin', 'MAINT_GOAL', 'MAINT_XP', 'calisStreak', 'CALIS_NEEDED', 'CALIS_PAIN', 'zoneAlert', 'HISTORY_MAX', 'memoStart', 'memoEnd', 'PROG_GROUPS', 'progFor', 'hasBike', 'computeXP', 'computeStars', 'canRows', 'backupDue', 'kineSummary', 'illusFull', 'illusMini', 'mascotSVG'
 ];
 
 module.exports = function load() {

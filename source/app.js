@@ -180,12 +180,15 @@ function legHTML(action, value) {
 const ui = { nextZones: [], setOpen: new Set(['seances']), screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set(), allProgs: false };
 
 function renderScreen(opts = {}) {
-  if (ui.screen === 'home') app.innerHTML = homeHTML();
-  else if (ui.screen === 'settings') app.innerHTML = settingsHTML();
-  else if (ui.screen === 'precheck') { if (!opts.fromSync) app.innerHTML = precheckHTML(); }
-  else if (ui.screen === 'summary') app.innerHTML = summaryHTML();
-  else if (ui.screen === 'test') app.innerHTML = testHTML();
-  else if (ui.screen === 'result' && !opts.fromSync) renderResult();
+  memoStart();
+  try {
+    if (ui.screen === 'home') app.innerHTML = homeHTML();
+    else if (ui.screen === 'settings') app.innerHTML = settingsHTML();
+    else if (ui.screen === 'precheck') { if (!opts.fromSync) app.innerHTML = precheckHTML(); }
+    else if (ui.screen === 'summary') app.innerHTML = summaryHTML();
+    else if (ui.screen === 'test') app.innerHTML = testHTML();
+    else if (ui.screen === 'result' && !opts.fromSync) renderResult();
+  } finally { memoEnd(); }
   const xpEl = ui.screen === 'home' ? $('#home-xp') : null;
   if (xpEl) {
     if (opts.fromSync || opts.still || reduceMotion) { xpEl.style.transition = 'none'; xpEl.style.width = xpEl.dataset.w + '%'; }
@@ -322,7 +325,7 @@ function homeHTML() {
 
     <section class="programs" aria-label="Tous les programmes">
       <button class="link-row big" data-action="all-progs" aria-expanded="${ui.allProgs}"><span>${ui.allProgs ? 'Masquer les programmes' : `Tous les programmes (${PROG_ORDER.length})`}</span>${ICON.chev}</button>
-      ${ui.allProgs ? PROG_ORDER.map(ticketHTML).join('') : ''}
+      ${ui.allProgs ? PROG_GROUPS.map(g => `<h3 class="prog-group">${esc(g.name)}</h3>${g.ids.map(ticketHTML).join('')}`).join('') : ''}
     </section>
 
     ${redFlagsHTML(false)}`;
