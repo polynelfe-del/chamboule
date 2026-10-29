@@ -145,6 +145,40 @@ Object.assign(EX, {
     cue: 'À quatre pattes, mains sous les épaules, genoux sous les hanches. Rentre le ventre et décolle les genoux de 2 ou 3 cm, dos plat, puis tiens en respirant.',
     tip: 'Le dos ne bouge pas, comme une table. Repose les genoux dès que ça tremble trop.' }
 });
+/* Exercices ajoutés après recherche : les « 3 de McGill » (Harvard Health), force et équilibre (NHS),
+   étirements doux (Spine-health, Physitrack) et respiration lente à 6 par minute. */
+Object.assign(EX, {
+  curlup: { id: 'curlup', name: 'Relevé de tête McGill', kind: 'hold', target: 5, hold: 8,
+    cue: 'Sur le dos, une jambe pliée, l’autre tendue, mains à plat sous le creux du dos. Décolle à peine la tête et les épaules, comme si ta tête reposait sur une balance, et tiens en respirant.',
+    tip: 'Ce n’est pas un abdo classique : le bas du dos garde sa petite courbe sur tes mains. Change de jambe pliée à mi-séance.' },
+  pointes: { id: 'pointes', name: 'Montées sur pointes', kind: 'reps', target: 12, sets: 2, tempo: 3,
+    cue: 'Debout, une main sur un dossier de chaise. Monte lentement sur la pointe des pieds, tiens une seconde, puis redescends doucement.',
+    tip: 'Corps bien droit, sans te pencher en avant.' },
+  chaisemur: { id: 'chaisemur', name: 'Chaise contre le mur', kind: 'hold', target: 3, hold: 20,
+    cue: 'Dos contre le mur, pieds à une longueur de pied devant toi. Glisse vers le bas jusqu’à mi-chemin, genoux au-dessus des chevilles, et tiens.',
+    tip: 'Pas plus bas que confortable pour les genoux. Le bas du dos reste contre le mur.' },
+  montee: { id: 'montee', name: 'Montée de marche', kind: 'reps', target: 8, sides: true, sideLabel: 'jambe', sets: 2, tempo: 4,
+    cue: 'Face à la première marche d’un escalier, une main sur la rampe. Pose un pied sur la marche, monte en poussant sur ce talon, puis redescends lentement.',
+    tip: 'Le genou reste dans l’axe du pied. Monte sans élan, buste droit.' },
+  equilibre: { id: 'equilibre', name: 'Équilibre sur une jambe', kind: 'hold', target: 2, hold: 20, sides: true,
+    cue: 'Debout près d’un appui, effleure-le du bout des doigts. Lève un pied du sol et tiens en regardant droit devant toi.',
+    tip: 'Quand c’est facile, lâche l’appui, puis essaie les yeux fermés, toujours avec l’appui à portée de main.' },
+  ischio: { id: 'ischio', name: 'Étirement de l’arrière des cuisses', kind: 'hold', target: 2, hold: 30, sides: true,
+    cue: 'Sur le dos, genoux pliés. Passe une serviette sous un pied et tends doucement cette jambe vers le plafond, en tenant la serviette à deux mains.',
+    tip: 'Tu sens l’arrière de la cuisse, sans douleur. Si ça tire dans la fesse ou la jambe, plie un peu le genou.' },
+  piriforme: { id: 'piriforme', name: 'Étirement de la fesse', kind: 'hold', target: 2, hold: 30, sides: true,
+    cue: 'Sur le dos, genoux pliés. Pose une cheville sur le genou opposé, puis ramène doucement cette jambe vers toi en tenant l’arrière de la cuisse.',
+    tip: 'Tu sens la fesse s’étirer, sans forcer : trop étirer peut réveiller une sciatique. Si ça fourmille ou que ça descend dans la jambe, arrête.' },
+  psoas: { id: 'psoas', name: 'Étirement de l’avant de la hanche', kind: 'hold', target: 2, hold: 30, sides: true,
+    cue: 'Un genou au sol sur un coussin, l’autre pied devant. Buste droit, serre légèrement le ventre et les fesses, puis avance doucement le bassin.',
+    tip: 'Le bas du dos ne se creuse pas : c’est l’avant de la hanche du genou au sol qui s’étire.' },
+  livre: { id: 'livre', name: 'Livre ouvert', kind: 'reps', target: 6, sides: true, tempo: 6,
+    cue: 'Allongé sur le côté, genoux pliés devant toi, bras tendus l’un sur l’autre. Ouvre lentement le bras du dessus vers l’arrière en suivant ta main des yeux, puis reviens.',
+    tip: 'Les genoux restent l’un sur l’autre : c’est le haut du dos qui tourne, pas le bas.' },
+  coherence: { id: 'coherence', name: 'Respiration 5 secondes', kind: 'breath', target: 30, tempo: 10,
+    cue: 'Assis ou allongé, épaules relâchées. Inspire 5 secondes par le nez, puis expire 5 secondes, en suivant le cercle.',
+    tip: 'Six respirations par minute. Si la tête tourne un peu, respire plus doucement.' }
+});
 EX.tirageserviette = { id: 'tirageserviette', name: 'Tirage à la serviette, sans porte', kind: 'reps', target: 8, sets: 2, tempo: 5,
   cue: 'Debout, bras tendus devant toi à hauteur de poitrine, une serviette tenue à deux mains par les bouts. Tire les coudes vers l’arrière en écartant la serviette comme pour la déchirer, serre les omoplates 2 secondes, puis relâche.',
   tip: 'Épaules basses, loin des oreilles. Le bas du dos ne bouge pas.' };
@@ -171,6 +205,21 @@ const PROGRAMS = {
   difficile: { id: 'difficile', name: 'Jour difficile', tag: 'Séance douce · 3 min', rest: 30,
     blurb: 'Juste la respiration, pour garder le rythme sans rien forcer. Pour les jours où le dos est sensible.',
     exercises: [{ ...EX.transverse, sets: 2 }] },
+  mcgill: { id: 'mcgill', name: 'Les 3 de McGill', tag: 'Gainage qui protège le dos', rest: 30,
+    blurb: 'Les trois exercices du professeur Stuart McGill, spécialiste de la colonne : relevé de tête, planche latérale sur genoux, bras-jambe opposés tenu. Ils renforcent l’endurance du tronc sans plier ni tourner le dos. À faire valider par ton kiné.',
+    exercises: [EX.curlup, EX.gainagelat, EX.birddogtenu] },
+  jambes: { id: 'jambes', name: 'Jambes et équilibre', tag: 'Debout · sans charge', rest: 30,
+    blurb: 'Mollets, cuisses, fessiers et équilibre, debout et sans charge sur la colonne. Utile au quotidien : escaliers, se relever, promener le chien. À faire valider par ton kiné.',
+    exercises: [EX.pointes, EX.chaisemur, EX.montee, EX.equilibre] },
+  express: { id: 'express', name: 'Séance express', tag: '5 minutes', rest: 20,
+    blurb: 'Pour les jours pressés : trois exercices de ta base, une série chacun, pour garder le rythme sans y passer du temps.',
+    exercises: [EX.birddog, EX.pont, { ...EX.murpompe, sets: 1 }] },
+  etirements: { id: 'etirements', name: 'Étirements du soir', tag: 'Détente · 10 min', rest: 10,
+    blurb: 'Des étirements doux pour finir la journée : arrière des cuisses, fesse, avant de la hanche et haut du dos. Toujours sans douleur, en respirant calmement. Arrête si ça descend dans la jambe.',
+    exercises: [EX.ischio, EX.piriforme, EX.psoas, EX.livre] },
+  relax: { id: 'relax', name: 'Relaxation', tag: 'Respiration · 5 min', rest: 0,
+    blurb: 'Cinq minutes de respiration lente, six par minute, pour calmer le corps quand la douleur monte, ou pour bien dormir.',
+    exercises: [EX.coherence] },
   cardio: { id: 'cardio', name: 'Vélo seul', tag: 'Cardio doux', rest: 0,
     blurb: 'Juste le vélo d’appartement, résistance légère, pour les jours sans renforcement : ça compte dans tes minutes de vélo de la semaine. La durée se règle dans les Réglages.',
     exercises: [EX.velo] },
@@ -185,11 +234,11 @@ const PROGRAMS = {
       cue: 'Pas besoin de bouger. Regarde le cercle se remplir. Quand il devient jaune et que ça bipe, tape : la balle part sur les boîtes.',
       tip: 'Si tu tapes trop tôt, la balle rate. Ici, la lenteur gagne toujours.' }] }
 };
-const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'haut', 'cardio', 'calme', 'difficile', 'solide', 'calis', 'boule'];
+const PROG_ORDER = ['dos', 'milieu', 'fessiers', 'haut', 'mcgill', 'jambes', 'express', 'cardio', 'calme', 'etirements', 'relax', 'difficile', 'solide', 'calis', 'boule'];
 /* Les programmes rangés par famille dans « Tous les programmes ». */
 const PROG_GROUPS = [
-  { name: 'La base', ids: ['dos', 'fessiers', 'haut', 'milieu'] },
-  { name: 'Les jours doux', ids: ['calme', 'difficile', 'cardio'] },
+  { name: 'La base', ids: ['dos', 'fessiers', 'haut', 'milieu', 'mcgill', 'jambes', 'express'] },
+  { name: 'Les jours doux', ids: ['calme', 'etirements', 'relax', 'difficile', 'cardio'] },
   { name: 'Pour aller plus loin', ids: ['solide', 'calis'] },
   { name: 'Ancien programme', ids: ['boule'] }
 ];
@@ -232,6 +281,7 @@ const CHALLENGES = [
   { id: 'days3', name: 'Trois cœurs', desc: 'Remplir 3 cœurs cette semaine', goal: 3, prog: w => new Set(w.map(h => dayKey(h.d))).size },
   { id: 'haut1', name: 'Haut du corps', desc: 'Faire une séance Haut du corps doux', goal: 1, prog: w => w.filter(h => h.prog === 'haut').length },
   { id: 'varie3', name: 'Touche-à-tout', desc: 'Faire 3 programmes différents dans la semaine', goal: 3, prog: w => new Set(w.map(h => h.prog)).size },
+  { id: 'zen', name: 'Zen', desc: 'Faire une séance Étirements du soir ou Relaxation', goal: 1, prog: w => w.filter(h => ['etirements', 'relax'].includes(h.prog)).length },
   { id: 'douceur', name: 'Douceur', desc: 'Faire une séance douce : Jour difficile, Dos calme ou Dos du milieu', goal: 1, prog: w => w.filter(h => ['difficile', 'milieu', 'calme'].includes(h.prog)).length },
   { id: 'save1', name: 'Prudence', desc: 'Exporter ta sauvegarde cette semaine', goal: 1, prog: (w, s, now) => (s.settings.lastExport && weekKey(new Date(s.settings.lastExport)) === weekKey(now) ? 1 : 0) }
 ];
@@ -424,7 +474,7 @@ function backCat(h) {
   return ['ok', 'sensible', 'douleur'][worst];
 }
 /* Programmes qui prouvent que le dos encaisse du renforcement. La respiration et la mobilité ne comptent pas. */
-const STRENGTH_PROGS = ['dos', 'milieu', 'fessiers', 'solide', 'calis', 'boule'];
+const STRENGTH_PROGS = ['dos', 'milieu', 'fessiers', 'mcgill', 'solide', 'calis', 'boule'];
 /* Une séance « sans douleur » : douleur acceptable au plus (3/10 par défaut, réglable avec le kiné) avant, après et le lendemain,
    sans aggravation par rapport au départ, sans symptôme dans la jambe
    ni exercice passé pour douleur. Renvoie 'count' quand le lendemain est noté, 'wait' tant qu’il manque, 'break' sinon,
@@ -448,7 +498,7 @@ function solidStreak(s) {
   return n;
 }
 /* Séance du jour proposée par Chouquette : la douleur récente d’abord, puis le programme fait le moins récemment. */
-const SUGGEST_ROTATION = ['dos', 'fessiers', 'milieu', 'haut'];
+const SUGGEST_ROTATION = ['dos', 'fessiers', 'milieu', 'haut', 'mcgill', 'jambes'];
 function suggestToday(s, now = new Date()) {
   const last = s.history[0];
   if (!last) return { prog: 'dos', why: 'Coucou, moi c’est Chouquette ! Pour commencer, ta routine de base, tout en douceur.' };
@@ -470,6 +520,11 @@ function suggestToday(s, now = new Date()) {
   if (s.settings.bike && s.history.some(rode) && !s.history.some(h => rode(h) && now.getTime() - Date.parse(h.d) < 4 * 86400000)) {
     return { prog: 'cardio', why: 'Pas de vélo depuis 4 jours : un peu de cardio doux aujourd’hui, à ton rythme.' };
   }
+  /* Reprise dos, la routine du kiné, revient au moins tous les 3 jours. */
+  const lastDos = s.history.find(h => h.prog === 'dos');
+  if (!lastDos || now.getTime() - Date.parse(lastDos.d) >= 3 * 86400000) {
+    return { prog: 'dos', why: (s.settings.bike ? 'Ta routine de base : respiration, bras-jambe opposés, pont et vélo.' : 'Ta routine de base : respiration, bras-jambe opposés et pont, sans le vélo.') + ' Elle revient au moins tous les 3 jours.' };
+  }
   /* Dos du milieu n’est proposé qu’une fois l’avis médical déclaré. */
   const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : [], s.settings.calisUnlocked ? ['calis'] : []);
   const lastDone = id => { const h = s.history.find(x => x.prog === id); return h ? new Date(h.d).getTime() : 0; };
@@ -479,6 +534,8 @@ function suggestToday(s, now = new Date()) {
     fessiers: 'Au tour des fessiers, sans charger le dos.',
     milieu: 'Un peu de mobilité et de gainage pour le dos du milieu.',
     haut: 'Au tour du haut du corps : bras, épaules et haut du dos, debout.',
+    mcgill: 'Les 3 de McGill : du gainage qui protège le dos.',
+    jambes: 'Jambes et équilibre, debout : pour les escaliers et les balades.',
     solide: 'Ton dos va bien : on passe un cran au-dessus.',
     calis: 'Ton dos ne fait plus mal : place à la calisthénie.'
   }[prog];
@@ -540,7 +597,7 @@ function hasBike(p) { return !!p && p.exercises.some(ex => ex.id === 'velo'); }
 /* Progression automatique : un cran de plus toutes les 3 séances calmes et complètes du programme (2 crans au plus),
    un cran de moins dès qu’une séance, quel que soit le programme, dépasse 3/10. Dans Reprise dos, la routine du kiné
    ne progresse que dans la fourchette qu’il a donnée (pont : 6 à 8). La mobilité et la respiration ne progressent pas. */
-const STEP_PROGS = ['dos', 'fessiers', 'milieu', 'haut', 'solide', 'calis'];
+const STEP_PROGS = ['dos', 'fessiers', 'milieu', 'haut', 'mcgill', 'jambes', 'solide', 'calis'];
 /* Calisthénie : seulement après Dos solide, puis 10 séances de renforcement d’affilée faites depuis, à 2/10 au plus
    avant, après et le lendemain (même si le seuil de progression a été monté avec le kiné). */
 const CALIS_NEEDED = 10, CALIS_PAIN = 2;

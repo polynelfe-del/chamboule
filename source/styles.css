@@ -137,6 +137,11 @@ button{font:inherit;color:inherit}
 .ticket.solide{--t-color:var(--prize);--t-ink:var(--prize-ink)}
 .ticket.calis{--t-color:var(--ok);--t-ink:var(--ok-ink)}
 .ticket.cardio{--t-color:var(--accent);--t-ink:var(--accent-ink)}
+.ticket.mcgill{--t-color:var(--prize);--t-ink:var(--prize-ink)}
+.ticket.jambes{--t-color:var(--ticket);--t-ink:var(--ticket-ink)}
+.ticket.express{--t-color:var(--accent);--t-ink:var(--accent-ink)}
+.ticket.etirements{--t-color:var(--blush);--t-ink:var(--face-ink)}
+.ticket.relax{--t-color:var(--ok);--t-ink:var(--ok-ink)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ticket.fessiers{--t-color:#A93C70;--t-ink:#FFFFFF}}
 :root[data-theme="dark"] .ticket.fessiers{--t-color:#A93C70;--t-ink:#FFFFFF}
 .prog-group{margin:14px 2px 2px;font-size:14px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}

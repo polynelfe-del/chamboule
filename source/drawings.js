@@ -192,6 +192,49 @@ ILLUS.tirageserviette = { labels: ['Serviette tendue devant la poitrine', 'Écar
   { h: [80, 16], b: FRONT.b, n: FRONT.legs, a: [[[66, 32], [54, 42], [62, 46]], [[94, 32], [106, 42], [98, 46]]], over: '<path class="il-cue" d="M62 46 L98 46"/><path class="il-arrow" d="M44 50 H32 M37 45 L32 50 L37 55 M116 50 H128 M123 45 L128 50 L123 55"/>' }
 ]};
 /* Calisthénie. */
+/* Les 3 de McGill, jambes et équilibre, étirements du soir, relaxation. */
+const STEP_BOX = '<path class="il-prop" d="M74 98h56v14H74z"/>';
+const CUSHION = '<rect class="il-prop" x="50" y="104" width="20" height="8" rx="3"/>';
+const sec = (x, y, t) => `<text class="il-t" x="${x}" y="${y}" text-anchor="middle">${t}</text>`;
+Object.assign(ILLUS, {
+  curlup: { labels: ['Mains sous le creux du dos', 'Décolle à peine tête et épaules, tiens'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [[[88, 106], [130, 107]], [[50, 107], [58, 108], [64, 108]]] },
+    { h: [43, 97], b: [[[66, 105], [88, 106]]], f: [SUP2.legF], n: [[[88, 106], [130, 107]], [[52, 104], [58, 108], [64, 108]]], a: [[[49, 101], [52, 103], [66, 105]]], over: up(30, 92, 78) + sec(60, 80, '8 s') }
+  ]},
+  pointes: { labels: ['Debout, une main sur un appui', 'Monte sur la pointe des pieds'], poses: [
+    { prop: CHAIR_SIDE, h: [80, 12], b: [[[80, 21], [80, 60]]], f: [[[78, 60], [78, 84], [78, 108], [88, 108]]], n: [[[80, 60], [80, 84], [80, 108], [90, 108]], [[80, 28], [60, 34], [40, 40]]] },
+    { prop: CHAIR_SIDE, h: [80, 6], b: [[[80, 15], [80, 54]], [[80, 54], [80, 78]]], f: [[[78, 54], [78, 78], [81, 100], [88, 108]]], n: [[[80, 22], [60, 31], [40, 40]]], a: [[[80, 78], [83, 100], [90, 108]]], over: up(116, 44, 26) }
+  ]},
+  chaisemur: { labels: ['Dos contre le mur', 'Glisse à mi-chemin, tiens'], poses: [
+    { prop: WALL_L, h: [38, 14], b: [[[36, 24], [36, 60]]], f: [[[34, 60], [38, 84], [42, 106], [50, 108]]], n: [[[36, 60], [40, 84], [44, 106], [52, 108]], [[36, 28], [40, 44], [40, 58]]] },
+    { prop: WALL_L, h: [38, 32], b: [[[36, 42], [36, 74]]], f: [[[34, 74], [60, 80], [60, 106], [68, 108]]], n: [[[36, 46], [48, 60], [58, 72]]], a: [[[36, 74], [62, 78], [62, 106], [70, 108]]], over: sec(104, 50, '20 s') }
+  ]},
+  montee: { labels: ['Un pied sur la marche', 'Monte en poussant sur ce talon'], poses: [
+    { prop: STEP_BOX, h: [62, 14], b: [[[62, 24], [62, 60]]], f: [[[60, 60], [58, 84], [56, 106], [64, 108]]], n: [[[62, 60], [82, 70], [90, 96], [98, 98]], [[62, 28], [66, 44], [64, 58]]] },
+    { prop: STEP_BOX, h: [88, 9], b: [[[88, 18], [88, 54]]], n: [[[88, 22], [92, 38], [90, 52]]], a: [[[88, 54], [91, 76], [93, 96], [101, 98]], [[88, 54], [78, 74], [70, 88], [76, 92]]], over: up(122, 50, 32) }
+  ]},
+  equilibre: { labels: ['Debout, main légère sur l’appui', 'Sur une jambe, regard devant, tiens'], poses: [
+    { prop: CHAIR_SIDE, h: [80, 12], b: [[[80, 21], [80, 60]]], f: [[[78, 60], [78, 84], [78, 108], [88, 108]]], n: [[[80, 60], [80, 84], [80, 108], [90, 108]], [[80, 28], [60, 36], [40, 40]]] },
+    { prop: CHAIR_SIDE, h: [80, 12], b: [[[80, 21], [80, 60]]], n: [[[80, 60], [80, 84], [80, 108], [90, 108]], [[80, 28], [60, 36], [40, 40]]], a: [[[80, 60], [86, 82], [74, 92]]], over: sec(118, 40, '20 s') }
+  ]},
+  ischio: { labels: ['Sur le dos, serviette sous le pied', 'Tends la jambe vers le plafond, tiens'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [SUP2.legN, [[50, 107], [60, 96], [72, 90]]], over: '<path class="il-cue" d="M72 90 L116 104"/>' },
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [[[50, 107], [62, 92], [72, 84]]], a: [[[88, 106], [97, 83], [106, 60]]], over: '<path class="il-cue" d="M72 84 L106 58"/>' + sec(132, 50, '30 s') }
+  ]},
+  piriforme: { labels: ['Cheville posée sur le genou opposé', 'Ramène les jambes vers toi, tiens'], poses: [
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], f: [SUP2.legF], n: [[[88, 106], [108, 96], [100, 88]], SUP2.arm] },
+    { h: SUP2.head, b: [SUP2.neck, SUP2.torso], n: [[[50, 106], [70, 94], [90, 90]]], a: [[[88, 106], [94, 82], [112, 80]], [[88, 106], [110, 98], [96, 84]]], over: sec(134, 60, '30 s') }
+  ]},
+  psoas: { labels: ['Un genou au sol, buste droit', 'Avance le bassin, ventre serré'], poses: [
+    { prop: CUSHION, h: [66, 30], b: [[[66, 40], [66, 76]]], f: [[[66, 76], [60, 106], [38, 108]]], n: [[[66, 76], [92, 80], [92, 108], [100, 108]], [[66, 46], [70, 60], [68, 72]]] },
+    { prop: CUSHION, h: [74, 32], b: [[[74, 42], [74, 78]]], n: [[[74, 78], [96, 82], [94, 108], [102, 108]], [[74, 48], [78, 62], [76, 74]]], a: [[[74, 78], [60, 106], [38, 108]]], over: toRight(84, 62) + sec(128, 36, '30 s') }
+  ]},
+  livre: { labels: ['Sur le côté, bras tendus devant', 'Ouvre le bras du dessus vers l’arrière'], poses: [
+    { h: [30, 99], b: [[[40, 104], [84, 104]]], f: [[[84, 106], [100, 96], [116, 106]], [[44, 102], [60, 96], [76, 96]]], n: [[[84, 103], [100, 90], [114, 102]], [[44, 100], [60, 92], [76, 92]]] },
+    { h: [30, 99], b: [[[40, 104], [84, 104]]], f: [[[84, 106], [100, 96], [116, 106]], [[44, 102], [60, 96], [76, 96]]], n: [[[84, 103], [100, 90], [114, 102]]], a: [[[44, 98], [40, 82], [28, 74]]], over: '<path class="il-arrow" d="M72 84 Q56 62 36 66 M40 61 L35 66 L41 70"/>' }
+  ]},
+  coherence: { labels: ['Inspire 5 secondes', 'Expire 5 secondes'], poses: ILLUS.transverse.poses }
+});
 const TABLE = '<path class="il-prop" d="M88 46h66v6H88z"/><path class="il-bike" d="M94 52v60M148 52v60"/>';
 Object.assign(ILLUS, {
   pompes: { labels: ['Bras tendus, corps droit', 'Poitrine près du sol'], poses: [
