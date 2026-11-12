@@ -2470,6 +2470,10 @@ function openReminderRoutine() {
 async function initStore() {
   const local = lsGet();
   if (local) state = normalize(local);
+  else if (CHAMBOULE_PUSH.native) {
+    state.settings.routineMorning = '06:30';
+    state.settings.routineEvening = '18:29';
+  }
   if (!window.claude) {
     // Appli du téléphone : on demande au système de ne pas effacer le stockage en cas de manque de place.
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => p || navigator.storage.persist()).catch(() => {}); } catch {}
@@ -2924,7 +2928,7 @@ async function managePush(action) {
     if (action === 'status') pushUI.server = await CHAMBOULE_PUSH.status();
     if (action === 'enable') {
       pushUI.server = await CHAMBOULE_PUSH.enable(pushSchedule());
-      pushUI.message = 'Notifications activées. Tu peux envoyer une notification de test.';
+      pushUI.message = CHAMBOULE_PUSH.native ? 'Notifications activées sur ce téléphone.' : 'Notifications activées. Tu peux envoyer une notification de test.';
     }
     if (action === 'save') {
       pushUI.server = await CHAMBOULE_PUSH.save(pushSchedule());
@@ -2935,8 +2939,10 @@ async function managePush(action) {
       pushUI.message = 'Notifications désactivées sur ce téléphone.';
     }
     if (action === 'test') {
-      await CHAMBOULE_PUSH.test();
-      pushUI.message = 'Test envoyé. Vérifie le panneau des notifications de ton téléphone.';
+      const result = await CHAMBOULE_PUSH.test();
+      pushUI.message = CHAMBOULE_PUSH.native
+        ? `Test programmé dans ${result.testDelaySeconds || 25} secondes. Ferme Chamboule et verrouille l’écran.`
+        : 'Test envoyé. Vérifie le panneau des notifications de ton téléphone.';
     }
   } catch (err) {
     if (pushUI.server && ['subscription_expired', 'not_active'].includes(err?.code)) {
@@ -2959,6 +2965,7 @@ async function managePush(action) {
 }
 function rappelsHTML() {
   const s = state.settings, status = pushUI.server, supported = CHAMBOULE_PUSH.supported();
+  const native = CHAMBOULE_PUSH.native === true;
   const slots = [['matin', 'Matin', 'routineMorning', 'routineMorningOn', 'rt-matin', 'Au réveil, dans ton lit si tu veux.'], ['soir', 'Soir', 'routineEvening', 'routineEveningOn', 'rt-soir', 'Pour détendre le dos avant de dormir.']];
   const schedule = pushSchedule(), permission = CHAMBOULE_PUSH.permission();
   const enabled = status?.receivable && permission === 'granted';
@@ -2989,9 +2996,12 @@ function rappelsHTML() {
           <p class="muted">${esc(remindersSummary())}</p>
           ${changed ? '<p class="muted">Enregistre pour appliquer les nouveaux horaires.</p>' : ''}
           <div class="row-btns"><button class="btn primary" data-action="push-save"${changed ? busy : ' disabled'}>Enregistrer les horaires</button>
-          <button class="btn ghost" data-action="push-test"${busy}>Envoyer un test</button>
-          <button class="btn ghost" data-action="push-disable"${busy}>Désactiver les notifications</button></div>` : `
-          ${permission === 'denied' ? '<p class="notice warn">Les notifications sont bloquées. Autorise-les dans les réglages de Chrome pour Chamboule, puis reviens ici.</p>' : ''}
+          <button class="btn ghost" data-action="push-test"${busy}>${native ? 'Programmer un test' : 'Envoyer un test'}</button>
+          <button class="btn ghost" data-action="push-disable"${busy}>Désactiver les notifications</button></div>
+          ${native && !status.exactAlarm ? '<p class="muted">Pour que le rappel sonne à l’heure choisie, autorise « Alarmes et rappels » pour Chamboule.</p><button class="btn ghost" data-action="push-exact">Autoriser les horaires précis</button>' : ''}` : `
+          ${permission === 'denied' ? (native
+            ? '<p class="notice warn">Les notifications de Chamboule sont bloquées dans Android.</p><button class="btn ghost" data-action="push-permissions">Ouvrir les réglages Android</button>'
+            : '<p class="notice warn">Les notifications sont bloquées. Autorise-les dans les réglages de Chrome pour Chamboule, puis reviens ici.</p>') : ''}
           ${times ? `<p class="muted">${esc(times)}. Tu pourras modifier les horaires après l’activation.</p>` : ''}
           ${!status?.paired && !CHAMBOULE_PUSH.hasLink() && !CHAMBOULE_PUSH.hasToken() ? '<p class="muted">Pour la première activation, ouvre ton lien privé Chamboule sur ce téléphone.</p>' : ''}
           <button class="btn primary big" data-action="push-enable"${permission === 'denied' ? ' disabled' : busy}>${ICON.bell} Activer les notifications</button>
@@ -3395,12 +3405,12 @@ function settingsHTML() {
       ${ui.unlockOpen === 'seuil' ? unlockPanelHTML('seuil') : ''}
       <p class="muted">Toutes les ${STEP_EVERY} séances calmes et complètes d’un programme, suivi du lendemain compris, Chouquette monte d’un palier : une répétition de plus ou quelques secondes de maintien, ${STEP_MAX} paliers au plus. Ensuite, la version suivante de l’exercice peut se débloquer avec l’accord de ton kiné (arbre dans Progrès). Une séance au-dessus de ton seuil fait redescendre d’un palier. Reprise dos reste dans la fourchette donnée par ton kiné.</p>
       <ul class="step-list">${STEP_PROGS.map(id => `<li><span>${esc(PROGRAMS[id].name)}</span><b>palier ${stepLevel(state, id)}/${STEP_MAX}</b></li>`).join('')}</ul>`;
-  const rappels = `
+  const rappels = `${CHAMBOULE_PUSH.native ? '' : `
       <div class="set-row"><div><b>Jours</b><small>Les jours où tu veux un rappel de séance.</small></div></div>
       <div class="day-chips" role="group" aria-label="Jours de rappel">${[[1, 'L', 'Lundi'], [2, 'M', 'Mardi'], [3, 'M', 'Mercredi'], [4, 'J', 'Jeudi'], [5, 'V', 'Vendredi'], [6, 'S', 'Samedi'], [0, 'D', 'Dimanche']].map(([d, l, n]) => `<button data-action="rem-day" data-v="${d}" aria-pressed="${s.reminderDays.includes(d)}" aria-label="${n}">${l}</button>`).join('')}</div>
       <div class="set-row"><div><b>Heure</b></div><input type="time" id="rem-time" class="time-in" value="${esc(s.reminderTime)}" aria-label="Heure du rappel"></div>
       ${canSave() ? `<div class="set-row"><div><b>Ajouter à mon agenda</b><small>Un rappel répété chaque semaine dans l’agenda du téléphone. Si tu changes les jours ou l’heure, ajoute-le de nouveau : il remplace l’ancien dans la plupart des agendas (sinon, supprime l’ancien à la main). Sur Android, ouvre ensuite le fichier téléchargé.</small></div><button class="btn ghost" data-action="reminders"${s.reminderDays.length ? '' : ' disabled'}>Ajouter</button></div>` : ''}
-      <h3 class="set-sub">Routine Dos calme</h3>
+      `}<h3 class="set-sub">Routine Dos calme</h3>
       <div class="set-row"><div><b>Rappels du matin et du soir</b><small>${esc(remindersSummary())} Aussi avec la cloche de l’accueil.</small></div><button class="btn ghost" data-action="reminders-open">Régler</button></div>`;
   const jeu = `
       <div class="set-row">
@@ -3430,11 +3440,11 @@ function settingsHTML() {
       <div class="set-row"><div><b>Résumé pour mon kiné</b><small>Les 30 derniers jours : séances, douleur avant, après et le lendemain, avec les zones.</small></div><button class="btn ghost" data-action="summary">Ouvrir</button></div>
       <div class="set-row"><div><b>Point avec le kiné</b><small>${esc(routineTag(state))} · rappel toutes les 4 semaines</small></div><button class="btn ghost" data-action="kine-reviewed">Il a revu ma routine</button></div>
       <div class="set-row"><div><b>Sauvegarde dans un fichier</b><small>Pour passer tes données d’un appareil à l’autre, par exemple vers l’appli du téléphone.</small></div>
-        <div class="row-btns">${canSave() ? '<button class="btn ghost" data-action="export">Exporter</button>' : ''}<label class="btn ghost" for="import-file">Importer</label><input type="file" id="import-file" class="sr" accept=".json,application/json"></div>
+        <div class="row-btns">${canSave() ? '<button class="btn ghost" data-action="export">Exporter</button>' : ''}${CHAMBOULE_PUSH.native ? '<button class="btn ghost" data-action="native-import">Importer</button>' : '<label class="btn ghost" for="import-file">Importer</label><input type="file" id="import-file" class="sr" accept=".json,application/json">'}</div>
       </div>
       ${ui.importData ? `<div class="notice warn"><b>Remplacer ta progression ?</b><span>Ce fichier contient ${ui.importData.history.length} séance(s) et ${ui.importData.xp} XP. Ta progression actuelle (${state.history.length} séance(s)) sera remplacée.</span></div>
       <div class="t-row"><button class="btn primary" data-action="import-confirm">Remplacer</button><button class="btn ghost" data-action="import-cancel">Annuler</button></div>` : ''}
-      <p class="muted">${mode === 'cloud' ? 'Ta progression est enregistrée sur ton compte et se retrouve sur tous tes appareils. Personne d’autre ne la voit, même si tu partages le lien de l’appli.' : 'Ta progression est enregistrée dans ce navigateur seulement.'}</p>
+      <p class="muted">${CHAMBOULE_PUSH.native ? 'Ta progression est enregistrée sur ce téléphone.' : mode === 'cloud' ? 'Ta progression est enregistrée sur ton compte et se retrouve sur tous tes appareils. Personne d’autre ne la voit, même si tu partages le lien de l’appli.' : 'Ta progression est enregistrée dans ce navigateur seulement.'}</p>
       ${ui.resetArm
         ? `<div class="t-row"><button class="btn danger-outline" data-action="reset-confirm">Oui, tout effacer</button><button class="btn ghost" data-action="reset-cancel">Annuler</button></div>`
         : `<div><button class="btn ghost" data-action="reset-arm">Effacer ma progression</button></div>`}`;
@@ -4369,7 +4379,33 @@ function endPractice() {
 /* Dans Claude, un fichier passe par la capacité de téléchargement.
    Dans l’appli du téléphone, par le menu de partage (Fichiers, Mail...), sinon par un lien classique. */
 function canSave() { return !!downloadsApi || !window.claude; }
+let nativeFileSerial = 0;
+function nativeFile(action, ...args) {
+  return new Promise((resolve, reject) => {
+    const id = String(++nativeFileSerial);
+    const name = 'chamboule-native-' + action;
+    const receive = event => {
+      if (String(event.detail?.id) !== id) return;
+      window.removeEventListener(name, receive);
+      if (event.detail.ok) resolve(event.detail);
+      else reject({ code: event.detail.code || 'unavailable' });
+    };
+    window.addEventListener(name, receive);
+    try { window.ChambouleAndroid[action + 'File'](id, ...args); }
+    catch (error) { window.removeEventListener(name, receive); reject(error); }
+  });
+}
+function readBackup(text) {
+  let obj;
+  try { obj = JSON.parse(String(text)); } catch {}
+  if (!obj || typeof obj !== 'object' || (!Array.isArray(obj.history) && typeof obj.xp !== 'number')) {
+    toast('Ce fichier n’est pas une sauvegarde Chamboule Coach.');
+    return;
+  }
+  ui.importData = normalize(obj); renderScreen();
+}
 function saveFile(name, text, type, noShare) {
+  if (CHAMBOULE_PUSH.native) return nativeFile('export', name, text, type).then(() => ({ status: 'saved' }));
   if (downloadsApi) return downloadsApi.save({ filename: name, data: text });
   if (window.claude) return Promise.reject({ code: 'unavailable' });
   try {
@@ -4410,6 +4446,10 @@ const ACTIONS = {
         persist(); renderScreen({ still: true }); toast('Sauvegarde exportée.');
       })
       .catch(e => { if (!e || e.code !== 'declined') toast('Export impossible ici.'); });
+  },
+  'native-import'() {
+    nativeFile('import').then(result => readBackup(result.text))
+      .catch(error => { if (error?.code !== 'declined') toast('Lecture du fichier impossible.'); });
   },
   'backup-later'() {
     state.settings.exportSnooze = new Date(Date.now() + 7 * 86400000).toISOString();
@@ -4638,6 +4678,8 @@ const ACTIONS = {
   'push-save'() { managePush('save'); },
   'push-test'() { managePush('test'); },
   'push-disable'() { managePush('disable'); },
+  'push-exact'() { CHAMBOULE_PUSH.requestExactAlarm(); },
+  'push-permissions'() { CHAMBOULE_PUSH.openNotificationSettings(); },
   'rt-toggle'(b) {
     const k = b.dataset.slot === 'matin' ? 'routineMorningOn' : 'routineEveningOn';
     state.settings[k] = !state.settings[k]; persist(); renderScreen();
@@ -4763,12 +4805,7 @@ app.addEventListener('change', e => {
     const f = e.target.files && e.target.files[0]; e.target.value = '';
     if (!f) return;
     const rd = new FileReader();
-    rd.onload = () => {
-      let obj = null;
-      try { obj = JSON.parse(String(rd.result)); } catch {}
-      if (!obj || typeof obj !== 'object' || (!Array.isArray(obj.history) && typeof obj.xp !== 'number')) { toast('Ce fichier n’est pas une sauvegarde Chamboule Coach.'); return; }
-      ui.importData = normalize(obj); renderScreen();
-    };
+    rd.onload = () => readBackup(rd.result);
     rd.onerror = () => toast('Lecture du fichier impossible.');
     rd.readAsText(f);
   }
@@ -4800,6 +4837,12 @@ app.addEventListener('focusin', e => { const h = e.target.closest && e.target.cl
 app.addEventListener('focusout', e => { if (e.target.closest && e.target.closest('[data-tip]')) hideTip(); });
 
 initStore();
+if (CHAMBOULE_PUSH.native) {
+  window.addEventListener('chamboule-native-routine', openReminderRoutine);
+  window.addEventListener('chamboule-native-notifications', () => {
+    if (ui.screen === 'rappels') managePush('status');
+  });
+}
 if (CHAMBOULE_PUSH.openedWithLink) ACTIONS['reminders-open']();
 else if (CHAMBOULE_PUSH.hasToken()) managePush('status');
 })();
