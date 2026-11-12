@@ -1,10 +1,31 @@
 const CHAMBOULE_PUSH = (() => {
   const URL_PUSH = 'https://ivkbevrfmzdbvrsuwmtx.supabase.co/functions/v1/chamboule-push';
   const TOKEN_KEY = 'chamboule-push-token-v1';
+  const LINK_KEY = 'chamboule-push-link-v1';
   const TIMEOUT = 10000;
-  const EMPTY = { active: false, paired: false, morning: null, evening: null, zone: null };
+  const EMPTY = { active: false, paired: false, receivable: false, morning: null, evening: null, zone: null };
   const OFFLINE = 'Le service de notifications est injoignable. Vérifie ta connexion, puis réessaie.';
-  const NOT_READY = 'Chamboule n’est pas encore prêt pour les notifications. Recharge l’appli, puis réessaie.';
+  const NOT_READY = 'La mise à jour des notifications se termine. Recharge Chamboule, puis réessaie.';
+
+  let linkCode = '';
+  let openedWithLink = false;
+  if (!window.claude) {
+    const code = /^#activer=([0-9a-f]{32})$/.exec(window.location.hash)?.[1];
+    if (code) {
+      linkCode = code;
+      openedWithLink = true;
+      const url = new URL(window.location.href);
+      url.hash = '';
+      window.history.replaceState(window.history.state, '', url.href);
+      try { sessionStorage.setItem(LINK_KEY, code); } catch {}
+    } else {
+      try { linkCode = sessionStorage.getItem(LINK_KEY) || ''; } catch {}
+    }
+  }
+  function clearLink() {
+    linkCode = '';
+    try { sessionStorage.removeItem(LINK_KEY); } catch {}
+  }
 
   function failure(message, code) {
     return Object.assign(new Error(message), { code });
@@ -114,6 +135,31 @@ const CHAMBOULE_PUSH = (() => {
     throw failure(NOT_READY, 'worker_not_ready');
   }
 
+  function supportsPush(worker) {
+    if (!worker || typeof worker.postMessage !== 'function') return Promise.resolve(false);
+    return new Promise(resolve => {
+      const channel = new MessageChannel();
+      const finish = supported => { clearTimeout(timer); channel.port1.close(); resolve(supported); };
+      const timer = setTimeout(() => finish(false), 350);
+      channel.port1.onmessage = event => finish(event.data === 'chamboule-push-v2');
+      try { worker.postMessage('chamboule-push-capability', [channel.port2]); }
+      catch { channel.port2.close(); finish(false); }
+    });
+  }
+
+  async function updatedRegistration() {
+    const reg = await registration();
+    if (await supportsPush(reg.active)) return reg;
+    // A previously installed PWA can still be controlled by the worker from the agenda version.
+    Promise.resolve().then(() => reg.update()).catch(() => {});
+    const deadline = Date.now() + TIMEOUT;
+    while (Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      if (await supportsPush(reg.active)) return reg;
+    }
+    throw failure(NOT_READY, 'worker_not_ready');
+  }
+
   function applicationServerKey(value) {
     try {
       if (typeof value === 'string' && /^[\w-]{87}$/.test(value)) {
@@ -145,31 +191,31 @@ const CHAMBOULE_PUSH = (() => {
     return { zone: schedule.zone, morning: schedule.morning, evening: schedule.evening };
   }
 
-  function settingsResponse(result) {
+  function settingsResponse(result, receivable = false) {
     if (typeof result.active !== 'boolean' || typeof result.paired !== 'boolean') {
       throw failure('Chamboule n’a pas reçu de confirmation de tes réglages. Réessaie.', 'invalid_response');
     }
     const { active, paired, morning = null, evening = null, zone = null } = result;
-    return { active, paired, morning, evening, zone };
+    return { active, paired, receivable: active && receivable, morning, evening, zone };
   }
 
   async function status() {
     const token = readToken();
     if (!token) return { ...EMPTY };
     const result = settingsResponse(await request({ action: 'status', token }));
-    if (!result.active) return result;
-    if (permission() !== 'granted') return { ...result, active: false };
-    const worker = await registration();
-    return (await worker.pushManager.getSubscription()) ? result : { ...result, active: false };
+    if (!result.active || permission() !== 'granted') return result;
+    try {
+      const worker = await registration();
+      return { ...result, receivable: !!(await worker.pushManager.getSubscription()) };
+    } catch {
+      return result;
+    }
   }
 
-  async function enable(code, schedule) {
-    const pairingCode = String(code || '').replace(/[\s-]+/g, '').toLowerCase();
+  async function enable(schedule) {
+    const pairingCode = linkCode;
     const knownToken = readToken();
-    if (!knownToken && !pairingCode) throw failure('Saisis ton code d’activation.', 'pairing_required');
-    if (pairingCode && !/^[0-9a-f]{32}$/.test(pairingCode)) {
-      throw failure('Vérifie ton code d’activation. Il contient 32 caractères.', 'pairing_invalid');
-    }
+    if (!knownToken && !pairingCode) throw failure('Ouvre ton lien privé Chamboule sur ton Xiaomi pour activer les rappels.', 'pairing_required');
     const currentPermission = requirePermission();
     let allowed = currentPermission;
     if (currentPermission !== 'granted') {
@@ -181,15 +227,25 @@ const CHAMBOULE_PUSH = (() => {
       throw failure('Appuie de nouveau sur Activer, puis choisis Autoriser dans Chrome.', 'permission_required');
     }
     const token = knownToken || createToken();
-    const [worker, config] = await Promise.all([registration(), request()]);
+    const [worker, config] = await Promise.all([updatedRegistration(), request()]);
     const push = await subscription(worker, applicationServerKey(config.publicKey));
-    return settingsResponse(await request({
-      action: 'enable', token, ...(pairingCode && { code: pairingCode }), subscription: push.toJSON(), ...scheduleFields(schedule)
-    }));
+    try {
+      const settings = settingsResponse(await request({
+        action: 'enable', token, ...(pairingCode && { code: pairingCode }), subscription: push.toJSON(), ...scheduleFields(schedule)
+      }), true);
+      clearLink();
+      return settings;
+    } catch (error) {
+      if (['pairing_invalid', 'pairing_required'].includes(error.code)) {
+        clearLink();
+        throw failure('Ce lien d’activation a expiré ou a déjà servi. Il faut un nouveau lien privé.', error.code);
+      }
+      throw error;
+    }
   }
 
   async function save(schedule) {
-    return settingsResponse(await request({ action: 'save', token: requireToken(), ...scheduleFields(schedule) }));
+    return settingsResponse(await request({ action: 'save', token: requireToken(), ...scheduleFields(schedule) }), true);
   }
 
   async function disable() {
@@ -208,6 +264,7 @@ const CHAMBOULE_PUSH = (() => {
 
   async function test() {
     if (requirePermission() !== 'granted') throw failure('Active d’abord les notifications sur ce téléphone.', 'permission_required');
+    await updatedRegistration();
     const result = await request({ action: 'test', token: requireToken() });
     if (result.sent !== true) {
       throw failure('Le service n’a pas confirmé l’envoi du test. Réessaie.', 'invalid_response');
@@ -215,5 +272,5 @@ const CHAMBOULE_PUSH = (() => {
     return { sent: true };
   }
 
-  return { supported, permission, hasToken: () => !!readToken(), status, enable, save, disable, test };
+  return { supported, permission, hasToken: () => !!readToken(), hasLink: () => !!linkCode, openedWithLink, status, enable, save, disable, test };
 })();

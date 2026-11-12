@@ -39,9 +39,9 @@ OPTION B : L'APPLI DE CE DOSSIER SUR GITHUB PAGES (gratuit, marche hors ligne)
    Réglages > Sauvegarde dans un fichier > Importer.
 
 4. ACTIVER LES NOTIFICATIONS SUR ANDROID
-   Ouvre Chamboule depuis Chrome ou son icône, puis touche la cloche.
-   Saisis le code d’activation privé et touche « Activer les notifications »,
-   puis « Autoriser » quand Chrome le demande. Les deux heures sont modifiables
+   Pour la première fois, ouvre ton lien privé Chamboule dans Chrome sur ton Xiaomi.
+   Touche « Activer les notifications », puis « Autoriser » quand Chrome le demande.
+   Ensuite, tu retrouves les réglages dans la cloche. Les deux heures sont modifiables
    depuis la cloche : touche « Enregistrer les horaires » pour les appliquer.
    « Envoyer un test » envoie une notification Chamboule, sans utiliser l’agenda.
    Pour vérifier l’écran verrouillé, règle temporairement une heure dans quelques

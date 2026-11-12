@@ -36,11 +36,11 @@ function runWorker(windows = []) {
 test('push displays only the three fixed Chamboule messages', async () => {
   const { emit, notifications } = runWorker();
   for (const slot of ['morning', 'evening', 'test', 'constructor', 'other']) {
-    await emit('push', { data: { json: () => ({ slot, body: 'ignored', url: 'https://example.org/' }) } });
+    await emit('push', { data: { json: () => ({ slot, date: '2026-11-12', body: 'ignored', url: 'https://example.org/' }) } });
   }
   await emit('push', { data: { json: () => { throw new SyntaxError('invalid payload'); } } });
   assert.deepEqual(notifications.map(({ options }) => options.tag), [
-    'chamboule-routine-morning', 'chamboule-routine-evening', 'chamboule-routine-test'
+    'chamboule-routine-morning-2026-11-12', 'chamboule-routine-evening-2026-11-12', 'chamboule-routine-test'
   ]);
   for (const { title, options } of notifications) {
     assert.equal(title, 'Chamboule');
@@ -48,6 +48,23 @@ test('push displays only the three fixed Chamboule messages', async () => {
     assert.equal(options.data.route, 'dos-calme');
     assert.equal(options.icon, scope + 'icon-192.png');
   }
+});
+
+test('announces a fresh reminder every day and deduplicates retries within the day', async () => {
+  const { emit, notifications } = runWorker();
+  for (const date of ['2026-11-12', '2026-11-12', '2026-11-13']) {
+    await emit('push', { data: { json: () => ({ slot: 'morning', date }) } });
+  }
+  const tags = notifications.map(({ options }) => options.tag);
+  assert.equal(tags[0], tags[1]);
+  assert.notEqual(tags[1], tags[2]);
+});
+
+test('only the updated worker confirms notification capability', () => {
+  const { emit } = runWorker();
+  let reply;
+  emit('message', { data: 'chamboule-push-capability', ports: [{ postMessage: value => { reply = value; } }] });
+  assert.equal(reply, 'chamboule-push-v2');
 });
 
 test('tapping a Chamboule notification opens Dos calme when the app is closed', async () => {

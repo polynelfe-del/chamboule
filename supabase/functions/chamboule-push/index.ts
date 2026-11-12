@@ -160,7 +160,8 @@ async function changeSettings(action: string, token: string, input: Record<strin
 }
 
 async function push(subscription: Subscription, slot: Slot, keys: VapidKeys, localDate?: string) {
-  const details = webpush.generateRequestDetails(subscription, JSON.stringify({ slot }), {
+  const payload = localDate ? { slot, date: localDate } : { slot };
+  const details = webpush.generateRequestDetails(subscription, JSON.stringify(payload), {
     TTL: slot === 'test' ? 60 : 900,
     urgency: 'high',
     topic: localDate ? `chamboule-${slot}-${localDate.replaceAll('-', '')}` : 'chamboule-test',
@@ -173,7 +174,8 @@ async function push(subscription: Subscription, slot: Slot, keys: VapidKeys, loc
     method: 'POST', headers, body: new Uint8Array(details.body),
     redirect: 'error', signal: AbortSignal.timeout(8000),
   });
-  await response.body?.cancel();
+  // Once the push service has answered, a body cleanup error must not resend an accepted push.
+  await response.body?.cancel().catch(() => {});
   return response.status;
 }
 
@@ -233,7 +235,7 @@ async function scheduledPush(request: Request) {
       where old.sent_at is null and (old.revision <> excluded.revision or (old.attempts < 3 and old.retry_after <= now()))
       returning token_hash, slot, local_date, revision
     )
-    select c.token_hash, c.slot, c.local_date::text, c.revision, d.subscription
+    select c.token_hash, c.slot, to_char(c.local_date, 'YYYY-MM-DD') as local_date, c.revision, d.subscription
     from claimed c join candidates d using (token_hash, slot, local_date, revision)
   `;
   const results = await Promise.all(due.map(async (delivery) => {
@@ -254,7 +256,6 @@ async function scheduledPush(request: Request) {
     `;
     return true;
   }));
-  await db`delete from chamboule_push.deliveries where local_date < current_date - 7`;
   return { sent: results.filter(Boolean).length, attempted: due.length };
 }
 
@@ -271,7 +272,7 @@ Deno.serve(async (request) => {
     } });
   }
   try {
-    if (request.method === 'GET') return reply({ publicKey: await getPublicKey() });
+    if (request.method === 'GET') return reply({ publicKey: await getPublicKey(), protocol: 2 });
     if (request.method !== 'POST') return reply({ error: 'Méthode non prise en charge.', code: 'method' }, 405);
     const input = await parseInput(request);
     if (input.action === 'tick') return reply(await scheduledPush(request));

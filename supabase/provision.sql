@@ -5,3 +5,10 @@ update chamboule_push.settings
   where id;
 
 select cron.schedule('chamboule-push-v1', '* * * * *', 'select chamboule_push.trigger_due()');
+
+-- Run independently of delivery so history also expires with no subscribed phone.
+select cron.schedule(
+  'chamboule-push-prune-v1',
+  '17 * * * *',
+  'delete from chamboule_push.deliveries where coalesce(sent_at, retry_after) < now() - interval ''7 days'''
+);

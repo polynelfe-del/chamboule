@@ -167,14 +167,21 @@ const ROUTINE_MESSAGES = {
   evening: 'Ta routine du soir t’attend.',
   test: 'Ta notification de test est bien arrivée.'
 };
+self.addEventListener('message', event => {
+  if (event.data === 'chamboule-push-capability') event.ports[0]?.postMessage('chamboule-push-v2');
+});
 self.addEventListener('push', event => {
-  let slot;
-  try { slot = event.data?.json()?.slot; } catch { return; }
+  let payload;
+  try { payload = event.data?.json(); } catch { return; }
+  const { slot, date } = payload || {};
   if (typeof slot !== 'string' || !Object.hasOwn(ROUTINE_MESSAGES, slot)) return;
+  // Separate each day's reminder while grouping repeated deliveries of the same occurrence.
+  const day = typeof date === 'string' && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date)
+    ? date : new Date().toISOString().slice(0, 10);
   event.waitUntil(self.registration.showNotification('Chamboule', {
     body: ROUTINE_MESSAGES[slot],
     icon: new URL('icon-192.png', self.registration.scope).href,
-    tag: 'chamboule-routine-' + slot,
+    tag: 'chamboule-routine-' + slot + (slot === 'test' ? '' : '-' + day),
     data: { route: 'dos-calme' }
   }));
 });
