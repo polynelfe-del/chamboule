@@ -27,8 +27,8 @@ const CHAMBOULE_PUSH = (() => {
     try { sessionStorage.removeItem(LINK_KEY); } catch {}
   }
 
-  function failure(message, code) {
-    return Object.assign(new Error(message), { code });
+  function failure(message, code, detail = '') {
+    return Object.assign(new Error(message), { code, detail });
   }
 
   function supported() {
@@ -136,7 +136,7 @@ const CHAMBOULE_PUSH = (() => {
   }
 
   function supportsPush(worker) {
-    if (!worker || typeof worker.postMessage !== 'function') return Promise.resolve(false);
+    if (!worker || worker.state !== 'activated' || typeof worker.postMessage !== 'function') return Promise.resolve(false);
     return new Promise(resolve => {
       const channel = new MessageChannel();
       const finish = supported => { clearTimeout(timer); channel.port1.close(); resolve(supported); };
@@ -172,18 +172,44 @@ const CHAMBOULE_PUSH = (() => {
     throw failure('Le service de notifications n’est pas prêt. Réessaie dans un instant.', 'invalid_key');
   }
 
+  function chromeSubscriptionError(error, stage) {
+    const name = typeof error?.name === 'string' && /^[A-Za-z]{1,32}Error$/.test(error.name) ? error.name : 'Erreur Chrome';
+    const message = typeof error?.message === 'string' ? error.message
+      .replace(/https?:\/\/\S+/gi, '[adresse masquée]')
+      .replace(/[A-Za-z0-9_:=+/%.-]{24,}/g, '[identifiant masqué]')
+      .replace(/\s+/g, ' ').trim().slice(0, 180) : '';
+    const hint = name === 'NotAllowedError' || /permission denied/i.test(message)
+      ? 'Chrome a refusé l’abonnement de Chamboule.'
+      : /could not connect to push server|network/i.test(message)
+        ? 'Chrome n’a pas pu joindre son service de notifications.'
+        : /storage|stockage/i.test(message)
+          ? 'Chrome n’a pas pu enregistrer l’abonnement dans son stockage.'
+          : 'Chrome n’a pas pu abonner ce téléphone aux notifications de Chamboule.';
+    return failure(hint, 'subscription_failed', stage + ' · ' + name + (message ? ' — ' + message : ''));
+  }
+
+  async function replaceStaleSubscription(manager, key, options, original) {
+    let current;
+    try { current = await manager.getSubscription(); }
+    catch (error) { throw chromeSubscriptionError(error, 'Lecture de l’abonnement'); }
+    if (!current) throw chromeSubscriptionError(original, 'Abonnement Chrome');
+    const currentKey = new Uint8Array(current.options.applicationServerKey || 0);
+    if (currentKey.length === key.length && currentKey.every((value, index) => value === key[index])) return current;
+    try { await current.unsubscribe(); }
+    catch (error) { throw chromeSubscriptionError(error, 'Remplacement de l’ancien abonnement'); }
+    try { return await manager.subscribe(options); }
+    catch (error) { throw chromeSubscriptionError(error, 'Nouvel abonnement Chrome'); }
+  }
+
   async function subscription(worker, key) {
+    const manager = worker.pushManager;
+    const options = { userVisibleOnly: true, applicationServerKey: key };
     try {
-      const current = await worker.pushManager.getSubscription();
-      if (current) {
-        const currentKey = new Uint8Array(current.options.applicationServerKey || 0);
-        if (currentKey.length === key.length && currentKey.every((value, index) => value === key[index])) return current;
-        await current.unsubscribe();
-      }
-      return await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
-    } catch {
-      requirePermission();
-      throw failure('Chrome n’a pas pu enregistrer ce téléphone. Vérifie ta connexion, puis réessaie.', 'subscription_failed');
+      // Chrome reuses a matching subscription. Only a conflict warrants inspecting an older one.
+      return await manager.subscribe(options);
+    } catch (error) {
+      if (error?.name === 'InvalidStateError') return replaceStaleSubscription(manager, key, options, error);
+      throw chromeSubscriptionError(error, 'Abonnement Chrome');
     }
   }
 

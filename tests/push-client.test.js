@@ -14,7 +14,7 @@ const SAVED_TOKEN = 'a'.repeat(43);
 const SCHEDULE = { zone: 'Europe/Paris', morning: '08:00', evening: '21:00' };
 const ACTIVE = { active: true, paired: true, ...SCHEDULE };
 
-function fixture({ token, permission = 'default', backend, existing = false, firstLoad = false, linked = true, oldWorker = false } = {}) {
+function fixture({ token, permission = 'default', backend, existing = false, firstLoad = false, linked = true, oldWorker = false, stale = false, subscribeError = null } = {}) {
   const calls = [];
   const store = new Map(token ? [[TOKEN_KEY, token]] : []);
   const session = new Map();
@@ -25,8 +25,13 @@ function fixture({ token, permission = 'default', backend, existing = false, fir
     options: { applicationServerKey: Uint8Array.from(PUBLIC_KEY).buffer },
     unsubscribe: async () => { calls.push('unsubscribe'); push = null; return true; }
   };
-  let push = existing ? current : null;
+  const outdated = {
+    options: { applicationServerKey: new Uint8Array([4, 2]).buffer },
+    unsubscribe: current.unsubscribe
+  };
+  let push = stale ? outdated : existing ? current : null;
   const compatible = {
+    state: 'activated',
     postMessage(message, [port]) {
       assert.equal(message, 'chamboule-push-capability');
       port.postMessage('chamboule-push-v2');
@@ -42,6 +47,9 @@ function fixture({ token, permission = 'default', backend, existing = false, fir
       subscribe: async (options) => {
         assert.equal(options.userVisibleOnly, true);
         assert.deepEqual(Buffer.from(options.applicationServerKey), PUBLIC_KEY);
+        if (subscribeError) throw subscribeError;
+        if (push === outdated) throw new DOMException('A subscription with a different applicationServerKey already exists.', 'InvalidStateError');
+        if (push === current) return push;
         calls.push('subscribe');
         push = current;
         return push;
@@ -138,4 +146,23 @@ test('opening the public app alone does not request permissions or create a subs
   const { api, calls } = fixture({ linked: false });
   await assert.rejects(api.enable(SCHEDULE), { code: 'pairing_required' });
   assert.deepEqual(calls, []);
+});
+
+test('replaces only a confirmed stale subscription and enrolls the new one', async () => {
+  const { api, calls } = fixture({ stale: true, permission: 'granted' });
+  await api.enable(SCHEDULE);
+  assert.deepEqual(calls.slice(0, 3), ['key', 'unsubscribe', 'subscribe']);
+  assert.equal(calls.at(-1).action, 'enable');
+});
+
+test('keeps the Chrome registration error while redacting identifiers and sends no enrollment', async () => {
+  const err = new DOMException('Registration failed - could not connect to push server https://example.test/push/private ' + 'a'.repeat(48), 'AbortError');
+  const { api, calls } = fixture({ permission: 'granted', subscribeError: err });
+  await assert.rejects(api.enable(SCHEDULE), error => {
+    assert.equal(error.code, 'subscription_failed');
+    assert.match(error.detail, /Abonnement Chrome · AbortError — Registration failed - could not connect to push server/);
+    assert.doesNotMatch(error.detail, /example\.test|a{48}/);
+    return true;
+  });
+  assert.deepEqual(calls, ['key']);
 });

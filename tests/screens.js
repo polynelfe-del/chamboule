@@ -188,6 +188,7 @@ async function step(label, fn) {
         const worker = {
           scope: new URL('./', location.href).href,
           active: {
+            state: 'activated',
             postMessage(message, [port]) {
               if (message === 'chamboule-push-capability') port.postMessage('chamboule-push-v2');
               port.close();
@@ -196,6 +197,7 @@ async function step(label, fn) {
           pushManager: {
             async getSubscription() { return sessionStorage.getItem('mock-push-key') === null ? null : subscription; },
             async subscribe(options) {
+              if (sessionStorage.getItem('mock-push-error')) throw new DOMException('Registration failed - push service error', 'AbortError');
               if (!options.userVisibleOnly) throw new Error('L’abonnement doit afficher ses notifications.');
               sessionStorage.setItem('mock-push-key', JSON.stringify([...options.applicationServerKey]));
               return subscription;
@@ -228,6 +230,11 @@ async function step(label, fn) {
       await pushPage.getByRole('heading', { name: 'Rappels du matin et du soir' }).waitFor();
       assert.equal(new URL(pushPage.url()).hash, '');
       assert.equal(await pushPage.locator('input[type="password"]').count(), 0);
+      await pushPage.evaluate(() => sessionStorage.setItem('mock-push-error', '1'));
+      await act('push-enable').click();
+      await pushPage.getByRole('alert').filter({ hasText: 'AbortError — Registration failed - push service error' }).waitFor();
+      assert.equal(calls.length, 0);
+      await pushPage.evaluate(() => sessionStorage.removeItem('mock-push-error'));
       await act('push-enable').click();
       await pushPage.getByText('Notifications activées.', { exact: false }).waitFor();
       const [enable] = calls;
