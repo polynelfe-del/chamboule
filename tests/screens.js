@@ -28,7 +28,7 @@ const BUSY = { v: 1, xp: 1200, bestCombo: 8, badges: {}, challenges: {}, tests: 
 
 const problems = [];
 async function step(label, fn) {
-  try { await fn(); console.log('✔ ' + label); } catch (e) { problems.push(`${label} : ${String(e.message).split('\n')[0]}`); console.log('✖ ' + label); }
+  try { await fn(); console.log('✔ ' + label); } catch (e) { problems.push(`${label} : ${String(e.message).split('\n')[0]}`); console.log('✖ ' + label); console.error(e.stack || e.message); }
 }
 
 (async () => {
@@ -218,7 +218,7 @@ async function step(label, fn) {
 
       await pushPage.goto(base + '?ouvrir=dos-calme');
       await pushPage.getByRole('heading', { name: 'Avant de jouer' }).waitFor();
-      assert.equal(await pushPage.locator('main .eyebrow').first().innerText(), 'Dos calme');
+      assert.equal(await pushPage.locator('main .eyebrow').first().textContent(), 'Dos calme');
       assert.equal(new URL(pushPage.url()).searchParams.has('ouvrir'), false);
     } finally {
       await pushPage.close();
