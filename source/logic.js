@@ -274,7 +274,7 @@ const BADGES = [
   { id: 'velo60', name: 'Roue libre', desc: '60 min de vélo au total', glyph: "60'", test: s => s.history.reduce((a, h) => a + (h.veloMin || 0), 0) >= 60 },
   { id: 's10', name: 'Habitué de la foire', desc: '10 séances terminées', glyph: '10', test: s => doneCount(s) >= 10 },
   { id: 's30', name: 'Pilier de la fête', desc: '30 séances terminées', glyph: '30', test: s => doneCount(s) >= 30 },
-  { id: 'chamboule', name: 'Boule qui chamboule', desc: 'Première séance du programme fessiers', glyph: 'BQC', test: s => s.history.some(h => h.prog === 'boule') },
+  { id: 'chamboule', name: 'Boule qui chamboule', desc: 'Première séance du programme fessiers', glyph: 'BQC', test: s => s.history.some(h => h.prog === 'boule' && isDone(h)) },
   { id: 'forme', name: 'En forme', desc: 'Faire un test de forme', glyph: 'T', test: s => (s.tests || []).length >= 1 }
 ];
 
@@ -337,16 +337,19 @@ function daysByWeek(hist) {
   hist.forEach(h => { if (!isDone(h)) return; const k = weekKey(new Date(h.d)); if (!m.has(k)) m.set(k, new Set()); m.get(k).add(dayKey(h.d)); });
   return m;
 }
-/* Une séance compte (cœurs, routine, défis, badges, déblocages) quand au moins les deux tiers de ses exercices
-   ont été faits. Un exercice passé parce qu’il augmentait la douleur ne compte ni pour ni contre.
-   Une séance écourtée reste dans le carnet et dans le résumé pour le kiné. */
+/* Une séance compte (cœurs, routine, défis, badges, déblocages) si elle n’a pas été arrêtée pour douleur et
+   si au moins les deux tiers de ses exercices ont été faits. Un exercice passé pour douleur ne compte ni pour ni contre. */
 const DONE_SHARE = 2 / 3;
+function stoppedForPain(h) { return h.stop === true || h.back === 'stop'; }
+function hasLegSymptoms(h) { return stoppedForPain(h) || h.legBefore === true || h.leg === true; }
 function doneShare(h) {
   const n = h.nEx || ((PROGRAMS[h.prog] || {}).exercises || []).length || 1;
-  const considered = n - (h.painEx || []).length;
-  return considered > 0 ? Math.max(0, n - (h.skipped || []).length) / considered : 0;
+  const skipped = new Set(h.skipped || []);
+  const excluded = new Set((h.painEx || []).filter(id => skipped.has(id)));
+  const considered = n - excluded.size;
+  return considered > 0 ? Math.max(0, n - skipped.size) / considered : 0;
 }
-function isDone(h) { return doneShare(h) >= DONE_SHARE - 1e-9; }
+function isDone(h) { return !stoppedForPain(h) && doneShare(h) >= DONE_SHARE - 1e-9; }
 function doneCount(s) { return s.history.filter(isDone).length; }
 function fmtDate(iso) { try { return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }); } catch { return ''; } }
 function fmtDateLong(iso) { try { return new Date(iso).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); } catch { return ''; } }
@@ -527,12 +530,15 @@ function weekStreak(s, now = new Date()) {
 /* Catégorie du dos après la séance, à partir de la douleur notée de 0 à 10 (après et le lendemain). */
 /* Après Dos calme, on ne redemande pas un chiffre : « plus détendu, pareil ou plus douloureux » (relief 1, 0, -1). */
 function backCat(h) {
-  if (h.stop || h.back === 'stop') return 'stop';
-  if (h.pain == null && h.relief == null) return h.back || null;
-  if (h.leg) return 'douleur';
+  if (stoppedForPain(h)) return 'stop';
+  if (hasLegSymptoms(h)) return 'douleur';
+  if (h.pain == null && h.relief == null && h.next == null) return h.back || null;
   const before = h.painBefore ?? h.pain;
   const rank = v => (v >= 7 || (before != null && v - before >= 3)) ? 2 : (before != null && v - before >= 1 && v > 2) ? 1 : 0;
-  const now = h.pain != null ? rank(h.pain) : h.relief === -1 ? 1 : 0;
+  let now = 0;
+  if (h.pain != null) now = rank(h.pain);
+  else if (h.relief != null) now = h.relief === -1 ? 1 : 0;
+  else now = BACKS.indexOf(h.back);
   const worst = Math.max(now, h.next != null ? rank(h.next) : 0);
   return ['ok', 'sensible', 'douleur'][worst];
 }
@@ -544,13 +550,15 @@ const STRENGTH_PROGS = ['dos', 'milieu', 'fessiers', 'mcgill', 'solide', 'calis'
    et null quand aucun ressenti n’a été noté. */
 const QUIET_MAX = 3;
 function quietState(h, max = QUIET_MAX) {
-  if (h.pain == null && h.relief == null && !h.stop) return null;
-  if (backCat(h) !== 'ok' || (h.painEx && h.painEx.length)) return 'break';
+  if (hasLegSymptoms(h) || h.painEx?.length) return 'break';
+  if (h.pain == null && h.relief == null && h.next == null) return null;
+  if (backCat(h) !== 'ok') return 'break';
   if (Math.max(h.painBefore ?? 0, h.pain ?? 0, h.next ?? 0) > max) return 'break';
-  return h.next == null ? 'wait' : 'count';
+  if (h.painBefore != null && (h.pain > h.painBefore || h.next > h.painBefore)) return 'break';
+  return h.painBefore == null || (h.pain == null && h.relief == null) || h.next == null ? 'wait' : 'count';
 }
 /* Alerte sérieuse : symptômes dans la jambe, arrêt pour douleur, ou douleur qui a beaucoup monté. */
-function seriousAlert(h) { return h.legBefore === true || ['douleur', 'stop'].includes(backCat(h)); }
+function seriousAlert(h) { return ['douleur', 'stop'].includes(backCat(h)); }
 /* Dos solide : séances de renforcement calmes parmi les 10 dernières séances jugées (renforcement suivi le lendemain,
    ou n’importe quelle séance au-dessus du seuil). Une alerte sérieuse remet tout à zéro ; une séance faite à moitié
    ne compte pas. Tant que la plus récente n’est pas calme, on reste juste en dessous du nombre demandé. */
@@ -572,17 +580,19 @@ function suggestToday(s, now = new Date()) {
   const last = s.history[0];
   if (!last) return { prog: 'dos', why: 'Coucou, moi c’est Chouquette ! Pour commencer, ta routine de base, tout en douceur.' };
   /* Ce qui a été vraiment fait décide du programme ; la douleur, elle, compte même pour une séance écourtée. */
+  const recent = h => {
+    const elapsed = now.getTime() - Date.parse(h.d);
+    return elapsed >= 0 && elapsed < 3 * 86400000;
+  };
+  if (s.history.some(h => recent(h) && seriousAlert(h))) {
+    return { prog: 'difficile', why: 'Ton dos a été douloureux récemment. Aujourd’hui, juste la respiration, et on voit demain.' };
+  }
+  if (recent(last) && backCat(last) === 'sensible') return { prog: 'calme', why: 'Ton dos était un peu sensible la dernière fois : place aux mouvements doux.' };
   const done = s.history.filter(isDone);
   /* La routine Dos calme du matin ou du soir ne compte pas comme la séance du jour. */
   if (done.some(h => dayKey(h.d) === dayKey(now) && h.prog !== ROUTINE_PROG)) {
     return { prog: 'calme', rest: true, why: 'Ton cœur du jour est déjà rempli. Repos, ou quelques minutes de Dos calme si le dos est raide.' };
   }
-  const recent = now.getTime() - new Date(last.d).getTime() < 3 * 86400000;
-  const cat = backCat(last);
-  if (recent && (cat === 'douleur' || cat === 'stop')) {
-    return { prog: 'difficile', why: 'Ton dos a été douloureux à la dernière séance. Aujourd’hui, juste la respiration, et on voit demain.' };
-  }
-  if (recent && cat === 'sensible') return { prog: 'calme', why: 'Ton dos était un peu sensible la dernière fois : place aux mouvements doux.' };
   const dayBefore = n => { const d = new Date(now); d.setDate(d.getDate() - n); return dayKey(d); };
   if ([1, 2, 3].every(n => done.some(h => h.prog !== ROUTINE_PROG && dayKey(h.d) === dayBefore(n)))) {
     return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : repos aujourd’hui. La balade du chien suffit, et Dos calme si le dos est raide.' };
@@ -619,6 +629,7 @@ function suggestBonus(sug, progId, reason) { return sug && !sug.rest && sug.prog
 function painFreeRun(s) {
   let n = 0;
   for (const h of s.history) {
+    if (seriousAlert(h)) break;
     if (h.prog !== 'dos' || !isDone(h)) continue;
     const q = quietState(h, s.settings.painMax);
     if (q === 'break' || q === null) break;
@@ -929,16 +940,21 @@ function evalMaintenance(s, now = new Date()) {
   Object.keys(s.maint).forEach(k => { if (!keep.has(k.split(':')[0])) delete s.maint[k]; });
   return won;
 }
-/* Alertes selon la zone : le milieu du dos à 5/10 ou plus sur n’importe quelle séance des 3 derniers jours
-   (rappel des signes à surveiller au ventre), ou la fesse deux séances de suite dans les 7 derniers jours
-   (comme une douleur qui commence à descendre). */
+const PAIN_PHASES = [['zoneBefore', 'painBefore'], ['zone', 'pain'], ['zoneNext', 'next']];
+function painInZone(h, zone) {
+  return Math.max(0, ...PAIN_PHASES.map(([zones, pain]) => (h[zones] || []).includes(zone) ? h[pain] ?? 0 : 0));
+}
+/* Alertes selon la zone : le milieu du dos à 5/10 ou plus sur une séance des 3 derniers jours,
+   ou la fesse deux séances de suite dans les 7 derniers jours. */
 function zoneAlert(s, now = new Date()) {
-  const recent = s.history.filter(h => now.getTime() - Date.parse(h.d) < 7 * 86400000);
-  const has = (h, z) => (h.zone || []).includes(z) || (h.zoneNext || []).includes(z);
-  const top = h => Math.max(h.pain ?? 0, h.next ?? 0);
-  const mid = recent.find(h => now.getTime() - Date.parse(h.d) < 3 * 86400000 && has(h, 'milieu') && top(h) >= 5);
-  if (mid) return { zone: 'milieu', pain: top(mid) };
-  if (recent.length >= 2 && has(recent[0], 'fesse') && has(recent[1], 'fesse')) return { zone: 'fesse' };
+  const age = h => now.getTime() - Date.parse(h.d);
+  const recent = s.history.filter(h => age(h) >= 0 && age(h) < 7 * 86400000);
+  for (const h of recent) {
+    if (age(h) >= 3 * 86400000) continue;
+    const pain = painInZone(h, 'milieu');
+    if (pain >= 5) return { zone: 'milieu', pain };
+  }
+  if (recent.length >= 2 && recent.slice(0, 2).every(h => painInZone(h, 'fesse') > 0)) return { zone: 'fesse' };
   return null;
 }
 /* Repère cardio : minutes de vélo de la semaine en cours. */
@@ -970,8 +986,8 @@ function kineSummary(s, now = new Date()) {
   }
   let peak = null;
   list.forEach(h => [h.painBefore, h.pain, h.next].forEach(v => { if (v != null && (!peak || v > peak.v)) peak = { v, d: h.d }; }));
-  const legs = list.filter(h => h.legBefore || h.leg);
-  const stops = list.filter(h => backCat(h) === 'stop');
+  const legs = list.filter(hasLegSymptoms);
+  const stops = list.filter(stoppedForPain);
   const zoneCount = {}, painCount = {}, eff = {};
   list.forEach(h => {
     [h.zoneBefore, h.zone, h.zoneNext].forEach(z => (z || []).forEach(id => { zoneCount[id] = (zoneCount[id] || 0) + 1; }));
@@ -997,11 +1013,11 @@ function kineSummary(s, now = new Date()) {
   if (lastBil && lastBil.stiff >= 2) flags.push(`Raideur du matin : ${low('stiff', lastBil.stiff)}`);
   if (lastBil && lastBil.night >= 1) flags.push(`Réveillé la nuit par le dos : ${low('night', lastBil.night)} dans la semaine`);
   if (lastBil && lastBil.meds >= 2) flags.push('Antidouleurs tous les jours');
-  const mid = list.filter(h => [['zoneBefore', 'painBefore'], ['zone', 'pain'], ['zoneNext', 'next']].some(([z, p]) => (h[z] || []).includes('milieu') && (h[p] ?? 0) >= 5));
+  const mid = list.filter(h => painInZone(h, 'milieu') >= 5);
   if (mid.length) flags.push(`Milieu du dos à 5/10 ou plus : ${mid.length} fois`);
   if (now.getTime() - Date.parse(st.kineReview || ROUTINE_DATE) >= KINE_EVERY_DAYS * 86400000) flags.push(`Routine du kiné à revoir (${st.kineReview ? 'revue le ' + D(st.kineReview) : 'prescrite le ' + D(ROUTINE_DATE)})`);
 
-  const done = list.filter(isDone), cut = list.length - done.length;
+  const done = list.filter(isDone), cut = list.length - done.length - stops.length;
   const days = new Set(done.map(h => dayKey(h.d))).size;
   const rt = routineDays(list);
   const bike = list.reduce((a, h) => a + (h.veloMin || 0), 0);
@@ -1019,7 +1035,7 @@ function kineSummary(s, now = new Date()) {
   if (peak) L.push(`Plus forte douleur notée : ${peak.v}/10 (séance du ${short(peak.d)})`);
   const zc = ZONE_IDS.filter(id => zoneCount[id]);
   L.push('Zones signalées : ' + (zc.length ? zc.map(id => `${zoneName(id)} (${zoneCount[id]})`).join(', ') : 'aucune précisée'));
-  L.push('Symptômes dans la jambe : ' + (legs.length ? legs.length + ' fois' : 'aucun'));
+  L.push('Symptômes dans la jambe : ' + (legs.length ? legs.length + ' fois' : 'aucun signalé'));
   L.push('');
   L.push('CE QUI SOULAGE, CE QUI GÊNE (juste après la séance, comparé à avant)');
   const effRows = Object.entries(eff);
@@ -1035,7 +1051,7 @@ function kineSummary(s, now = new Date()) {
   });
   L.push('');
   L.push('RÉGULARITÉ');
-  L.push(`Séances faites : ${done.length}, sur ${plural(days, 'jour')}${cut ? ` ; ${plural(cut, 'séance')} écourtée${cut > 1 ? 's' : ''} (moins des deux tiers des exercices)` : ''}`);
+  L.push(`Séances faites : ${done.length}, sur ${plural(days, 'jour')}${cut ? ` ; ${plural(cut, 'séance')} écourtée${cut > 1 ? 's' : ''} (moins des deux tiers des exercices)` : ''}${stops.length ? ` ; ${plural(stops.length, 'séance')} arrêtée${stops.length > 1 ? 's' : ''} pour douleur` : ''}`);
   L.push(`Routine Dos calme : ${plural(rt.matins, 'matin')}, ${plural(rt.soirs, 'soir')} (${plural(rt.complets, 'jour')} matin et soir)`);
   L.push(st.bike ? `Vélo d’appartement : ${fmtMin(bike)} min sur la période` : 'Vélo d’appartement : mis de côté pour le moment');
   const tl = (s.tests || []).slice(0, 4).reverse();

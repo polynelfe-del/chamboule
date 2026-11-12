@@ -5,8 +5,47 @@ const $ = (s, r = document) => r.querySelector(s);
 const reduceMotion = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } })();
 const app = $('#app');
 
-function lsGet() { try { const t = localStorage.getItem(LS); return t ? JSON.parse(t) : null; } catch { return null; } }
-function lsSet(obj) { try { localStorage.setItem(LS, JSON.stringify(obj)); } catch {} }
+const storageWarning = document.createElement('p');
+storageWarning.className = 'storage-warning';
+storageWarning.setAttribute('role', 'alert');
+storageWarning.hidden = true;
+app.before(storageWarning);
+let unreadableLocalData = false;
+
+function showStorageWarning(message) {
+  if (storageWarning.textContent === message) return;
+  storageWarning.hidden = !message;
+  storageWarning.textContent = message;
+  const inGame = $('#game-storage-warning');
+  if (inGame) { inGame.hidden = !message; inGame.textContent = message; }
+}
+function lsGet() {
+  let raw;
+  try { raw = localStorage.getItem(LS); }
+  catch {
+    unreadableLocalData = true;
+    showStorageWarning('Chamboule ne peut pas ouvrir la sauvegarde de cet appareil. Exporte tes nouvelles séances avant de fermer l’appli, puis vérifie les réglages de stockage du navigateur.');
+    return null;
+  }
+  if (raw === null) return null;
+  try {
+    const saved = JSON.parse(raw);
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) return saved;
+  } catch {}
+  unreadableLocalData = true;
+  showStorageWarning('La sauvegarde de cet appareil est illisible. Chamboule la conserve telle quelle. Exporte tes nouvelles séances avant de fermer l’appli.');
+  return null;
+}
+function lsSet(obj) {
+  if (unreadableLocalData) return false;
+  try { localStorage.setItem(LS, JSON.stringify(obj)); }
+  catch {
+    showStorageWarning('Chamboule ne peut pas enregistrer ta progression sur cet appareil. Exporte une sauvegarde avant de fermer l’appli.');
+    return false;
+  }
+  showStorageWarning('');
+  return true;
+}
 
 let state = defaultState();
 let mode = 'local';
@@ -20,8 +59,8 @@ function body() { return JSON.parse(JSON.stringify({ v: 1, xp: state.xp, bestCom
 function persist() {
   clearTimeout(persistTimer);
   const b = body();
-  lsSet({ ...b, owner: uid });
-  if (!cloudRef) return;
+  const localSaved = lsSet({ ...b, owner: uid });
+  if (!cloudRef) return localSaved;
   const ref = cloudRef;
   writeChain = writeChain
     .then(() => ref.set(b).catch(e => {
@@ -29,11 +68,22 @@ function persist() {
       throw e;
     }))
     .catch(() => {
-      if (!warnedSave) { warnedSave = true; toast('Sauvegarde en ligne impossible pour l’instant. Ta progression reste gardée sur cet appareil.'); }
+      if (!warnedSave) {
+        warnedSave = true;
+        toast(localSaved ? 'Sauvegarde en ligne indisponible. Ta progression est gardée sur cet appareil.' : 'Les sauvegardes locale et en ligne sont indisponibles. Exporte ta progression.');
+      }
     });
+  return localSaved;
 }
 let persistTimer = 0;
 function persistSoon() { clearTimeout(persistTimer); persistTimer = setTimeout(persist, 600); }
+
+function openReminderRoutine() {
+  if (ui.screen === 'game' || ui.screen === 'routine-confirm') { toast('Ta séance est déjà ouverte.'); return; }
+  if (ui.screen === 'precheck' && ui.pre?.prog === 'calme') return;
+  ui.nextMsg = null;
+  openPrecheck('calme');
+}
 
 async function initStore() {
   const local = lsGet();
@@ -42,7 +92,19 @@ async function initStore() {
     // Appli du téléphone : on demande au système de ne pas effacer le stockage en cas de manque de place.
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => p || navigator.storage.persist()).catch(() => {}); } catch {}
   }
-  renderScreen();
+  const url = new URL(window.location.href);
+  if (!window.claude && url.searchParams.get('ouvrir') === 'dos-calme') {
+    url.searchParams.delete('ouvrir');
+    window.history.replaceState(window.history.state, '', url.href);
+    openReminderRoutine();
+  } else {
+    renderScreen();
+  }
+  if (!window.claude && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data?.type === 'chamboule-open-routine') openReminderRoutine();
+    });
+  }
   const c = window.claude;
   if (!c || typeof c.use !== 'function') return;
   let db = null, user = null;
@@ -113,14 +175,21 @@ function sweep(f1, f2, dur, type, gain) {
   } catch {}
 }
 let voiceOK = (() => { try { return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance === 'function'; } catch { return false; } })();
-function say(text) {
-  if (!state.settings.sound || !voiceOK) return;
+function say(text, handlers) {
+  if (!state.settings.sound || !voiceOK) return false;
   try {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'fr-FR'; u.rate = 1;
+    if (handlers) {
+      u.onend = handlers.done;
+      u.onerror = event => {
+        if (event.error !== 'canceled' && event.error !== 'interrupted') handlers.failed();
+      };
+    }
     speechSynthesis.speak(u);
-  } catch { voiceOK = false; }
+    return true;
+  } catch { voiceOK = false; return false; }
 }
 function hush() { try { voiceOK && speechSynthesis.cancel(); } catch {} }
 function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch {} }
@@ -181,7 +250,7 @@ function infoSheetHTML(kind) {
     : `${GESTES.map(g => `<section class="geste"><h3>${esc(g.t)}</h3><ol>${g.s.map(x => `<li>${esc(x)}</li>`).join('')}</ol></section>`).join('')}
       <p class="tip">Des conseils généraux : ton kiné peut les adapter à ton dos.</p>`;
   return `<div class="sheet-wrap" data-action="info-close-bg"><div class="ex-sheet" role="dialog" aria-modal="true" aria-labelledby="info-t">
-    <div class="ex-sheet-top"><div><p class="eyebrow">${kind === 'alerte' ? 'À connaître' : 'Au quotidien'}</p><h2 id="info-t">${kind === 'alerte' ? 'Quand appeler, quand consulter' : 'Les bons gestes'}</h2></div><button class="icon-btn" data-action="info-close" aria-label="Fermer">${ICON.close}</button></div>
+    <div class="ex-sheet-top"><div><p class="eyebrow">${kind === 'alerte' ? 'À connaître' : 'Au quotidien'}</p><h2 id="info-t" tabindex="-1">${kind === 'alerte' ? 'Quand appeler, quand consulter' : 'Les bons gestes'}</h2></div><button class="icon-btn" data-action="info-close" aria-label="Fermer">${ICON.close}</button></div>
     ${body}
   </div></div>`;
 }
@@ -198,6 +267,47 @@ function legHTML(action, value) {
 
 /* ---------- Écrans ---------- */
 const ui = { nextZones: [], setOpen: new Set(['seances']), screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, info: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set(), allProgs: false, todoAll: false, wk: null };
+let sheetOpener = null;
+
+function rememberFocus(button) {
+  if (!button?.dataset.action || !app.contains(button)) return null;
+  const selector = ['action', 'info', 'prog', 'ex'].filter(key => key in button.dataset)
+    .map(key => `[data-${key}="${CSS.escape(button.dataset[key])}"]`).join('');
+  return { selector, index: Array.from(app.querySelectorAll(selector)).indexOf(button) };
+}
+function restoreFocus(opener) {
+  if (!opener) return;
+  const matches = app.querySelectorAll(opener.selector);
+  (matches[opener.index] || matches[0])?.focus({ preventScroll: true });
+}
+function focusModal() {
+  const dialog = $('[aria-modal="true"]', app);
+  if (!dialog) return false;
+  for (let branch = dialog; branch !== app; branch = branch.parentElement) {
+    for (const sibling of branch.parentElement.children) if (sibling !== branch) sibling.inert = true;
+  }
+  document.getElementById(dialog.getAttribute('aria-labelledby'))?.focus({ preventScroll: true });
+  return true;
+}
+function handleModalKey(event) {
+  const dialog = $('[aria-modal="true"]', app);
+  if (!dialog) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    if (G?.overlay) closeOverlay();
+    else if (ui.sheet) ACTIONS['ex-close']();
+    else if (ui.info) ACTIONS['info-close']();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const buttons = Array.from(dialog.querySelectorAll('a[href], button, input, select, textarea, [tabindex]'))
+    .filter(el => !el.disabled && el.tabIndex >= 0 && el.getClientRects().length);
+  const first = buttons[0], last = buttons.at(-1);
+  if (!buttons.includes(document.activeElement) || document.activeElement === (event.shiftKey ? first : last)) {
+    event.preventDefault();
+    (event.shiftKey ? last : first)?.focus();
+  }
+}
 
 function renderScreen(opts = {}) {
   memoStart();
@@ -209,8 +319,10 @@ function renderScreen(opts = {}) {
     else if (ui.screen === 'test') app.innerHTML = testHTML();
     else if (ui.screen === 'weekly') app.innerHTML = weeklyHTML();
     else if (ui.screen === 'rappels') app.innerHTML = rappelsHTML();
+    else if (ui.screen === 'routine-confirm') app.innerHTML = routineConfirmHTML();
     else if (ui.screen === 'result' && !opts.fromSync) renderResult();
   } finally { memoEnd(); }
+  if (ui.screen === 'home' && (ui.sheet || ui.info)) focusModal();
   const xpEl = ui.screen === 'home' ? $('#home-xp') : null;
   if (xpEl) {
     if (opts.fromSync || opts.still || reduceMotion) { xpEl.style.transition = 'none'; xpEl.style.width = xpEl.dataset.w + '%'; }
@@ -257,7 +369,7 @@ function homeHTML() {
   const shown = ui.todoAll ? todos : todos.slice(0, 2);
   const todoHTML = todos.length ? `<section class="card todo" aria-label="À faire aujourd’hui"><h2 class="section-title">À faire aujourd’hui</h2>${shown.join('')}${todos.length > 2 ? `<button class="link-btn" data-action="todo-all">${ui.todoAll ? 'Voir moins' : todos.length === 3 ? 'Voir la dernière' : `Voir les ${todos.length - 2} autres`}</button>` : ''}</section>` : '';
   const earned = BADGES.filter(b => state.badges[b.id]).length;
-  const remOk = !!state.settings.remindersSet;
+  const remOk = !!(pushUI.server?.receivable && (pushUI.server.morning || pushUI.server.evening));
   const gear = `<div class="top-btns"><button class="icon-btn${remOk ? '' : ' dot'}" data-action="reminders-open" aria-label="Rappels du matin et du soir${remOk ? '' : ', pas encore programmés'}">${ICON.bell}</button><button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button></div>`;
   const wkDone = (state.challenges || {})[weekKey(new Date())] || {};
   const chalWon = weekChallenges(new Date(), !state.settings.bike).filter(c => wkDone[c.id]).length;
@@ -408,61 +520,99 @@ function lifeHTML() {
     ${due ? '<div class="row-btns"><button class="btn primary" data-action="weekly-open">Faire le bilan de cette semaine</button></div>' : ''}
   </section>`;
 }
-/* ---------- Rappels du matin et du soir ----------
-   Une appli web sans serveur ne peut pas réveiller le téléphone à heure fixe une fois fermée :
-   le rappel est confié à l’agenda du téléphone, qui sonne chaque jour, même appli fermée. */
+/* ---------- Notifications du matin et du soir ---------- */
+const pushUI = { server: null, busy: false, error: '', message: '' };
 function fmtTime(t) { const [h, m] = t.split(':'); return `${Number(h)} h${m === '00' ? '' : ' ' + m}`; }
 function remindersSummary() {
-  const at = state.settings.remindersAt;
-  if (!state.settings.remindersSet || !at) return 'Pas encore programmés.';
-  const parts = at.split('|').map((t, i) => t === '-' ? '' : (i ? 'soir à ' : 'matin à ') + fmtTime(t)).filter(Boolean);
-  return parts.length ? 'Programmés : ' + parts.join(', ') + '.' : 'Aucun rappel programmé.';
+  const status = pushUI.server;
+  if (!status?.receivable) return 'Notifications pas encore activées sur cet appareil.';
+  const parts = [status.morning && 'matin à ' + fmtTime(status.morning), status.evening && 'soir à ' + fmtTime(status.evening)].filter(Boolean);
+  return parts.length ? 'Rappels enregistrés : ' + parts.join(', ') + '.' : 'Aucun horaire activé.';
 }
-function markReminders() {
-  state.settings.remindersSet = new Date().toISOString();
-  state.settings.remindersAt = remindersKey(state.settings);
-  persist();
-  if (ui.screen === 'rappels') renderScreen();
+function pushSchedule() {
+  const s = state.settings;
+  return { zone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris', morning: s.routineMorningOn ? s.routineMorning : null, evening: s.routineEveningOn ? s.routineEvening : null };
 }
-function phoneKind() {
+async function managePush(action) {
+  if (pushUI.busy || !CHAMBOULE_PUSH.supported()) return;
+  pushUI.busy = true;
+  pushUI.error = pushUI.message = '';
+  if (ui.screen === 'rappels') renderScreen({ still: true });
   try {
-    const ua = navigator.userAgent || '';
-    if (/Android/i.test(ua)) return 'android';
-    if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
-  } catch {}
-  return 'autre';
+    if (action === 'status') pushUI.server = await CHAMBOULE_PUSH.status();
+    if (action === 'enable') {
+      pushUI.server = await CHAMBOULE_PUSH.enable(pushSchedule());
+      pushUI.message = 'Notifications activées. Tu peux envoyer une notification de test.';
+    }
+    if (action === 'save') {
+      pushUI.server = await CHAMBOULE_PUSH.save(pushSchedule());
+      pushUI.message = 'Horaires enregistrés.';
+    }
+    if (action === 'disable') {
+      pushUI.server = await CHAMBOULE_PUSH.disable();
+      pushUI.message = 'Notifications désactivées sur ce téléphone.';
+    }
+    if (action === 'test') {
+      await CHAMBOULE_PUSH.test();
+      pushUI.message = 'Test envoyé. Vérifie le panneau des notifications de ton téléphone.';
+    }
+  } catch (err) {
+    if (pushUI.server && ['subscription_expired', 'not_active'].includes(err?.code)) {
+      pushUI.server = { ...pushUI.server, active: false, receivable: false };
+    }
+    pushUI.error = err instanceof Error ? err.message : 'Impossible de contacter le service de notifications. Réessaie.';
+  } finally {
+    pushUI.busy = false;
+    if (ui.screen === 'rappels') renderScreen({ still: true });
+    else {
+      const bell = app.querySelector('.top-btns [data-action="reminders-open"]');
+      if (bell) {
+        const active = !!(pushUI.server?.receivable && (pushUI.server.morning || pushUI.server.evening));
+        bell.classList.toggle('dot', !active);
+        bell.setAttribute('aria-label', 'Rappels du matin et du soir' + (active ? '' : ', pas encore programmés'));
+      }
+    }
+  }
 }
 function rappelsHTML() {
-  const s = state.settings, kind = phoneKind();
+  const s = state.settings, status = pushUI.server, supported = CHAMBOULE_PUSH.supported();
   const slots = [['matin', 'Matin', 'routineMorning', 'routineMorningOn', 'rt-matin', 'Au réveil, dans ton lit si tu veux.'], ['soir', 'Soir', 'routineEvening', 'routineEveningOn', 'rt-soir', 'Pour détendre le dos avant de dormir.']];
-  const any = s.routineMorningOn || s.routineEveningOn;
-  const changed = s.remindersSet && s.remindersAt !== remindersKey(s);
-  let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
-  const gcal = slots.filter(x => s[x[3]]).map(x => `<a class="btn ${kind === 'android' ? 'primary big' : 'ghost'}" href="${esc(googleCalURL(x[0], s[x[2]], new Date(), tz))}" target="_blank" rel="noopener" data-action="gcal">${ICON.bell} Rappel du ${x[0]} dans Google Agenda</a>`).join('');
-  const ics = canSave() ? `<button class="btn ${kind === 'android' ? 'ghost' : 'primary big'}" data-action="routine-reminders" ${any ? '' : 'disabled'}>${ICON.bell} ${kind === 'android' ? 'Autre agenda : fichier .ics' : 'Programmer mes rappels'}</button>` : '';
+  const schedule = pushSchedule(), permission = CHAMBOULE_PUSH.permission();
+  const enabled = status?.receivable && permission === 'granted';
+  const changed = enabled && (status.morning !== schedule.morning || status.evening !== schedule.evening || status.zone !== schedule.zone);
+  const busy = pushUI.busy ? ' disabled' : '';
+  const times = [schedule.morning && 'matin à ' + fmtTime(schedule.morning), schedule.evening && 'soir à ' + fmtTime(schedule.evening)].filter(Boolean).join(' · ');
   return `<main class="page plain">
     <header class="sub-top">
       <button class="icon-btn" data-action="rem-back" aria-label="Retour">${ICON.back}</button>
       <div><p class="eyebrow">Routine Dos calme</p><h1>Rappels du matin et du soir</h1></div>
     </header>
-    <section class="card set-card" aria-label="Heures des rappels">
+    ${enabled ? `<section class="card set-card" aria-label="Heures des rappels">
       <h2 class="section-title">Tes heures</h2>
       ${slots.map(([slot, label, key, on, id, hint]) => `<div class="set-row rem-row${s[on] ? '' : ' off'}">
         <div><b>${label}</b><small>${hint}</small></div>
-        <div class="rem-ctl"><input type="time" id="${id}" class="time-in" value="${esc(s[key])}" aria-label="Heure du rappel du ${slot}" ${s[on] ? '' : 'disabled'}><button class="toggle" role="switch" aria-checked="${s[on]}" aria-label="Rappel du ${slot}" data-action="rt-toggle" data-slot="${slot}"></button></div>
+        <div class="rem-ctl"><input type="time" id="${id}" class="time-in" value="${esc(s[key])}" aria-label="Heure du rappel du ${slot}" ${s[on] ? busy : ' disabled'}><button class="toggle" role="switch" aria-checked="${s[on]}" aria-label="Rappel du ${slot}" data-action="rt-toggle" data-slot="${slot}"${busy}></button></div>
       </div>`).join('')}
-    </section>
-    ${changed ? '<div class="notice warn"><b>Tes heures ont changé.</b><span>Programme de nouveau tes rappels pour que ton téléphone suive.</span></div>'
-      : s.remindersSet ? `<div class="notice good"><b>${esc(remindersSummary())}</b><span>Ton téléphone te prévient chaque jour à ces heures.</span></div>` : ''}
+    </section>` : ''}
     <section class="card set-card" aria-label="Programmer les rappels">
-      <h2 class="section-title">Programmer sur ton téléphone</h2>
-      <p class="muted">Ton téléphone te prévient chaque jour à ces heures, même appli fermée : le rappel est confié à son agenda. Le titre reste discret : « Chamboule : ta routine du matin ».</p>
-      ${any ? '' : '<p class="muted">Active au moins un rappel.</p>'}
-      ${kind === 'android' ? gcal + ics : ics + gcal}
-      <p class="muted">${kind === 'android' ? 'Google Agenda s’ouvre avec le rappel prêt : touche Enregistrer, une fois pour le matin, une fois pour le soir. Choisis une notification « au moment de l’événement ».' : kind === 'ios' ? 'Calendrier s’ouvre : touche « Ajouter tout ». Les rappels sonnent à l’heure pile. Si tu utilises Google Agenda, prends plutôt les liens Google.' : 'Ouvre le fichier avec ton agenda, ou utilise les liens Google Agenda.'}</p>
-      <p class="muted">Autre solution, toute simple : deux alarmes dans l’Horloge du téléphone, aux mêmes heures.</p>
+      <h2 class="section-title">Notifications Chamboule</h2>
+      <p class="muted">Chamboule t’envoie les rappels même quand l’appli est fermée. Touche la notification pour ouvrir Dos calme.</p>
+      ${!supported ? '<p class="muted">Pour les activer sur ton Xiaomi, ouvre la version téléphone de Chamboule dans Chrome.</p>' : `
+        ${pushUI.busy ? '<p role="status">Un instant…</p>' : ''}
+        ${pushUI.error ? '<p class="notice warn" role="alert">' + esc(pushUI.error) + '</p>' : ''}
+        ${pushUI.message ? '<p class="notice good" role="status">' + esc(pushUI.message) + '</p>' : ''}
+        ${enabled ? `
+          <p class="muted">${esc(remindersSummary())}</p>
+          ${changed ? '<p class="muted">Enregistre pour appliquer les nouveaux horaires.</p>' : ''}
+          <div class="row-btns"><button class="btn primary" data-action="push-save"${changed ? busy : ' disabled'}>Enregistrer les horaires</button>
+          <button class="btn ghost" data-action="push-test"${busy}>Envoyer un test</button>
+          <button class="btn ghost" data-action="push-disable"${busy}>Désactiver les notifications</button></div>` : `
+          ${permission === 'denied' ? '<p class="notice warn">Les notifications sont bloquées. Autorise-les dans les réglages de Chrome pour Chamboule, puis reviens ici.</p>' : ''}
+          ${times ? `<p class="muted">${esc(times)}. Tu pourras modifier les horaires après l’activation.</p>` : ''}
+          ${!status?.paired && !CHAMBOULE_PUSH.hasLink() && !CHAMBOULE_PUSH.hasToken() ? '<p class="muted">Pour la première activation, ouvre ton lien privé Chamboule sur ce téléphone.</p>' : ''}
+          <button class="btn primary big" data-action="push-enable"${permission === 'denied' ? ' disabled' : busy}>${ICON.bell} Activer les notifications</button>
+          ${status?.active ? `<button class="btn ghost" data-action="push-disable"${busy}>Désactiver les notifications</button>` : ''}`}`}
     </section>
-    <p class="muted center-note">Pour changer d’heure plus tard : reviens ici et reprogramme. ${kind === 'android' ? 'Dans Google Agenda, supprime ensuite l’ancien rappel.' : 'Sur iPhone, le nouveau rappel remplace l’ancien ; un rappel coupé ici est à supprimer dans Calendrier.'}</p>
   </main>`;
 }
 /* Bilan de la semaine : un écran, quatre questions, sans chiffre de douleur. */
@@ -545,7 +695,7 @@ function exSheetHTML(key) {
   const p = progFor(state, progId) || PROGRAMS.dos, ex = p.exercises.find(e => e.id === exId) || EX[exId];
   if (!ex) return '';
   return `<div class="sheet-wrap" data-action="ex-close-bg"><div class="ex-sheet" role="dialog" aria-modal="true" aria-labelledby="ex-t">
-    <div class="ex-sheet-top"><div><p class="eyebrow">${esc(p.name)}</p><h2 id="ex-t">${esc(ex.name)}</h2></div><button class="icon-btn" data-action="ex-close" aria-label="Fermer">${ICON.close}</button></div>
+    <div class="ex-sheet-top"><div><p class="eyebrow">${esc(p.name)}</p><h2 id="ex-t" tabindex="-1">${esc(ex.name)}</h2></div><button class="icon-btn" data-action="ex-close" aria-label="Fermer">${ICON.close}</button></div>
     ${illusFull(ex.id)}
     <p class="presc">${esc(presc(state, ex, setsFor(state, p, ex)))}</p>
     <p>${esc(ex.cue)}</p>
@@ -1042,17 +1192,27 @@ function startGame(progId, pre) {
   tickIv = setInterval(() => { if (ui.screen === 'game' && G) frame(performance.now()); else clearInterval(tickIv); }, 250);
 }
 
-/* Mains libres : la présentation de l’exercice est lue à voix haute, puis l’exercice démarre tout seul.
-   Le temps laissé dépend de la longueur de la consigne, pour avoir le temps de l’écouter et de se mettre en place. */
-function introSec(ex) { return clamp(Math.round(String(ex.cue || '').split(/\s+/).length / 2.6) + 6, 10, 25); }
+/* Mains libres : attendre la fin de la consigne vocale avant de lancer le compte à rebours. */
 function introAuto() {
-  if (!G || G.phase !== 'intro' || !G.hf || G.prog.practice) { if (G) G.introEnd = 0; return; }
-  const ex = G.steps[G.i].ex;
-  if (ex.kind === 'timer') { G.introEnd = 0; return; }
-  G.introEnd = performance.now() + introSec(ex) * 1000;
-  say(`${ex.name}. ${ex.cue}`);
+  const game = G;
+  if (!game) return;
+  game.introEnd = 0;
+  game.introVoice = '';
+  const step = game.steps[game.i];
+  if (game.phase !== 'intro' || !game.hf || game.prog.practice || step.ex.kind === 'timer') return;
+  game.introVoice = 'speaking';
+  const update = heard => {
+    if (G !== game || game.steps[game.i] !== step || game.phase !== 'intro' || game.overlay || game.introVoice !== 'speaking') return;
+    game.introVoice = heard ? '' : 'fallback';
+    game.introEnd = heard ? performance.now() + 5000 : 0;
+    const focused = rememberFocus(document.activeElement);
+    renderGame({ focusDefault: !focused });
+    restoreFocus(focused);
+  };
+  const { name, cue } = step.ex;
+  if (!say(`${name}. ${cue}`, { done: () => update(true), failed: () => update(false) })) game.introVoice = 'fallback';
 }
-function renderGame() {
+function renderGame({ focusDefault = true } = {}) {
   const st = G.steps[G.i], p = G.prog;
   const pips = p.exercises.map((e, k) => {
     const cls = G.skipped.includes(e.id) ? 'skip' : k < st.ei ? 'done' : k === st.ei ? 'now' : '';
@@ -1073,6 +1233,7 @@ function renderGame() {
         <button class="icon-btn" data-action="mute" aria-label="${snd ? 'Couper le son' : 'Remettre le son'}">${snd ? ICON.sound : ICON.mute}</button>
         <div class="g-score"><span class="lbl">Score</span><b id="g-score">${G.score}</b></div>
       </div>
+      <p id="game-storage-warning" class="game-storage-warning"${storageWarning.hidden ? ' hidden' : ''}>${esc(storageWarning.textContent)}</p>
       ${inner}
     </div>
     ${G.overlay ? overlayHTML() : ''}
@@ -1087,8 +1248,8 @@ function renderGame() {
   G.ready = null; G.hintText = null; G.litL = -1;
   if (G.el.zone) G.el.zone.classList.toggle('paused', G.paused);
   if (G.phase === 'timer') updateTimer(performance.now(), true);
-  const focusEl = $('[data-autofocus]');
-  if (focusEl && !G.overlay) { try { focusEl.focus({ preventScroll: true }); } catch {} }
+  if (G.overlay) focusModal();
+  else if (focusDefault) $('[data-autofocus]')?.focus({ preventScroll: true });
 }
 
 function introHTML(st) {
@@ -1110,7 +1271,10 @@ function introHTML(st) {
     <div class="cue">${illusFull(ex.id)}<p>${esc(ex.cue)}</p>${ex.tip ? `<p class="tip">${esc(ex.tip)}</p>` : ''}</div>
     ${hfCard}
     ${tempoNote}
-    ${G.introEnd ? `<p class="auto-go" role="status">Installe-toi : ça démarre tout seul dans <b id="introclock">${Math.max(0, Math.ceil((G.introEnd - performance.now()) / 1000))}</b> s.</p>` : buddyHTML(G.line, 'happy', 'sm')}
+    ${G.introEnd ? `<p class="auto-go" role="status">Installe-toi : ça démarre dans <b id="introclock">${Math.max(0, Math.ceil((G.introEnd - performance.now()) / 1000))}</b> s.</p>`
+      : G.introVoice === 'speaking' ? '<p class="auto-go" role="status">Écoute la consigne, puis installe-toi.</p>'
+      : G.introVoice === 'fallback' ? '<p class="auto-go" role="status">La voix est indisponible. Lis la consigne et appuie sur « C’est parti » quand tu es prête.</p>'
+      : buddyHTML(G.line, 'happy', 'sm')}
     <div class="g-actions">
       <button class="btn primary big" data-action="go" data-autofocus>C’est parti</button>
       ${G.introEnd ? '<button class="btn ghost" data-action="intro-add">Encore 15 s pour m’installer</button>' : ''}
@@ -1132,17 +1296,17 @@ function playHTML(st) {
       <p class="g-meta">${esc(meta.join(' · '))}${G.hf ? '<span class="hf-chip">Mains libres</span>' : ''}</p>
     </div>
     ${standHTML(ex.target, G.setPerfect)}
-    <div class="zone" data-tap role="button" tabindex="0" aria-label="${G.hf ? 'Mettre en pause ou reprendre' : 'Compter une répétition'}" data-autofocus>
-      <div class="target">
-        <div class="disc"></div>
-        ${ex.kind === 'breath' ? '<div class="breath" id="breath"></div>' : ''}
+    <button type="button" class="zone" data-action="zone-tap" aria-label="${G.hf ? 'Mettre en pause ou reprendre' : 'Compter une répétition'}" data-autofocus>
+      <span class="target">
+        <span class="disc"></span>
+        ${ex.kind === 'breath' ? '<span class="breath" id="breath"></span>' : ''}
         <svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><circle class="ring-bg" cx="100" cy="100" r="92"/><circle class="ring-fg" id="ring" cx="100" cy="100" r="92" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg>
-        <div class="count"><b id="count">${G.count}</b><span>/ ${esc(targetLabel(ex))}</span></div>
-      </div>
-      <p class="zone-hint" id="hint"></p>
-      <p class="combo" id="combo" ${G.combo >= 2 ? '' : 'hidden'}>Combo ${G.combo}</p>
-      <div class="fx" id="fx"></div>
-    </div>
+        <span class="count"><b id="count">${G.count}</b><span>/ ${esc(targetLabel(ex))}</span></span>
+      </span>
+      <span class="zone-hint" id="hint"></span>
+      <span class="combo" id="combo" ${G.combo >= 2 ? '' : 'hidden'}>Combo ${G.combo}</span>
+      <span class="fx" id="fx"></span>
+    </button>
     <div class="g-actions">
       <button class="btn primary" data-action="set-done" id="setdone" ${showSetDone(ex) ? '' : 'hidden'}>Série terminée</button>
       <div class="row3">
@@ -1162,15 +1326,15 @@ function timerHTML(st) {
       <p class="g-meta">${ex.id === 'velo' ? state.settings.veloMin + ' min · résistance légère · buste peu penché' : timerMin(state, ex) + ' min · à ton rythme'}</p>
     </div>
     <div class="lanterns" aria-hidden="true">${Array.from({ length: Math.min(timerMin(state, ex), 20) }, () => '<span class="bulb sm"></span>').join('')}</div>
-    <div class="zone" data-tap role="button" tabindex="0" aria-label="Démarrer ou mettre en pause le chrono" data-autofocus>
-      <div class="target">
-        <div class="disc"></div>
+    <button type="button" class="zone" data-action="zone-tap" aria-label="Démarrer ou mettre en pause le chrono" data-autofocus>
+      <span class="target">
+        <span class="disc"></span>
         <svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><circle class="ring-bg" cx="100" cy="100" r="92"/><circle class="ring-fg" id="ring" cx="100" cy="100" r="92" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"/></svg>
-        <div class="count">${ex.id === 'velo' ? ICON.bike(G.timer.running) : ''}<b class="clock" id="tclock">${fmtClock(G.timer.dur / 1000)}</b><span id="tstate"></span></div>
-      </div>
-      <p class="zone-hint" id="tpts">+0 pt</p>
-      <div class="fx" id="fx"></div>
-    </div>
+        <span class="count">${ex.id === 'velo' ? ICON.bike(G.timer.running) : ''}<b class="clock" id="tclock">${fmtClock(G.timer.dur / 1000)}</b><span id="tstate"></span></span>
+      </span>
+      <span class="zone-hint" id="tpts">+0 pt</span>
+      <span class="fx" id="fx"></span>
+    </button>
     <div class="g-actions">
       <button class="btn primary" data-action="timer-done">J’ai fini</button>
       <div class="row3">
@@ -1209,14 +1373,14 @@ function switchHTML(st) {
 
 function overlayHTML() {
   if (G.overlay === 'pain') return `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ov-t"><div class="sheet">
-    <h2 id="ov-t">Qu’est-ce que tu ressens ?</h2>
+    <h2 id="ov-t" tabindex="-1">Qu’est-ce que tu ressens ?</h2>
     <button class="choice danger" data-action="pain-stop"><b>Ça descend dans la jambe ou ça fourmille</b><span>On arrête la séance tout de suite. Tu gardes tes points.</span></button>
     <button class="choice warn" data-action="pain-skip"><b>Ce mouvement augmente ma douleur</b><span>On passe cet exercice, sans perdre d’étoile, et on le note pour ton kiné.</span></button>
     <button class="choice" data-action="overlay-close"><b>Fausse alerte</b><span>Je reprends doucement.</span></button>
     ${redFlagsHTML(true)}
   </div></div>`;
   return `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ov-t"><div class="sheet">
-    <h2 id="ov-t">Quitter la séance ?</h2>
+    <h2 id="ov-t" tabindex="-1">Quitter la séance ?</h2>
     <button class="choice" data-action="end-now"><b>Terminer maintenant</b><span>Tes points sont gardés. Les exercices restants comptent comme non faits.</span></button>
     <button class="choice danger" data-action="abandon"><b>Quitter sans enregistrer</b><span>Rien n’est gardé de cette séance.</span></button>
     <button class="choice" data-action="overlay-close"><b>Reprendre</b><span>Retour au jeu.</span></button>
@@ -1262,6 +1426,7 @@ function updateHold(now, ex) {
   setHint(`Tiens… ${left} s`);
   if (t >= ex.hold) {
     G.holdStart = null;
+    if (G.hf) G.autoCredited = true;
     const rec = scoreRep(true);
     G.lastTap = now;
     buzz(25); launch(true); cheer(true);
@@ -1353,6 +1518,7 @@ function tap() {
 }
 
 function autoRep(now) {
+  G.autoCredited = true;
   const ex = G.steps[G.i].ex;
   const rec = scoreRep(true);
   G.lastTap = now;
@@ -1552,12 +1718,14 @@ function creditTimer(full) {
   stepDone(full ? 'OBJECTIF ATTEINT' : (G.steps[G.i].ex.id === 'velo' ? 'BIEN ROULÉ' : 'BIEN MARCHÉ'), pts);
 }
 
-function openOverlay(kind) {
+function openOverlay(kind, button) {
+  if (G.overlay) return;
+  G.overlayOpener = rememberFocus(button);
   G.overlay = kind; G.pausedAt = performance.now();
+  if (G.introVoice === 'speaking') G.introVoice = '';
   hush();
   if (G.timer.running) { G.timer.acc += G.pausedAt - G.timer.since; G.timer.running = false; G.resumeTimer = true; }
   renderGame();
-  const first = $('.sheet .choice'); if (first) first.focus();
 }
 function closeOverlay() {
   const d = performance.now() - G.pausedAt;
@@ -1566,8 +1734,11 @@ function closeOverlay() {
   if (G.paused) G.pauseStart += d; else { G.lastTap += d; if (G.holdStart != null) G.holdStart += d; }
   if (G.flashUntil) G.flashUntil += d;
   if (G.resumeTimer) { G.timer.since = performance.now(); G.timer.running = true; G.resumeTimer = false; }
-  G.overlay = null;
-  renderGame();
+  const opener = G.overlayOpener;
+  G.overlay = G.overlayOpener = null;
+  if (G.phase === 'intro' && G.hf && !G.introEnd && !G.introVoice) introAuto();
+  renderGame({ focusDefault: !opener });
+  restoreFocus(opener);
 }
 
 function finish(reason) {
@@ -1589,6 +1760,31 @@ function finish(reason) {
     toast('Séance vide : rien n’a été enregistré.');
     return;
   }
+  const nEx = G.prog.exercises.length;
+  if (G.prog.id === ROUTINE_PROG && G.autoCredited && reason !== 'pain' && isDone({ prog: G.prog.id, nEx, skipped: G.skipped, painEx: G.painEx })) {
+    G.finishReason = reason;
+    ui.screen = 'routine-confirm';
+    renderScreen();
+    window.scrollTo(0, 0);
+    $('#routine-confirm-title')?.focus({ preventScroll: true });
+    return;
+  }
+  saveFinishedSession(reason);
+}
+function routineConfirmHTML() {
+  return `<main class="page plain">
+    <section class="card set-card" aria-labelledby="routine-confirm-title">
+      <p class="eyebrow">Dos calme</p>
+      <h1 id="routine-confirm-title" tabindex="-1">As-tu fait la routine ?</h1>
+      <p>Confirme pour l’ajouter à ton carnet et cocher ta routine.</p>
+      <div class="btn-col">
+        <button class="btn primary big" data-action="routine-save">Oui, enregistrer</button>
+        <button class="btn ghost" data-action="routine-discard">Quitter sans enregistrer</button>
+      </div>
+    </section>
+  </main>`;
+}
+function saveFinishedSession(reason) {
   const nEx = G.prog.exercises.length;
   const stars = computeStars(reason, G, nEx);
   const sameDay = G.prog.id !== ROUTINE_PROG && state.history.some(h => dayKey(h.d) === dayKey(new Date()) && h.prog !== ROUTINE_PROG && isDone(h));
@@ -1857,7 +2053,9 @@ const ACTIONS = {
   'import-confirm'() {
     if (!ui.importData) return;
     state = ui.importData; ui.importData = null;
-    persist(); renderScreen(); toast('Sauvegarde importée.');
+    unreadableLocalData = false;
+    const saved = persist();
+    renderScreen(); toast(saved ? 'Sauvegarde importée.' : 'Sauvegarde ouverte pour cette session.');
   },
   'import-cancel'() { ui.importData = null; renderScreen(); },
   'sum-share'() {
@@ -1875,11 +2073,11 @@ const ACTIONS = {
   },
   'pre-force'() { startGame(ui.pre.prog, ui.pre); },
   'pre-difficile'() { startGame('difficile', ui.pre); },
-  'ex-open'(b) { ui.sheet = b.dataset.prog + ':' + b.dataset.ex; renderScreen({ still: true }); const c = $('.ex-sheet [data-action="ex-close"]'); if (c) c.focus(); },
-  'ex-close'() { ui.sheet = null; renderScreen({ still: true }); },
+  'ex-open'(b) { sheetOpener = rememberFocus(b); ui.sheet = b.dataset.prog + ':' + b.dataset.ex; renderScreen({ still: true }); },
+  'ex-close'() { ui.sheet = null; renderScreen({ still: true }); restoreFocus(sheetOpener); sheetOpener = null; },
   'ex-close-bg'(b, e) { if (e.target === b) ACTIONS['ex-close'](); },
-  info(b) { ui.info = b.dataset.info; renderScreen({ still: true }); const c = $('.ex-sheet [data-action="info-close"]'); if (c) c.focus(); },
-  'info-close'() { ui.info = null; renderScreen({ still: true }); },
+  info(b) { sheetOpener = rememberFocus(b); ui.info = b.dataset.info; renderScreen({ still: true }); },
+  'info-close'() { ui.info = null; renderScreen({ still: true }); restoreFocus(sheetOpener); sheetOpener = null; },
   'info-close-bg'(b, e) { if (e.target === b) ACTIONS['info-close'](); },
   'todo-all'() { ui.todoAll = !ui.todoAll; renderScreen({ still: true }); },
   'strip-toggle'() { ui.stripOpen = !ui.stripOpen; renderScreen({ still: true }); },
@@ -2047,21 +2245,19 @@ const ACTIONS = {
     state.settings.reminderDays = days.includes(d) ? days.filter(x => x !== d) : days.concat(d).sort((a, c) => a - c);
     persist(); renderScreen({ still: true });
   },
-  'routine-reminders'() {
-    const s = state.settings;
-    if (!s.routineMorningOn && !s.routineEveningOn) return;
-    saveFile('chamboule-rappels-routine.ics', routineICS(s.routineMorningOn ? s.routineMorning : null, s.routineEveningOn ? s.routineEvening : null), 'text/calendar', true)
-      .then(() => { markReminders(); toast('Ajoute les rappels à ton agenda quand le téléphone te le propose.'); })
-      .catch(e => { if (!e || e.code !== 'declined') toast('Impossible de créer les rappels ici. Utilise les liens Google Agenda ou l’Horloge.'); });
+  'reminders-open'() {
+    ui.remBack = ui.screen === 'settings' ? 'settings' : 'home'; ui.screen = 'rappels'; renderScreen(); window.scrollTo(0, 0);
+    if (CHAMBOULE_PUSH.hasToken()) managePush('status');
   },
-  'reminders-open'() { ui.remBack = ui.screen === 'settings' ? 'settings' : 'home'; ui.screen = 'rappels'; renderScreen(); window.scrollTo(0, 0); },
   'rem-back'() { ui.screen = ui.remBack === 'settings' ? 'settings' : 'home'; renderScreen(); window.scrollTo(0, 0); },
+  'push-enable'() { managePush('enable'); },
+  'push-save'() { managePush('save'); },
+  'push-test'() { managePush('test'); },
+  'push-disable'() { managePush('disable'); },
   'rt-toggle'(b) {
     const k = b.dataset.slot === 'matin' ? 'routineMorningOn' : 'routineEveningOn';
     state.settings[k] = !state.settings[k]; persist(); renderScreen();
   },
-  /* Le lien s’ouvre dans Google Agenda ; on note juste que c’est programmé (sans redessiner pendant le clic). */
-  gcal() { setTimeout(() => { markReminders(); if (ui.screen === 'rappels') renderScreen(); }, 400); },
   reminders() {
     const s = state.settings; if (!s.reminderDays.length) return;
     saveFile('chamboule-rappels.ics', reminderICS(s.reminderDays, s.reminderTime), 'text/calendar', true)
@@ -2081,7 +2277,11 @@ const ACTIONS = {
   'hf-toggle'() { state.settings.handsFree = !state.settings.handsFree; persist(); renderScreen(); },
   'reset-arm'() { ui.resetArm = true; renderScreen(); },
   'reset-cancel'() { ui.resetArm = false; renderScreen(); },
-  'reset-confirm'() { state = defaultState(); ui.resetArm = false; persist(); renderScreen(); toast('Progression effacée.'); },
+  'reset-confirm'() {
+    state = defaultState(); ui.resetArm = false; unreadableLocalData = false;
+    const saved = persist();
+    renderScreen(); toast(saved ? 'Progression effacée.' : 'Progression effacée pour cette session.');
+  },
   'ci-pain'(b) { R.ci.pain = Number(b.dataset.v); if (R.ci.leg == null && R.entry.leg != null) R.ci.leg = R.entry.leg; if (R.ci.leg != null) applyCheckin(); else renderResult(); },
   'ci-leg'(b) {
     R.ci.leg = b.dataset.v === '1';
@@ -2114,7 +2314,17 @@ const ACTIONS = {
     renderGame();
   },
   'intro-add'() { if (G && G.introEnd) { G.introEnd += 15000; setText(G.el.introclock, Math.ceil((G.introEnd - performance.now()) / 1000)); } },
-  mute() { if (!G) return; state.settings.sound = !state.settings.sound; persistSoon(); if (!state.settings.sound) hush(); renderGame(); },
+  mute() {
+    if (!G) return;
+    state.settings.sound = !state.settings.sound;
+    persistSoon();
+    if (!state.settings.sound) {
+      if (G.phase === 'intro' && G.hf) { G.introEnd = 0; G.introVoice = 'fallback'; }
+      if (G.phase === 'play' && G.hf && !G.paused) togglePause();
+      hush();
+    } else if (G.phase === 'intro') introAuto();
+    renderGame();
+  },
   skip() { if (G) skipExercise(false); },
   undo() { if (G) undo(); },
   'set-done'() { if (G && !G.flashUntil) finishSet(); },
@@ -2125,10 +2335,13 @@ const ACTIONS = {
     if (timerElapsed(performance.now()) < 5000) { skipExercise(false); return; }
     creditTimer(false);
   },
-  pain() { if (G) openOverlay('pain'); },
-  quit() { if (G) openOverlay('quit'); },
+  'zone-tap'() { zoneTap(); },
+  pain(b) { if (G) openOverlay('pain', b); },
+  quit(b) { if (G) openOverlay('quit', b); },
   'overlay-close'() { if (G) closeOverlay(); },
   'pain-stop'() { if (G) { G.overlay = null; finish('pain'); } },
+  'routine-save'() { if (ui.screen === 'routine-confirm' && G?.finishReason) saveFinishedSession(G.finishReason); },
+  'routine-discard'() { if (ui.screen === 'routine-confirm') { G = null; goHome(); toast('Routine non enregistrée.'); } },
   'pain-skip'() { if (G) { skipExercise(true); toast('Exercice passé, sans perte d’étoile. Pense à le signaler à ton kiné.'); } },
   'end-now'() { if (G) { G.overlay = null; finish('early'); } },
   abandon() {
@@ -2181,22 +2394,7 @@ function zoneTap() {
   if (G.phase === 'play') { if (G.hf) togglePause(); else tap(); }
   else if (G.phase === 'timer') toggleTimer();
 }
-app.addEventListener('pointerdown', e => {
-  if (ui.screen !== 'game') return;
-  const z = e.target.closest('[data-tap]');
-  if (!z || (e.button !== undefined && e.button !== 0)) return;
-  e.preventDefault();
-  zoneTap();
-});
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && ui.sheet && ui.screen === 'home') { ACTIONS['ex-close'](); return; }
-  if (e.key === 'Escape' && ui.info && ui.screen === 'home') { ACTIONS['info-close'](); return; }
-  if (ui.screen !== 'game' || !G) return;
-  if (e.key === 'Escape' && G.overlay) { closeOverlay(); return; }
-  if (G.overlay || (e.key !== ' ' && e.key !== 'Enter')) return;
-  if (e.target.closest && e.target.closest('button, input, a')) return;
-  if (G.phase === 'play' || G.phase === 'timer') { e.preventDefault(); zoneTap(); }
-});
+document.addEventListener('keydown', handleModalKey);
 
 /* Infobulle du graphique */
 function hideTip() { const t = $('#chart-tip'); if (t) t.hidden = true; }
@@ -2218,3 +2416,5 @@ app.addEventListener('focusin', e => { const h = e.target.closest && e.target.cl
 app.addEventListener('focusout', e => { if (e.target.closest && e.target.closest('[data-tip]')) hideTip(); });
 
 initStore();
+if (CHAMBOULE_PUSH.openedWithLink) ACTIONS['reminders-open']();
+else if (CHAMBOULE_PUSH.hasToken()) managePush('status');

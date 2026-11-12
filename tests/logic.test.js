@@ -38,6 +38,8 @@ test('catégorie du dos après la séance', () => {
   assert.equal(api.backCat(entry({ painBefore: 3, pain: 6 })), 'douleur', '+3 points');
   assert.equal(api.backCat(entry({ painBefore: 6, pain: 7 })), 'douleur', '7/10 ou plus');
   assert.equal(api.backCat(entry({ painBefore: 3, pain: 3, next: 6 })), 'douleur', 'le lendemain compte');
+  assert.equal(api.backCat(entry({ pain: null, next: 7 })), 'douleur', 'suivi seul, sans ressenti immédiat');
+  assert.equal(api.backCat(entry({ legBefore: true, pain: null })), 'douleur', 'symptôme avant, même sans mesure après');
   assert.equal(api.backCat(entry({ pain: null, back: 'sensible' })), 'sensible', 'anciennes séances');
 });
 
@@ -285,6 +287,18 @@ test('séance du jour proposée par Chouquette', () => {
   for (const p of api.SUGGEST_ROTATION || []) assert.ok(api.PROGRAMS[p]);
 });
 
+test('les alertes récentes passent avant une séance terminée aujourd’hui', () => {
+  const done = entry({ d: iso(2026, 10, 18, 11), pain: 2 });
+  const stopped = entry({ d: iso(2026, 10, 18, 9), nEx: 3, skipped: ['pont'], stop: true, pain: null });
+  assert.equal(api.suggestToday(state({ history: [done, stopped] }), NOW).prog, 'difficile');
+
+  const followed = entry({ d: iso(2026, 10, 17), pain: null });
+  const s = state({ history: [done, followed] });
+  api.applyNext(s, followed.id, 7, NOW);
+  assert.equal(followed.back, 'douleur');
+  assert.equal(api.suggestToday(s, NOW).prog, 'difficile');
+});
+
 test('suivi du lendemain : toutes les séances du même jour', () => {
   const a = entry({ d: iso(2026, 10, 17, 19) }), b = entry({ d: iso(2026, 10, 17, 9) }), c = entry({ d: iso(2026, 10, 16) });
   const s = state({ history: [a, b, c], xp: 1000 });
@@ -405,6 +419,16 @@ test('douleur acceptable réglable avec le kiné', () => {
   assert.match(api.kineSummary(s, NOW), /Douleur acceptable pour progresser : 4\/10/);
 });
 
+test('les paliers exigent des notes stables et écartent les symptômes dans la jambe', () => {
+  const worsened = Array.from({ length: 8 }, (_, i) => entry({ d: iso(2026, 10, 18 - i), painBefore: 0, pain: 2, next: 2 }));
+  const s = state({ history: worsened });
+  assert.equal(api.solidStreak(s), 0);
+  assert.equal(api.stepLevel(s, 'dos'), 0);
+  assert.equal(api.quietState(entry({ painBefore: 1, pain: 1, next: 2 })), 'break', 'aggravation légère le lendemain');
+  assert.equal(api.quietState(entry({ legBefore: true, painBefore: 1, pain: 1, next: 1 })), 'break');
+  assert.equal(api.quietState(entry({ pain: null, next: 2 })), 'wait', 'note après manquante');
+});
+
 test('rowing sans porte', () => {
   const s = state();
   assert.ok(api.progFor(s, 'haut').exercises.some(e => e.id === 'rowserviette'));
@@ -512,6 +536,9 @@ test('alertes selon la zone de douleur', () => {
   assert.equal(api.zoneAlert(state({ history: [e(1, { pain: 4, zone: ['milieu'] })] }), NOW), null, 'milieu du dos à 4/10 : pas d’alerte');
   const m = api.zoneAlert(state({ history: [e(1, { next: 6, zoneNext: ['milieu'] })] }), NOW);
   assert.equal(m.zone, 'milieu'); assert.equal(m.pain, 6);
+  const before = api.zoneAlert(state({ history: [e(1, { painBefore: 6, zoneBefore: ['milieu'] })] }), NOW);
+  assert.equal(before.zone, 'milieu'); assert.equal(before.pain, 6, 'la note avant compte pour sa propre zone');
+  assert.equal(api.zoneAlert(state({ history: [e(1, { pain: 1, zone: ['milieu'], next: 7, zoneNext: ['bas'] })] }), NOW), null, 'ne pas attribuer à une zone la douleur mesurée ailleurs');
   assert.equal(api.zoneAlert(state({ history: [e(1, { prog: 'haut' }), e(2, { pain: 6, zone: ['milieu'] })] }), NOW).zone, 'milieu', 'l’alerte tient malgré une séance depuis');
   assert.equal(api.zoneAlert(state({ history: [e(1, { prog: 'haut' }), e(4, { pain: 6, zone: ['milieu'] })] }), NOW), null, 'au-delà de 3 jours');
 });
@@ -686,6 +713,7 @@ test('une séance ne compte que si elle est vraiment faite', () => {
   assert.equal(api.isDone(entry({ prog: 'calme', skipped: calme7.slice(0, 2) })), true, '5 étirements sur 7');
   assert.equal(api.isDone(entry({ prog: 'calme', skipped: calme7.slice(0, 3) })), false, '4 sur 7 : moins des deux tiers');
   assert.equal(api.isDone(entry({ prog: 'dos', skipped: ['pont', 'velo'], painEx: ['pont'] })), true, 'passé pour douleur : ni pour ni contre');
+  assert.equal(api.isDone(entry({ prog: 'dos', skipped: ['pont', 'velo'], painEx: ['transverse'] })), false, 'seul un exercice réellement sauté sort du dénominateur');
   assert.equal(api.isDone(entry({ prog: 'dos', nEx: 3, skipped: ['pont'] })), true, 'sans vélo : 2 sur 3');
   // Le bug de l’audit : 18 s de Dos calme le soir cochaient la routine, un défi et un badge.
   const short = entry({ prog: 'calme', d: iso(2026, 10, 18, 20), skipped: calme7, nEx: 7 });
@@ -703,6 +731,19 @@ test('une séance ne compte que si elle est vraiment faite', () => {
   // Le soir commence à 17 h : la routine du matin faite à 15 h reste celle du matin.
   same(api.routineToday(state({ history: [entry({ prog: 'calme', d: iso(2026, 10, 18, 15) })] }), D(2026, 10, 18, 16)), { matin: true, soir: false, now: 'matin' });
   assert.match(api.kineSummary(state({ history: [short, entry({ d: iso(2026, 10, 17) })] }), NOW), /Séances faites : 1, sur 1 jour ; 1 séance écourtée/);
+});
+
+test('un arrêt pour la jambe reste au carnet sans compter pour les récompenses de fin de séance', () => {
+  const stopped = entry({ d: iso(2026, 10, 18, 9), prog: 'boule', nEx: 3, skipped: ['fentes'], stop: true, pain: null, leg: null });
+  const s = state({ history: [stopped], xp: stopped.xp });
+  assert.equal(api.isDone(stopped), false);
+  assert.equal(api.isDone({ ...stopped, stop: false, back: 'stop' }), false, 'historique ancien');
+  assert.equal(api.weekDays(s, NOW), 0);
+  assert.equal(api.chalProgress(s, api.CHALLENGES.find(c => c.id === 'varie3'), NOW), 0);
+  assert.equal(api.BADGES.find(b => b.id === 'chamboule').test(s), false);
+  assert.equal(api.normalize(s).history[0].xp, stopped.xp);
+  assert.match(api.kineSummary(s, NOW), /Symptômes dans la jambe : 1 fois/);
+  assert.match(api.kineSummary(s, NOW), /Séances faites : 0, sur 0 jour ; 1 séance arrêtée pour douleur/);
 });
 
 test('Dos calme : ressenti sans chiffre', () => {

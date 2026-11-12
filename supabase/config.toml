@@ -1,0 +1,5 @@
+project_id = "chamboule"
+
+[functions.chamboule-push]
+# Registration uses a paired device credential; the scheduler uses a dedicated bearer.
+verify_jwt = false

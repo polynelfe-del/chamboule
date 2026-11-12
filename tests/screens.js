@@ -2,6 +2,7 @@
 // Lancé seulement sur GitHub (.github/workflows/tests.yml), où Playwright est installé pour l’occasion :
 //   npm install --no-save --no-package-lock playwright@1.48.2 && npx playwright install --with-deps chromium
 //   node tests/screens.js
+const assert = require('node:assert/strict');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -27,7 +28,7 @@ const BUSY = { v: 1, xp: 1200, bestCombo: 8, badges: {}, challenges: {}, tests: 
 
 const problems = [];
 async function step(label, fn) {
-  try { await fn(); console.log('✔ ' + label); } catch (e) { problems.push(`${label} : ${String(e.message).split('\n')[0]}`); console.log('✖ ' + label); }
+  try { await fn(); console.log('✔ ' + label); } catch (e) { problems.push(`${label} : ${String(e.message).split('\n')[0]}`); console.log('✖ ' + label); console.error(e.stack || e.message); }
 }
 
 (async () => {
@@ -107,33 +108,175 @@ async function step(label, fn) {
     await click('[data-action="tab"][data-tab="play"]');
     await click('.links [data-info="alerte"]');
     await has('.ex-sheet .alert', 'fiche des signes d’alerte');
-    await click('[data-action="info-close"]');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'info-t');
+    assert.equal(await page.locator('main').getAttribute('inert'), '');
+    for (const key of ['Tab', 'Tab', 'Shift+Tab']) {
+      await page.keyboard.press(key);
+      assert.equal(await page.evaluate(() => !!document.activeElement.closest('[aria-modal="true"]')), true);
+    }
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => document.activeElement.dataset.info), 'alerte');
+    assert.equal(await page.locator('main').getAttribute('inert'), null);
     await click('.links [data-info="gestes"]');
     await has('.ex-sheet .geste', 'fiche des bons gestes');
     await click('[data-action="info-close"]');
+    assert.equal(await page.evaluate(() => document.activeElement.dataset.info), 'gestes');
     if (!(await page.locator('text=ne remplace pas un avis médical').count())) throw new Error('avertissement médical absent');
+  });
+  await step('sauvegarde locale : alerte visible et contenu illisible préservé', async () => {
+    for (const mode of ['quota', 'illisible']) {
+      const storagePage = await browser.newPage({ serviceWorkers: 'block', viewport: { width: 375, height: 812 }, isMobile: true });
+      try {
+        await storagePage.addInitScript(({ mode }) => {
+          const key = 'chamboule-coach.v1';
+          if (mode === 'illisible') {
+            localStorage.setItem(key, '{incomplet');
+          } else {
+            const nativeSet = Storage.prototype.setItem;
+            Storage.prototype.setItem = function(name, value) {
+              if (this === localStorage && name === key) throw new DOMException('Quota atteint', 'QuotaExceededError');
+              return nativeSet.call(this, name, value);
+            };
+          }
+        }, { mode });
+        await storagePage.goto(base);
+        await storagePage.locator('.today [data-action="bike-toggle"]').click();
+        const warning = storagePage.locator('.storage-warning');
+        await warning.waitFor({ state: 'visible' });
+        assert.match(await warning.textContent(), mode === 'quota' ? /ne peut pas enregistrer/ : /est illisible/);
+        if (mode === 'illisible') assert.equal(await storagePage.evaluate(() => localStorage.getItem('chamboule-coach.v1')), '{incomplet');
+        await storagePage.locator('.today [data-action="play"]').click();
+        await storagePage.locator('#game-storage-warning').waitFor({ state: 'visible' });
+      } finally {
+        await storagePage.close();
+      }
+    }
   });
   await step('cloche : rappels du matin et du soir', async () => {
     await click('[data-action="reminders-open"]');
-    await has('#rt-matin', 'heure du matin');
-    await has('#rt-soir', 'heure du soir');
-    await page.fill('#rt-matin', '07:30');
-    await page.locator('#rt-matin').dispatchEvent('change');
-    await click('[data-action="rt-toggle"][data-slot="soir"]');
-    if (!(await page.locator('#rt-soir').isDisabled())) throw new Error('le rappel du soir ne se coupe pas');
-    const st = await page.evaluate(() => JSON.parse(localStorage.getItem('chamboule-coach.v1')).settings);
-    if (st.routineMorning !== '07:30' || st.routineEveningOn !== false) throw new Error('heures mal enregistrées : ' + JSON.stringify([st.routineMorning, st.routineEveningOn]));
-    await has('[data-action="routine-reminders"], [data-action="gcal"]', 'bouton pour programmer');
+    await has('text=Notifications Chamboule', 'notifications dans la cloche');
+    if (await page.locator('.page a[href*="calendar.google.com"]').count()) throw new Error('la cloche utilise encore Google Agenda');
+    if (await page.locator('#rt-matin, #rt-soir, input[type="password"]').count()) throw new Error('réglages ou code affichés avant activation');
     await click('[data-action="rem-back"]');
     await has('.today', 'retour à l’accueil');
   });
+  await step('notifications : activation, horaires, essai et ouverture de Dos calme', async () => {
+    const pushPage = await browser.newPage({
+      viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true,
+      locale: 'fr-FR', timezoneId: 'Europe/Paris', serviceWorkers: 'block'
+    });
+    const code = '0123456789abcdef0123456789abcdef';
+    const keyBytes = Buffer.alloc(65, 1);
+    keyBytes[0] = 4;
+    const publicKey = keyBytes.toString('base64url');
+    const endpoint = 'https://fcm.googleapis.com/fcm/send/test-chamboule';
+    const calls = [];
+    let saved = { active: false, paired: false, morning: null, evening: null, zone: null };
+    try {
+      pushPage.on('pageerror', error => problems.push('écran notifications : ' + error.message));
+      await pushPage.addInitScript(({ endpoint }) => {
+        Object.defineProperty(window, 'Notification', { value: {
+          get permission() { return sessionStorage.getItem('mock-notification') || 'default'; },
+          async requestPermission() { sessionStorage.setItem('mock-notification', 'granted'); return 'granted'; }
+        } });
+        Object.defineProperty(window, 'PushManager', { value: function PushManager() {} });
+        const subscription = {
+          get options() { return { applicationServerKey: Uint8Array.from(JSON.parse(sessionStorage.getItem('mock-push-key'))) }; },
+          toJSON: () => ({ endpoint, keys: { p256dh: 'fake-public-key', auth: 'fake-auth-key' } }),
+          async unsubscribe() { sessionStorage.removeItem('mock-push-key'); return true; }
+        };
+        const worker = {
+          scope: new URL('./', location.href).href,
+          active: {
+            postMessage(message, [port]) {
+              if (message === 'chamboule-push-capability') port.postMessage('chamboule-push-v2');
+              port.close();
+            }
+          },
+          pushManager: {
+            async getSubscription() { return sessionStorage.getItem('mock-push-key') === null ? null : subscription; },
+            async subscribe(options) {
+              if (!options.userVisibleOnly) throw new Error('L’abonnement doit afficher ses notifications.');
+              sessionStorage.setItem('mock-push-key', JSON.stringify([...options.applicationServerKey]));
+              return subscription;
+            }
+          }
+        };
+        Object.defineProperty(navigator.serviceWorker, 'getRegistration', { value: async () => worker });
+      }, { endpoint });
+      await pushPage.route('**/functions/v1/chamboule-push', async route => {
+        const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+        const request = route.request();
+        if (request.method() === 'OPTIONS') { await route.fulfill({ status: 204, headers }); return; }
+        if (request.method() === 'GET') { await route.fulfill({ json: { publicKey }, headers }); return; }
+        const data = request.postDataJSON();
+        calls.push(data);
+        if (data.action === 'enable' || data.action === 'save') {
+          saved = { active: true, paired: true, morning: data.morning, evening: data.evening, zone: data.zone };
+        }
+        if (data.action === 'disable') saved = { ...saved, active: false };
+        await route.fulfill({ json: data.action === 'test' ? { sent: true } : saved, headers });
+      });
+
+      const act = action => pushPage.locator(`[data-action="${action}"]`).first();
+      await pushPage.goto(base);
+      await act('reminders-open').click();
+      await act('push-enable').click();
+      await pushPage.getByRole('alert').filter({ hasText: 'Ouvre ton lien privé Chamboule' }).waitFor();
+      assert.equal(calls.length, 0);
+      await pushPage.goto(base + '?premiere-ouverture#activer=' + code);
+      await pushPage.getByRole('heading', { name: 'Rappels du matin et du soir' }).waitFor();
+      assert.equal(new URL(pushPage.url()).hash, '');
+      assert.equal(await pushPage.locator('input[type="password"]').count(), 0);
+      await act('push-enable').click();
+      await pushPage.getByText('Notifications activées.', { exact: false }).waitFor();
+      const [enable] = calls;
+      assert.equal(enable.action, 'enable');
+      assert.equal(enable.code, code);
+      assert.match(enable.token, /^[\w-]{43}$/);
+      assert.equal(enable.subscription.endpoint, endpoint);
+      assert.deepEqual([enable.morning, enable.evening, enable.zone], ['08:00', '21:00', 'Europe/Paris']);
+      assert.deepEqual(await pushPage.evaluate(() => JSON.parse(sessionStorage.getItem('mock-push-key'))), [...keyBytes]);
+
+      await pushPage.locator('#rt-matin').fill('07:30');
+      await pushPage.locator('#rt-matin').dispatchEvent('change');
+      await pushPage.locator('[data-action="rt-toggle"][data-slot="soir"]').click();
+      assert.equal(await pushPage.locator('#rt-soir').isDisabled(), true);
+      await act('push-save').click();
+      await pushPage.getByText('Horaires enregistrés.', { exact: true }).waitFor();
+      assert.deepEqual(calls.at(-1), { action: 'save', token: enable.token, morning: '07:30', evening: null, zone: 'Europe/Paris' });
+
+      await pushPage.reload();
+      await act('reminders-open').click();
+      await pushPage.getByText('Rappels enregistrés : matin à 7 h 30.', { exact: true }).waitFor();
+      await act('push-test').click();
+      await pushPage.getByText('Test envoyé.', { exact: false }).waitFor();
+      assert.deepEqual(calls.at(-1), { action: 'test', token: enable.token });
+      await pushPage.evaluate(() => sessionStorage.setItem('mock-notification', 'denied'));
+      await pushPage.reload();
+      await act('reminders-open').click();
+      await pushPage.getByText('Les notifications sont bloquées.', { exact: false }).waitFor();
+      await act('push-disable').click();
+      await pushPage.getByText('Notifications désactivées sur ce téléphone.', { exact: true }).waitFor();
+      assert.deepEqual(calls.at(-1), { action: 'disable', token: enable.token });
+      assert.equal(await pushPage.evaluate(() => sessionStorage.getItem('mock-push-key')), null);
+
+      await pushPage.goto(base + '?ouvrir=dos-calme');
+      await pushPage.getByRole('heading', { name: 'Avant de jouer' }).waitFor();
+      assert.equal(await pushPage.locator('main .eyebrow').first().textContent(), 'Dos calme');
+      assert.equal(new URL(pushPage.url()).searchParams.has('ouvrir'), false);
+    } finally {
+      await pushPage.close();
+    }
+  });
   await step('Dos calme écourté : écran honnête, routine pas cochée', async () => {
-    await load(BUSY);
+    await load({ ...BUSY, settings: { ...BUSY.settings, sound: false } });
     await click('.routine [data-action="play"]');
     await click('[data-action="next"][data-v="2"]');
     await click('[data-action="pre-leg"][data-v="0"]');
     await click('[data-action="pre-go"]');
-    await has('.auto-go', 'départ automatique, guidé à la voix');
+    await has('text=La voix est indisponible', 'consigne de départ manuel sans voix');
+    assert.equal(await page.locator('#introclock').count(), 0);
     await click('[data-action="go"]');
     await page.waitForTimeout(9000);
     await click('[data-action="quit"]');
