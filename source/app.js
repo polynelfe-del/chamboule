@@ -521,7 +521,7 @@ function lifeHTML() {
   </section>`;
 }
 /* ---------- Notifications du matin et du soir ---------- */
-const pushUI = { server: null, busy: false, error: '', message: '' };
+const pushUI = { server: null, busy: false, error: '', detail: '', message: '' };
 function fmtTime(t) { const [h, m] = t.split(':'); return `${Number(h)} h${m === '00' ? '' : ' ' + m}`; }
 function remindersSummary() {
   const status = pushUI.server;
@@ -536,7 +536,7 @@ function pushSchedule() {
 async function managePush(action) {
   if (pushUI.busy || !CHAMBOULE_PUSH.supported()) return;
   pushUI.busy = true;
-  pushUI.error = pushUI.message = '';
+  pushUI.error = pushUI.detail = pushUI.message = '';
   if (ui.screen === 'rappels') renderScreen({ still: true });
   try {
     if (action === 'status') pushUI.server = await CHAMBOULE_PUSH.status();
@@ -561,6 +561,7 @@ async function managePush(action) {
       pushUI.server = { ...pushUI.server, active: false, receivable: false };
     }
     pushUI.error = err instanceof Error ? err.message : 'Impossible de contacter le service de notifications. Réessaie.';
+    pushUI.detail = typeof err?.detail === 'string' ? err.detail : '';
   } finally {
     pushUI.busy = false;
     if (ui.screen === 'rappels') renderScreen({ still: true });
@@ -599,7 +600,8 @@ function rappelsHTML() {
       <p class="muted">Chamboule t’envoie les rappels même quand l’appli est fermée. Touche la notification pour ouvrir Dos calme.</p>
       ${!supported ? '<p class="muted">Pour les activer sur ton Xiaomi, ouvre la version téléphone de Chamboule dans Chrome.</p>' : `
         ${pushUI.busy ? '<p role="status">Un instant…</p>' : ''}
-        ${pushUI.error ? '<p class="notice warn" role="alert">' + esc(pushUI.error) + '</p>' : ''}
+        ${pushUI.error ? '<div class="notice warn" role="alert"><b>' + esc(pushUI.error) + '</b>'
+          + (pushUI.detail ? '<span>' + esc(pushUI.detail) + '</span>' : '') + '</div>' : ''}
         ${pushUI.message ? '<p class="notice good" role="status">' + esc(pushUI.message) + '</p>' : ''}
         ${enabled ? `
           <p class="muted">${esc(remindersSummary())}</p>

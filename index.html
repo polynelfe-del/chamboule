@@ -2106,8 +2106,8 @@ const CHAMBOULE_PUSH = (() => {
     try { sessionStorage.removeItem(LINK_KEY); } catch {}
   }
 
-  function failure(message, code) {
-    return Object.assign(new Error(message), { code });
+  function failure(message, code, detail = '') {
+    return Object.assign(new Error(message), { code, detail });
   }
 
   function supported() {
@@ -2215,7 +2215,7 @@ const CHAMBOULE_PUSH = (() => {
   }
 
   function supportsPush(worker) {
-    if (!worker || typeof worker.postMessage !== 'function') return Promise.resolve(false);
+    if (!worker || worker.state !== 'activated' || typeof worker.postMessage !== 'function') return Promise.resolve(false);
     return new Promise(resolve => {
       const channel = new MessageChannel();
       const finish = supported => { clearTimeout(timer); channel.port1.close(); resolve(supported); };
@@ -2251,18 +2251,44 @@ const CHAMBOULE_PUSH = (() => {
     throw failure('Le service de notifications n’est pas prêt. Réessaie dans un instant.', 'invalid_key');
   }
 
+  function chromeSubscriptionError(error, stage) {
+    const name = typeof error?.name === 'string' && /^[A-Za-z]{1,32}Error$/.test(error.name) ? error.name : 'Erreur Chrome';
+    const message = typeof error?.message === 'string' ? error.message
+      .replace(/https?:\/\/\S+/gi, '[adresse masquée]')
+      .replace(/[A-Za-z0-9_:=+/%.-]{24,}/g, '[identifiant masqué]')
+      .replace(/\s+/g, ' ').trim().slice(0, 180) : '';
+    const hint = name === 'NotAllowedError' || /permission denied/i.test(message)
+      ? 'Chrome a refusé l’abonnement de Chamboule.'
+      : /could not connect to push server|network/i.test(message)
+        ? 'Chrome n’a pas pu joindre son service de notifications.'
+        : /storage|stockage/i.test(message)
+          ? 'Chrome n’a pas pu enregistrer l’abonnement dans son stockage.'
+          : 'Chrome n’a pas pu abonner ce téléphone aux notifications de Chamboule.';
+    return failure(hint, 'subscription_failed', stage + ' · ' + name + (message ? ' — ' + message : ''));
+  }
+
+  async function replaceStaleSubscription(manager, key, options, original) {
+    let current;
+    try { current = await manager.getSubscription(); }
+    catch (error) { throw chromeSubscriptionError(error, 'Lecture de l’abonnement'); }
+    if (!current) throw chromeSubscriptionError(original, 'Abonnement Chrome');
+    const currentKey = new Uint8Array(current.options.applicationServerKey || 0);
+    if (currentKey.length === key.length && currentKey.every((value, index) => value === key[index])) return current;
+    try { await current.unsubscribe(); }
+    catch (error) { throw chromeSubscriptionError(error, 'Remplacement de l’ancien abonnement'); }
+    try { return await manager.subscribe(options); }
+    catch (error) { throw chromeSubscriptionError(error, 'Nouvel abonnement Chrome'); }
+  }
+
   async function subscription(worker, key) {
+    const manager = worker.pushManager;
+    const options = { userVisibleOnly: true, applicationServerKey: key };
     try {
-      const current = await worker.pushManager.getSubscription();
-      if (current) {
-        const currentKey = new Uint8Array(current.options.applicationServerKey || 0);
-        if (currentKey.length === key.length && currentKey.every((value, index) => value === key[index])) return current;
-        await current.unsubscribe();
-      }
-      return await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
-    } catch {
-      requirePermission();
-      throw failure('Chrome n’a pas pu enregistrer ce téléphone. Vérifie ta connexion, puis réessaie.', 'subscription_failed');
+      // Chrome reuses a matching subscription. Only a conflict warrants inspecting an older one.
+      return await manager.subscribe(options);
+    } catch (error) {
+      if (error?.name === 'InvalidStateError') return replaceStaleSubscription(manager, key, options, error);
+      throw chromeSubscriptionError(error, 'Abonnement Chrome');
     }
   }
 
@@ -2877,7 +2903,7 @@ function lifeHTML() {
   </section>`;
 }
 /* ---------- Notifications du matin et du soir ---------- */
-const pushUI = { server: null, busy: false, error: '', message: '' };
+const pushUI = { server: null, busy: false, error: '', detail: '', message: '' };
 function fmtTime(t) { const [h, m] = t.split(':'); return `${Number(h)} h${m === '00' ? '' : ' ' + m}`; }
 function remindersSummary() {
   const status = pushUI.server;
@@ -2892,7 +2918,7 @@ function pushSchedule() {
 async function managePush(action) {
   if (pushUI.busy || !CHAMBOULE_PUSH.supported()) return;
   pushUI.busy = true;
-  pushUI.error = pushUI.message = '';
+  pushUI.error = pushUI.detail = pushUI.message = '';
   if (ui.screen === 'rappels') renderScreen({ still: true });
   try {
     if (action === 'status') pushUI.server = await CHAMBOULE_PUSH.status();
@@ -2917,6 +2943,7 @@ async function managePush(action) {
       pushUI.server = { ...pushUI.server, active: false, receivable: false };
     }
     pushUI.error = err instanceof Error ? err.message : 'Impossible de contacter le service de notifications. Réessaie.';
+    pushUI.detail = typeof err?.detail === 'string' ? err.detail : '';
   } finally {
     pushUI.busy = false;
     if (ui.screen === 'rappels') renderScreen({ still: true });
@@ -2955,7 +2982,8 @@ function rappelsHTML() {
       <p class="muted">Chamboule t’envoie les rappels même quand l’appli est fermée. Touche la notification pour ouvrir Dos calme.</p>
       ${!supported ? '<p class="muted">Pour les activer sur ton Xiaomi, ouvre la version téléphone de Chamboule dans Chrome.</p>' : `
         ${pushUI.busy ? '<p role="status">Un instant…</p>' : ''}
-        ${pushUI.error ? '<p class="notice warn" role="alert">' + esc(pushUI.error) + '</p>' : ''}
+        ${pushUI.error ? '<div class="notice warn" role="alert"><b>' + esc(pushUI.error) + '</b>'
+          + (pushUI.detail ? '<span>' + esc(pushUI.detail) + '</span>' : '') + '</div>' : ''}
         ${pushUI.message ? '<p class="notice good" role="status">' + esc(pushUI.message) + '</p>' : ''}
         ${enabled ? `
           <p class="muted">${esc(remindersSummary())}</p>
