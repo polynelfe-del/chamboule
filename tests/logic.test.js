@@ -779,3 +779,29 @@ test('accueil : précautions et confidentialité', () => {
   const build = require('fs').readFileSync(require('path').join(__dirname, '..', 'source', 'build-phone-app.js'), 'utf8');
   assert.match(build, /<meta name="robots" content="noindex, nofollow">/, 'pas dans les moteurs de recherche');
 });
+
+test('rappels du matin et du soir', () => {
+  const ics = api.routineICS('07:30', null, NOW);
+  assert.equal((ics.match(/BEGIN:VEVENT/g) || []).length, 1, 'soir coupé : un seul rappel');
+  assert.match(ics, /DTSTART:20261019T073000/, 'demain 7 h 30');
+  assert.match(ics, /SUMMARY:Chamboule : ta routine du matin/, 'titre discret sur l’écran verrouillé');
+  assert.doesNotMatch(ics, /dos/i, 'rien sur le dos dans l’agenda');
+  assert.match(ics, /TRIGGER:PT0S/, 'notification à l’heure pile');
+  for (const line of ics.split('\r\n')) assert.ok(Buffer.byteLength(line) <= 75, 'ligne trop longue : ' + line);
+  const both = api.routineICS('08:00', '21:15', NOW);
+  assert.match(both, /DTSTART:20261018T211500/, 'ce soir 21 h 15');
+  const url = api.googleCalURL('soir', '21:15', NOW, 'Europe/Paris');
+  assert.match(url, /^https:\/\/calendar\.google\.com\/calendar\/render\?action=TEMPLATE&/);
+  assert.match(url, /dates=20261018T211500%2F20261018T212500/);
+  assert.match(url, /recur=RRULE%3AFREQ%3DDAILY/, 'tous les jours');
+  assert.match(url, /ctz=Europe%2FParis/);
+  assert.doesNotMatch(decodeURIComponent(url), /dos/i);
+  const s = api.defaultState().settings;
+  assert.equal(api.remindersKey(s), '08:00|21:00');
+  s.routineEveningOn = false;
+  assert.equal(api.remindersKey(s), '08:00|-');
+  const n = api.normalize({ settings: { routineMorningOn: false, remindersAt: '<b>', remindersSet: 'x' } }).settings;
+  assert.equal(n.routineMorningOn, false); assert.equal(n.routineEveningOn, true);
+  assert.equal(n.remindersAt, null); assert.equal(n.remindersSet, null);
+  assert.equal(api.normalize({ settings: { remindersAt: '07:30|-' } }).settings.remindersAt, '07:30|-');
+});

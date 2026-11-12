@@ -208,6 +208,7 @@ function renderScreen(opts = {}) {
     else if (ui.screen === 'summary') app.innerHTML = summaryHTML();
     else if (ui.screen === 'test') app.innerHTML = testHTML();
     else if (ui.screen === 'weekly') app.innerHTML = weeklyHTML();
+    else if (ui.screen === 'rappels') app.innerHTML = rappelsHTML();
     else if (ui.screen === 'result' && !opts.fromSync) renderResult();
   } finally { memoEnd(); }
   const xpEl = ui.screen === 'home' ? $('#home-xp') : null;
@@ -256,7 +257,8 @@ function homeHTML() {
   const shown = ui.todoAll ? todos : todos.slice(0, 2);
   const todoHTML = todos.length ? `<section class="card todo" aria-label="À faire aujourd’hui"><h2 class="section-title">À faire aujourd’hui</h2>${shown.join('')}${todos.length > 2 ? `<button class="link-btn" data-action="todo-all">${ui.todoAll ? 'Voir moins' : todos.length === 3 ? 'Voir la dernière' : `Voir les ${todos.length - 2} autres`}</button>` : ''}</section>` : '';
   const earned = BADGES.filter(b => state.badges[b.id]).length;
-  const gear = `<button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button>`;
+  const remOk = !!state.settings.remindersSet;
+  const gear = `<div class="top-btns"><button class="icon-btn${remOk ? '' : ' dot'}" data-action="reminders-open" aria-label="Rappels du matin et du soir${remOk ? '' : ', pas encore programmés'}">${ICON.bell}</button><button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button></div>`;
   const wkDone = (state.challenges || {})[weekKey(new Date())] || {};
   const chalWon = weekChallenges(new Date(), !state.settings.bike).filter(c => wkDone[c.id]).length;
   const disclaimer = '<p class="foot">Chamboule Coach t’aide à suivre les exercices de ton kiné. Elle ne remplace pas un avis médical.</p>';
@@ -405,6 +407,63 @@ function lifeHTML() {
     <p class="muted">Raideur du matin : ${esc(WEEKLY.stiff.a[w.stiff].toLowerCase())} · réveils la nuit : ${esc(WEEKLY.night.a[w.night].toLowerCase())} · antidouleurs : ${esc(WEEKLY.meds.a[w.meds].toLowerCase())}</p>
     ${due ? '<div class="row-btns"><button class="btn primary" data-action="weekly-open">Faire le bilan de cette semaine</button></div>' : ''}
   </section>`;
+}
+/* ---------- Rappels du matin et du soir ----------
+   Une appli web sans serveur ne peut pas réveiller le téléphone à heure fixe une fois fermée :
+   le rappel est confié à l’agenda du téléphone, qui sonne chaque jour, même appli fermée. */
+function fmtTime(t) { const [h, m] = t.split(':'); return `${Number(h)} h${m === '00' ? '' : ' ' + m}`; }
+function remindersSummary() {
+  const at = state.settings.remindersAt;
+  if (!state.settings.remindersSet || !at) return 'Pas encore programmés.';
+  const parts = at.split('|').map((t, i) => t === '-' ? '' : (i ? 'soir à ' : 'matin à ') + fmtTime(t)).filter(Boolean);
+  return parts.length ? 'Programmés : ' + parts.join(', ') + '.' : 'Aucun rappel programmé.';
+}
+function markReminders() {
+  state.settings.remindersSet = new Date().toISOString();
+  state.settings.remindersAt = remindersKey(state.settings);
+  persist();
+  if (ui.screen === 'rappels') renderScreen();
+}
+function phoneKind() {
+  try {
+    const ua = navigator.userAgent || '';
+    if (/Android/i.test(ua)) return 'android';
+    if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
+  } catch {}
+  return 'autre';
+}
+function rappelsHTML() {
+  const s = state.settings, kind = phoneKind();
+  const slots = [['matin', 'Matin', 'routineMorning', 'routineMorningOn', 'rt-matin', 'Au réveil, dans ton lit si tu veux.'], ['soir', 'Soir', 'routineEvening', 'routineEveningOn', 'rt-soir', 'Pour détendre le dos avant de dormir.']];
+  const any = s.routineMorningOn || s.routineEveningOn;
+  const changed = s.remindersSet && s.remindersAt !== remindersKey(s);
+  let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
+  const gcal = slots.filter(x => s[x[3]]).map(x => `<a class="btn ${kind === 'android' ? 'primary big' : 'ghost'}" href="${esc(googleCalURL(x[0], s[x[2]], new Date(), tz))}" target="_blank" rel="noopener" data-action="gcal">${ICON.bell} Rappel du ${x[0]} dans Google Agenda</a>`).join('');
+  const ics = canSave() ? `<button class="btn ${kind === 'android' ? 'ghost' : 'primary big'}" data-action="routine-reminders" ${any ? '' : 'disabled'}>${ICON.bell} ${kind === 'android' ? 'Autre agenda : fichier .ics' : 'Programmer mes rappels'}</button>` : '';
+  return `<main class="page plain">
+    <header class="sub-top">
+      <button class="icon-btn" data-action="rem-back" aria-label="Retour">${ICON.back}</button>
+      <div><p class="eyebrow">Routine Dos calme</p><h1>Rappels du matin et du soir</h1></div>
+    </header>
+    <section class="card set-card" aria-label="Heures des rappels">
+      <h2 class="section-title">Tes heures</h2>
+      ${slots.map(([slot, label, key, on, id, hint]) => `<div class="set-row rem-row${s[on] ? '' : ' off'}">
+        <div><b>${label}</b><small>${hint}</small></div>
+        <div class="rem-ctl"><input type="time" id="${id}" class="time-in" value="${esc(s[key])}" aria-label="Heure du rappel du ${slot}" ${s[on] ? '' : 'disabled'}><button class="toggle" role="switch" aria-checked="${s[on]}" aria-label="Rappel du ${slot}" data-action="rt-toggle" data-slot="${slot}"></button></div>
+      </div>`).join('')}
+    </section>
+    ${changed ? '<div class="notice warn"><b>Tes heures ont changé.</b><span>Programme de nouveau tes rappels pour que ton téléphone suive.</span></div>'
+      : s.remindersSet ? `<div class="notice good"><b>${esc(remindersSummary())}</b><span>Ton téléphone te prévient chaque jour à ces heures.</span></div>` : ''}
+    <section class="card set-card" aria-label="Programmer les rappels">
+      <h2 class="section-title">Programmer sur ton téléphone</h2>
+      <p class="muted">Ton téléphone te prévient chaque jour à ces heures, même appli fermée : le rappel est confié à son agenda. Le titre reste discret : « Chamboule : ta routine du matin ».</p>
+      ${any ? '' : '<p class="muted">Active au moins un rappel.</p>'}
+      ${kind === 'android' ? gcal + ics : ics + gcal}
+      <p class="muted">${kind === 'android' ? 'Google Agenda s’ouvre avec le rappel prêt : touche Enregistrer, une fois pour le matin, une fois pour le soir. Choisis une notification « au moment de l’événement ».' : kind === 'ios' ? 'Calendrier s’ouvre : touche « Ajouter tout ». Les rappels sonnent à l’heure pile. Si tu utilises Google Agenda, prends plutôt les liens Google.' : 'Ouvre le fichier avec ton agenda, ou utilise les liens Google Agenda.'}</p>
+      <p class="muted">Autre solution, toute simple : deux alarmes dans l’Horloge du téléphone, aux mêmes heures.</p>
+    </section>
+    <p class="muted center-note">Pour changer d’heure plus tard : reviens ici et reprogramme. ${kind === 'android' ? 'Dans Google Agenda, supprime ensuite l’ancien rappel.' : 'Sur iPhone, le nouveau rappel remplace l’ancien ; un rappel coupé ici est à supprimer dans Calendrier.'}</p>
+  </main>`;
 }
 /* Bilan de la semaine : un écran, quatre questions, sans chiffre de douleur. */
 function weeklyHTML() {
@@ -808,9 +867,7 @@ function settingsHTML() {
       <div class="set-row"><div><b>Heure</b></div><input type="time" id="rem-time" class="time-in" value="${esc(s.reminderTime)}" aria-label="Heure du rappel"></div>
       ${canSave() ? `<div class="set-row"><div><b>Ajouter à mon agenda</b><small>Un rappel répété chaque semaine dans l’agenda du téléphone. Si tu changes les jours ou l’heure, ajoute-le de nouveau : il remplace l’ancien dans la plupart des agendas (sinon, supprime l’ancien à la main). Sur Android, ouvre ensuite le fichier téléchargé.</small></div><button class="btn ghost" data-action="reminders"${s.reminderDays.length ? '' : ' disabled'}>Ajouter</button></div>` : ''}
       <h3 class="set-sub">Routine Dos calme</h3>
-      <div class="set-row"><div><b>Matin</b></div><input type="time" id="rt-matin" class="time-in" value="${esc(s.routineMorning)}" aria-label="Heure de la routine du matin"></div>
-      <div class="set-row"><div><b>Soir</b></div><input type="time" id="rt-soir" class="time-in" value="${esc(s.routineEvening)}" aria-label="Heure de la routine du soir"></div>
-      ${canSave() ? '<div class="set-row"><div><b>Ajouter matin et soir à mon agenda</b><small>Deux rappels chaque jour pour Dos calme. Ils remplacent les anciens si tu changes les heures.</small></div><button class="btn ghost" data-action="routine-reminders">Ajouter</button></div>' : ''}`;
+      <div class="set-row"><div><b>Rappels du matin et du soir</b><small>${esc(remindersSummary())} Aussi avec la cloche de l’accueil.</small></div><button class="btn ghost" data-action="reminders-open">Régler</button></div>`;
   const jeu = `
       <div class="set-row">
         <div><b>Dos calme guidé à la voix</b><small>Allongé, tu n’as ni à regarder ni à toucher l’écran : l’appli lit chaque étirement, le lance et compte pour toi.</small></div>
@@ -1992,10 +2049,19 @@ const ACTIONS = {
   },
   'routine-reminders'() {
     const s = state.settings;
-    saveFile('chamboule-routine.ics', routineICS(s.routineMorning, s.routineEvening), 'text/calendar', true)
-      .then(() => toast('Ajoute les rappels du matin et du soir à ton agenda quand le téléphone te le propose.'))
-      .catch(e => { if (!e || e.code !== 'declined') toast('Impossible de créer les rappels ici.'); });
+    if (!s.routineMorningOn && !s.routineEveningOn) return;
+    saveFile('chamboule-rappels-routine.ics', routineICS(s.routineMorningOn ? s.routineMorning : null, s.routineEveningOn ? s.routineEvening : null), 'text/calendar', true)
+      .then(() => { markReminders(); toast('Ajoute les rappels à ton agenda quand le téléphone te le propose.'); })
+      .catch(e => { if (!e || e.code !== 'declined') toast('Impossible de créer les rappels ici. Utilise les liens Google Agenda ou l’Horloge.'); });
   },
+  'reminders-open'() { ui.remBack = ui.screen === 'settings' ? 'settings' : 'home'; ui.screen = 'rappels'; renderScreen(); window.scrollTo(0, 0); },
+  'rem-back'() { ui.screen = ui.remBack === 'settings' ? 'settings' : 'home'; renderScreen(); window.scrollTo(0, 0); },
+  'rt-toggle'(b) {
+    const k = b.dataset.slot === 'matin' ? 'routineMorningOn' : 'routineEveningOn';
+    state.settings[k] = !state.settings[k]; persist(); renderScreen();
+  },
+  /* Le lien s’ouvre dans Google Agenda ; on note juste que c’est programmé (sans redessiner pendant le clic). */
+  gcal() { setTimeout(() => { markReminders(); if (ui.screen === 'rappels') renderScreen(); }, 400); },
   reminders() {
     const s = state.settings; if (!s.reminderDays.length) return;
     saveFile('chamboule-rappels.ics', reminderICS(s.reminderDays, s.reminderTime), 'text/calendar', true)
@@ -2082,7 +2148,10 @@ app.addEventListener('click', e => {
 });
 app.addEventListener('change', e => {
   if (e.target.id === 'rt-matin' || e.target.id === 'rt-soir') {
-    if (/^([01]\d|2[0-3]):[0-5]\d$/.test(e.target.value)) { state.settings[e.target.id === 'rt-matin' ? 'routineMorning' : 'routineEvening'] = e.target.value; persist(); }
+    if (/^([01]\d|2[0-3]):[0-5]\d$/.test(e.target.value)) {
+      state.settings[e.target.id === 'rt-matin' ? 'routineMorning' : 'routineEvening'] = e.target.value; persist();
+      if (ui.screen === 'rappels') renderScreen();
+    }
     return;
   }
   if (e.target.id === 'rem-time') {

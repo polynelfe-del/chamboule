@@ -357,7 +357,7 @@ function exName(id) { return (EX[id] || {}).name || id; }
 /* ---------- État & sauvegarde ---------- */
 const LS = 'chamboule-coach.v1';
 function defaultState() {
-  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', routineMorning: '08:00', routineEvening: '21:00', sound: true, handsFree: false, lyingHF: true, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, calisUnlocked: false, calisUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, noTable: false, tableChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {}, weekly: [] };
+  return { v: 1, xp: 0, bestCombo: 0, settings: { sets: 1, fessiersSets: 1, veloMin: 10, bike: true, weeklyGoal: 3, reminderDays: [1, 3, 5], reminderTime: '18:00', routineMorning: '08:00', routineEvening: '21:00', routineMorningOn: true, routineEveningOn: true, remindersSet: null, remindersAt: null, sound: true, handsFree: false, lyingHF: true, tutorialDone: false, bouleUnlocked: false, bouleUnlockedAt: null, solideUnlocked: false, solideUnlockedAt: null, calisUnlocked: false, calisUnlockedAt: null, milieuOk: false, milieuOkAt: null, lastExport: null, exportSnooze: null, outfit: 'noeud', rungs: {}, stepReset: {}, painMax: 3, painMaxAt: null, noDoor: false, doorChecked: false, noTable: false, tableChecked: false, kineReview: null, kineSnooze: null }, badges: {}, challenges: {}, history: [], tests: [], maint: {}, weekly: [] };
 }
 /* Tout ce qui vient d’un fichier importé ou du stockage est revérifié et converti au bon type :
    aucune valeur lue n’arrive telle quelle dans la page. */
@@ -471,6 +471,9 @@ function cleanSettings(s, d) {
     reminderTime: typeof s.reminderTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s.reminderTime) ? s.reminderTime : d.reminderTime,
     routineMorning: typeof s.routineMorning === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s.routineMorning) ? s.routineMorning : d.routineMorning,
     routineEvening: typeof s.routineEvening === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(s.routineEvening) ? s.routineEvening : d.routineEvening,
+    routineMorningOn: s.routineMorningOn !== false, routineEveningOn: s.routineEveningOn !== false,
+    remindersSet: isoOr(s.remindersSet),
+    remindersAt: typeof s.remindersAt === 'string' && /^(\d\d:\d\d|-)\|(\d\d:\d\d|-)$/.test(s.remindersAt) ? s.remindersAt : null,
     outfit: typeof s.outfit === 'string' && OUTFITS.some(o => o.id === s.outfit) ? s.outfit : 'noeud',
     painMax: numOr(s.painMax, 2, 6, d.painMax, true), painMaxAt: isoOr(s.painMaxAt),
     noDoor: s.noDoor === true, doorChecked: s.doorChecked === true,
@@ -837,18 +840,36 @@ function canRows(n) {
 /* Fichier agenda (.ics) : un rappel répété chaque semaine aux jours et à l’heure choisis, à l’heure locale du téléphone.
    Toujours le même identifiant, avec un numéro de version qui monte : l’agenda remplace l’ancien rappel au lieu d’en ajouter un. */
 const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-/* Rappels de la routine : Dos calme chaque jour, le matin et le soir, aux heures choisies. */
+/* Rappels de la routine : Dos calme chaque jour, le matin et/ou le soir, aux heures choisies (null : pas de rappel).
+   Le titre reste discret sur l’écran verrouillé : rien sur le dos. */
+const APP_URL = 'https://polynelfe-del.github.io/chamboule/';
+function reminderTitle(slot) { return 'Chamboule : ta routine du ' + slot; }
+/* Ce qui a été programmé dans l’agenda, pour prévenir quand les heures changent ensuite. */
+function remindersKey(st) { return (st.routineMorningOn ? st.routineMorning : '-') + '|' + (st.routineEveningOn ? st.routineEvening : '-'); }
+function nextAt(time, now) {
+  const [hh, mm] = time.split(':').map(Number);
+  const d = new Date(now); d.setHours(hh, mm, 0, 0);
+  if (d <= now) d.setDate(d.getDate() + 1);
+  return d;
+}
+/* Lien Google Agenda : l’événement répété chaque jour s’ouvre prêt à enregistrer (Android). */
+function googleCalURL(slot, time, now = new Date(), tz) {
+  const local = d => '' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
+  const start = nextAt(time, now), end = new Date(start.getTime() + 10 * 60000);
+  const q = { action: 'TEMPLATE', text: reminderTitle(slot), dates: local(start) + '/' + local(end), recur: 'RRULE:FREQ=DAILY', details: 'Ta routine du ' + slot + ', 9 minutes : ' + APP_URL };
+  if (tz) q.ctz = tz;
+  return 'https://calendar.google.com/calendar/render?' + Object.entries(q).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&');
+}
 function routineICS(morning, evening, now = new Date()) {
   const local = d => '' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00';
   const utc = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   const ev = (slot, time) => {
-    const [hh, mm] = time.split(':').map(Number);
-    const start = new Date(now); start.setHours(hh, mm, 0, 0);
-    if (start <= now) start.setDate(start.getDate() + 1);
+    if (!time) return [];
+    const start = nextAt(time, now);
     return ['BEGIN:VEVENT', 'UID:chamboule-routine-' + slot + '@polynelfe-del.github.io', 'SEQUENCE:' + Math.floor(now.getTime() / 60000),
       'DTSTAMP:' + utc(now), 'DTSTART:' + local(start), 'DTEND:' + local(new Date(start.getTime() + 10 * 60000)), 'RRULE:FREQ=DAILY',
-      'SUMMARY:Dos calme du ' + slot, 'DESCRIPTION:Ta routine du ' + slot + ', 9 minutes',
-      'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Dos calme du ' + slot, 'TRIGGER:PT0S', 'END:VALARM', 'END:VEVENT'];
+      'SUMMARY:' + reminderTitle(slot), 'DESCRIPTION:Ta routine du ' + slot + ', 9 minutes', 'URL:' + APP_URL,
+      'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + reminderTitle(slot), 'TRIGGER:PT0S', 'END:VALARM', 'END:VEVENT'];
   };
   return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Chamboule Coach//FR', 'CALSCALE:GREGORIAN', ...ev('matin', morning), ...ev('soir', evening), 'END:VCALENDAR', ''].join('\r\n');
 }

@@ -113,6 +113,20 @@ async function step(label, fn) {
     await click('[data-action="info-close"]');
     if (!(await page.locator('text=ne remplace pas un avis médical').count())) throw new Error('avertissement médical absent');
   });
+  await step('cloche : rappels du matin et du soir', async () => {
+    await click('[data-action="reminders-open"]');
+    await has('#rt-matin', 'heure du matin');
+    await has('#rt-soir', 'heure du soir');
+    await page.fill('#rt-matin', '07:30');
+    await page.locator('#rt-matin').dispatchEvent('change');
+    await click('[data-action="rt-toggle"][data-slot="soir"]');
+    if (!(await page.locator('#rt-soir').isDisabled())) throw new Error('le rappel du soir ne se coupe pas');
+    const st = await page.evaluate(() => JSON.parse(localStorage.getItem('chamboule-coach.v1')).settings);
+    if (st.routineMorning !== '07:30' || st.routineEveningOn !== false) throw new Error('heures mal enregistrées : ' + JSON.stringify([st.routineMorning, st.routineEveningOn]));
+    await has('[data-action="routine-reminders"], [data-action="gcal"]', 'bouton pour programmer');
+    await click('[data-action="rem-back"]');
+    await has('.today', 'retour à l’accueil');
+  });
   await step('Dos calme écourté : écran honnête, routine pas cochée', async () => {
     await load(BUSY);
     await click('.routine [data-action="play"]');
