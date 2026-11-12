@@ -162,6 +162,11 @@ async function step(label, fn) {
 
   await browser.close();
   server.close();
-  if (problems.length) { console.error('\nProblèmes :\n- ' + problems.join('\n- ')); process.exit(1); }
+  if (problems.length) {
+    console.error('\nProblèmes :\n- ' + problems.join('\n- '));
+    // Sur GitHub, chaque problème devient aussi une annotation, lisible sans ouvrir le journal.
+    if (process.env.GITHUB_ACTIONS) for (const p of problems) console.log('::error title=Écrans::' + p.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A'));
+    process.exit(1);
+  }
   console.log('\nTous les écrans principaux s’affichent sans erreur.');
 })().catch(e => { console.error(e); process.exit(1); });
