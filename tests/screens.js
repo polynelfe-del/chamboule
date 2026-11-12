@@ -140,15 +140,11 @@ async function step(label, fn) {
           }
         }, { mode });
         await storagePage.goto(base);
-        await storagePage.locator('[data-action="reminders-open"]').click();
-        await storagePage.locator('#rt-matin').fill('07:30');
-        await storagePage.locator('#rt-matin').dispatchEvent('change');
+        await storagePage.locator('.today [data-action="bike-toggle"]').click();
         const warning = storagePage.locator('.storage-warning');
         await warning.waitFor({ state: 'visible' });
         assert.match(await warning.textContent(), mode === 'quota' ? /ne peut pas enregistrer/ : /est illisible/);
         if (mode === 'illisible') assert.equal(await storagePage.evaluate(() => localStorage.getItem('chamboule-coach.v1')), '{incomplet');
-        await storagePage.locator('[data-action="rem-back"]').click();
-        await warning.waitFor({ state: 'visible' });
         await storagePage.locator('.today [data-action="play"]').click();
         await storagePage.locator('#game-storage-warning').waitFor({ state: 'visible' });
       } finally {
