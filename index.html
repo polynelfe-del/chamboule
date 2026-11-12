@@ -2059,6 +2059,226 @@ function mascotSVG(mood, outfit) {
 /* Chamboule-tout : une pyramide de boîtes par série, une boîte par répétition parfaite. */
 const CAN_SVG = '<svg viewBox="0 0 20 26" preserveAspectRatio="none"><rect class="can-body" x="1" y="1.5" width="18" height="23" rx="3"/><rect class="can-band" x="1" y="9" width="18" height="8"/><path class="can-heart" d="M10 15.6 7.5 13.2a1.55 1.55 0 0 1 2.5-1.8 1.55 1.55 0 0 1 2.5 1.8z"/><rect class="can-rim" x="2" y="1" width="16" height="2.5" rx="1.2"/></svg>';
 
+const CHAMBOULE_PUSH = (() => {
+  const URL_PUSH = 'https://ivkbevrfmzdbvrsuwmtx.supabase.co/functions/v1/chamboule-push';
+  const TOKEN_KEY = 'chamboule-push-token-v1';
+  const TIMEOUT = 10000;
+  const EMPTY = { active: false, paired: false, morning: null, evening: null, zone: null };
+  const OFFLINE = 'Le service de notifications est injoignable. Vérifie ta connexion, puis réessaie.';
+  const NOT_READY = 'Chamboule n’est pas encore prêt pour les notifications. Recharge l’appli, puis réessaie.';
+
+  function failure(message, code) {
+    return Object.assign(new Error(message), { code });
+  }
+
+  function supported() {
+    try {
+      return !window.claude && window.isSecureContext === true && !!navigator.serviceWorker
+        && typeof window.PushManager === 'function'
+        && typeof window.Notification?.requestPermission === 'function';
+    } catch {
+      return false;
+    }
+  }
+
+  function permission() {
+    return supported() ? window.Notification.permission : 'unsupported';
+  }
+
+  function requirePermission() {
+    const value = permission();
+    if (value === 'unsupported') {
+      throw failure('Ouvre Chamboule dans Chrome sur ton téléphone pour activer les notifications.', 'unsupported');
+    }
+    if (value === 'denied') {
+      throw failure('Les notifications sont bloquées. Autorise-les pour Chamboule dans les paramètres de Chrome et du téléphone.', 'permission_denied');
+    }
+    return value;
+  }
+
+  function readToken() {
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      return typeof token === 'string' && /^[\w-]{43}$/.test(token) ? token : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function requireToken() {
+    const token = readToken();
+    if (!token) throw failure('Active d’abord les notifications sur ce téléphone.', 'not_paired');
+    return token;
+  }
+
+  function createToken() {
+    const bytes = window.crypto.getRandomValues(new Uint8Array(32));
+    const token = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    try {
+      localStorage.setItem(TOKEN_KEY, token);
+      if (readToken() === token) return token;
+    } catch {
+      // Keep the server untouched if the browser cannot remember this device.
+    }
+    throw failure('Chrome ne peut pas mémoriser ce téléphone. Rouvre Chamboule hors navigation privée.', 'storage_unavailable');
+  }
+
+  async function request(body) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT);
+    let response;
+    let result;
+    try {
+      response = await fetch(URL_PUSH, {
+        ...(body && { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+        cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error', signal: controller.signal
+      });
+      try { result = await response.json(); } catch (error) { if (controller.signal.aborted) throw error; }
+    } catch {
+      throw failure(OFFLINE, 'network');
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!response.ok) {
+      const code = typeof result?.code === 'string' ? result.code : 'service_unavailable';
+      const message = response.status < 500 && typeof result?.error === 'string' && result.error.length <= 240
+        ? result.error : 'Le service de notifications est momentanément indisponible. Réessaie dans un instant.';
+      throw failure(message, code);
+    }
+    if (!result || typeof result !== 'object') {
+      throw failure('Chamboule n’a pas reçu de confirmation du service de notifications. Réessaie.', 'invalid_response');
+    }
+    return result;
+  }
+
+  function withTimeout(promise) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(failure(NOT_READY, 'worker_not_ready')), TIMEOUT);
+      promise.then(resolve, reject).finally(() => clearTimeout(timer));
+    });
+  }
+
+  function ownScope(registration) {
+    return registration?.scope === new URL('./', window.location.href).href;
+  }
+
+  async function registration() {
+    try {
+      const serviceWorker = navigator.serviceWorker;
+      const existing = await withTimeout(serviceWorker.getRegistration());
+      if (ownScope(existing) && existing.active && existing.pushManager) return existing;
+      const ready = await withTimeout(serviceWorker.ready);
+      if (ownScope(ready) && ready.active && ready.pushManager) return ready;
+    } catch {
+      // A registration can fail when a page is embedded or the browser blocks workers.
+    }
+    throw failure(NOT_READY, 'worker_not_ready');
+  }
+
+  function applicationServerKey(value) {
+    try {
+      if (typeof value === 'string' && /^[\w-]{87}$/.test(value)) {
+        const key = Uint8Array.from(atob(value.replace(/-/g, '+').replace(/_/g, '/') + '='), char => char.charCodeAt(0));
+        if (key.length === 65 && key[0] === 4) return key;
+      }
+    } catch {
+      // An invalid public key is a service configuration error.
+    }
+    throw failure('Le service de notifications n’est pas prêt. Réessaie dans un instant.', 'invalid_key');
+  }
+
+  async function subscription(worker, key) {
+    try {
+      const current = await worker.pushManager.getSubscription();
+      if (current) {
+        const currentKey = new Uint8Array(current.options.applicationServerKey || 0);
+        if (currentKey.length === key.length && currentKey.every((value, index) => value === key[index])) return current;
+        await current.unsubscribe();
+      }
+      return await worker.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+    } catch {
+      requirePermission();
+      throw failure('Chrome n’a pas pu enregistrer ce téléphone. Vérifie ta connexion, puis réessaie.', 'subscription_failed');
+    }
+  }
+
+  function scheduleFields(schedule) {
+    return { zone: schedule.zone, morning: schedule.morning, evening: schedule.evening };
+  }
+
+  function settingsResponse(result) {
+    if (typeof result.active !== 'boolean' || typeof result.paired !== 'boolean') {
+      throw failure('Chamboule n’a pas reçu de confirmation de tes réglages. Réessaie.', 'invalid_response');
+    }
+    const { active, paired, morning = null, evening = null, zone = null } = result;
+    return { active, paired, morning, evening, zone };
+  }
+
+  async function status() {
+    const token = readToken();
+    if (!token) return { ...EMPTY };
+    const result = settingsResponse(await request({ action: 'status', token }));
+    if (!result.active) return result;
+    if (permission() !== 'granted') return { ...result, active: false };
+    const worker = await registration();
+    return (await worker.pushManager.getSubscription()) ? result : { ...result, active: false };
+  }
+
+  async function enable(code, schedule) {
+    const pairingCode = String(code || '').replace(/[\s-]+/g, '').toLowerCase();
+    const knownToken = readToken();
+    if (!knownToken && !pairingCode) throw failure('Saisis ton code d’activation.', 'pairing_required');
+    if (pairingCode && !/^[0-9a-f]{32}$/.test(pairingCode)) {
+      throw failure('Vérifie ton code d’activation. Il contient 32 caractères.', 'pairing_invalid');
+    }
+    const currentPermission = requirePermission();
+    let allowed = currentPermission;
+    if (currentPermission !== 'granted') {
+      // Start the native prompt directly in the click handler, before any network request.
+      try { allowed = await window.Notification.requestPermission(); } catch { allowed = permission(); }
+    }
+    if (allowed !== 'granted') {
+      requirePermission();
+      throw failure('Appuie de nouveau sur Activer, puis choisis Autoriser dans Chrome.', 'permission_required');
+    }
+    const token = knownToken || createToken();
+    const [worker, config] = await Promise.all([registration(), request()]);
+    const push = await subscription(worker, applicationServerKey(config.publicKey));
+    return settingsResponse(await request({
+      action: 'enable', token, ...(pairingCode && { code: pairingCode }), subscription: push.toJSON(), ...scheduleFields(schedule)
+    }));
+  }
+
+  async function save(schedule) {
+    return settingsResponse(await request({ action: 'save', token: requireToken(), ...scheduleFields(schedule) }));
+  }
+
+  async function disable() {
+    const result = settingsResponse(await request({ action: 'disable', token: requireToken() }));
+    if (!result.active && supported()) {
+      try {
+        const worker = await registration();
+        const push = await worker.pushManager.getSubscription();
+        await push?.unsubscribe();
+      } catch {
+        // The server already confirmed deactivation; the browser might already have removed it.
+      }
+    }
+    return result;
+  }
+
+  async function test() {
+    if (requirePermission() !== 'granted') throw failure('Active d’abord les notifications sur ce téléphone.', 'permission_required');
+    const result = await request({ action: 'test', token: requireToken() });
+    if (result.sent !== true) {
+      throw failure('Le service n’a pas confirmé l’envoi du test. Réessaie.', 'invalid_response');
+    }
+    return { sent: true };
+  }
+
+  return { supported, permission, hasToken: () => !!readToken(), status, enable, save, disable, test };
+})();
+
 /* Chamboule Coach : écrans, jeu et sauvegarde (tout ce qui touche à la page). */
 
 /* ---------- Utilitaires ---------- */
@@ -2096,6 +2316,13 @@ function persist() {
 let persistTimer = 0;
 function persistSoon() { clearTimeout(persistTimer); persistTimer = setTimeout(persist, 600); }
 
+function openReminderRoutine() {
+  if (ui.screen === 'game') { toast('Ta séance est déjà en cours.'); return; }
+  if (ui.screen === 'precheck' && ui.pre?.prog === 'calme') return;
+  ui.nextMsg = null;
+  openPrecheck('calme');
+}
+
 async function initStore() {
   const local = lsGet();
   if (local) state = normalize(local);
@@ -2103,7 +2330,19 @@ async function initStore() {
     // Appli du téléphone : on demande au système de ne pas effacer le stockage en cas de manque de place.
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then(p => p || navigator.storage.persist()).catch(() => {}); } catch {}
   }
-  renderScreen();
+  const url = new URL(window.location.href);
+  if (!window.claude && url.searchParams.get('ouvrir') === 'dos-calme') {
+    url.searchParams.delete('ouvrir');
+    window.history.replaceState(window.history.state, '', url.href);
+    openReminderRoutine();
+  } else {
+    renderScreen();
+  }
+  if (!window.claude && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data?.type === 'chamboule-open-routine') openReminderRoutine();
+    });
+  }
   const c = window.claude;
   if (!c || typeof c.use !== 'function') return;
   let db = null, user = null;
@@ -2318,7 +2557,7 @@ function homeHTML() {
   const shown = ui.todoAll ? todos : todos.slice(0, 2);
   const todoHTML = todos.length ? `<section class="card todo" aria-label="À faire aujourd’hui"><h2 class="section-title">À faire aujourd’hui</h2>${shown.join('')}${todos.length > 2 ? `<button class="link-btn" data-action="todo-all">${ui.todoAll ? 'Voir moins' : todos.length === 3 ? 'Voir la dernière' : `Voir les ${todos.length - 2} autres`}</button>` : ''}</section>` : '';
   const earned = BADGES.filter(b => state.badges[b.id]).length;
-  const remOk = !!state.settings.remindersSet;
+  const remOk = !!(pushUI.server?.active && (pushUI.server.morning || pushUI.server.evening));
   const gear = `<div class="top-btns"><button class="icon-btn${remOk ? '' : ' dot'}" data-action="reminders-open" aria-label="Rappels du matin et du soir${remOk ? '' : ', pas encore programmés'}">${ICON.bell}</button><button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button></div>`;
   const wkDone = (state.challenges || {})[weekKey(new Date())] || {};
   const chalWon = weekChallenges(new Date(), !state.settings.bike).filter(c => wkDone[c.id]).length;
@@ -2469,38 +2708,71 @@ function lifeHTML() {
     ${due ? '<div class="row-btns"><button class="btn primary" data-action="weekly-open">Faire le bilan de cette semaine</button></div>' : ''}
   </section>`;
 }
-/* ---------- Rappels du matin et du soir ----------
-   Une appli web sans serveur ne peut pas réveiller le téléphone à heure fixe une fois fermée :
-   le rappel est confié à l’agenda du téléphone, qui sonne chaque jour, même appli fermée. */
+/* ---------- Notifications du matin et du soir ---------- */
+const pushUI = { server: null, busy: false, error: '', message: '', code: '' };
 function fmtTime(t) { const [h, m] = t.split(':'); return `${Number(h)} h${m === '00' ? '' : ' ' + m}`; }
 function remindersSummary() {
-  const at = state.settings.remindersAt;
-  if (!state.settings.remindersSet || !at) return 'Pas encore programmés.';
-  const parts = at.split('|').map((t, i) => t === '-' ? '' : (i ? 'soir à ' : 'matin à ') + fmtTime(t)).filter(Boolean);
-  return parts.length ? 'Programmés : ' + parts.join(', ') + '.' : 'Aucun rappel programmé.';
+  const status = pushUI.server;
+  if (!status?.active) return 'Notifications pas encore activées sur cet appareil.';
+  const parts = [status.morning && 'matin à ' + fmtTime(status.morning), status.evening && 'soir à ' + fmtTime(status.evening)].filter(Boolean);
+  return parts.length ? 'Rappels enregistrés : ' + parts.join(', ') + '.' : 'Aucun horaire activé.';
 }
-function markReminders() {
-  state.settings.remindersSet = new Date().toISOString();
-  state.settings.remindersAt = remindersKey(state.settings);
-  persist();
-  if (ui.screen === 'rappels') renderScreen();
+function pushSchedule() {
+  const s = state.settings;
+  return { zone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris', morning: s.routineMorningOn ? s.routineMorning : null, evening: s.routineEveningOn ? s.routineEvening : null };
 }
-function phoneKind() {
+async function managePush(action) {
+  if (pushUI.busy || !CHAMBOULE_PUSH.supported()) return;
+  const code = pushUI.code;
+  if (action === 'enable' && !pushUI.server?.paired && !code.trim()) {
+    pushUI.error = 'Saisis le code d’activation pour associer ce téléphone.';
+    renderScreen({ still: true });
+    $('#chamboule-push-code')?.focus();
+    return;
+  }
+  pushUI.busy = true;
+  pushUI.error = pushUI.message = '';
+  if (ui.screen === 'rappels') renderScreen({ still: true });
   try {
-    const ua = navigator.userAgent || '';
-    if (/Android/i.test(ua)) return 'android';
-    if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
-  } catch {}
-  return 'autre';
+    if (action === 'status') pushUI.server = await CHAMBOULE_PUSH.status();
+    if (action === 'enable') {
+      pushUI.server = await CHAMBOULE_PUSH.enable(code, pushSchedule());
+      pushUI.code = '';
+      pushUI.message = 'Notifications activées. Tu peux envoyer une notification de test.';
+    }
+    if (action === 'save') {
+      pushUI.server = await CHAMBOULE_PUSH.save(pushSchedule());
+      pushUI.message = 'Horaires enregistrés.';
+    }
+    if (action === 'disable') {
+      pushUI.server = await CHAMBOULE_PUSH.disable();
+      pushUI.message = 'Notifications désactivées sur ce téléphone.';
+    }
+    if (action === 'test') {
+      await CHAMBOULE_PUSH.test();
+      pushUI.message = 'Test envoyé. Vérifie le panneau des notifications de ton téléphone.';
+    }
+  } catch (err) {
+    pushUI.error = err instanceof Error ? err.message : 'Impossible de contacter le service de notifications. Réessaie.';
+  } finally {
+    pushUI.busy = false;
+    if (ui.screen === 'rappels') renderScreen({ still: true });
+    else {
+      const bell = app.querySelector('.top-btns [data-action="reminders-open"]');
+      if (bell) {
+        const active = !!(pushUI.server?.active && (pushUI.server.morning || pushUI.server.evening));
+        bell.classList.toggle('dot', !active);
+        bell.setAttribute('aria-label', 'Rappels du matin et du soir' + (active ? '' : ', pas encore programmés'));
+      }
+    }
+  }
 }
 function rappelsHTML() {
-  const s = state.settings, kind = phoneKind();
+  const s = state.settings, status = pushUI.server, supported = CHAMBOULE_PUSH.supported();
   const slots = [['matin', 'Matin', 'routineMorning', 'routineMorningOn', 'rt-matin', 'Au réveil, dans ton lit si tu veux.'], ['soir', 'Soir', 'routineEvening', 'routineEveningOn', 'rt-soir', 'Pour détendre le dos avant de dormir.']];
-  const any = s.routineMorningOn || s.routineEveningOn;
-  const changed = s.remindersSet && s.remindersAt !== remindersKey(s);
-  let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
-  const gcal = slots.filter(x => s[x[3]]).map(x => `<a class="btn ${kind === 'android' ? 'primary big' : 'ghost'}" href="${esc(googleCalURL(x[0], s[x[2]], new Date(), tz))}" target="_blank" rel="noopener" data-action="gcal">${ICON.bell} Rappel du ${x[0]} dans Google Agenda</a>`).join('');
-  const ics = canSave() ? `<button class="btn ${kind === 'android' ? 'ghost' : 'primary big'}" data-action="routine-reminders" ${any ? '' : 'disabled'}>${ICON.bell} ${kind === 'android' ? 'Autre agenda : fichier .ics' : 'Programmer mes rappels'}</button>` : '';
+  const schedule = pushSchedule(), permission = CHAMBOULE_PUSH.permission();
+  const changed = status?.active && (status.morning !== schedule.morning || status.evening !== schedule.evening || status.zone !== schedule.zone);
+  const busy = pushUI.busy ? ' disabled' : '';
   return `<main class="page plain">
     <header class="sub-top">
       <button class="icon-btn" data-action="rem-back" aria-label="Retour">${ICON.back}</button>
@@ -2510,20 +2782,28 @@ function rappelsHTML() {
       <h2 class="section-title">Tes heures</h2>
       ${slots.map(([slot, label, key, on, id, hint]) => `<div class="set-row rem-row${s[on] ? '' : ' off'}">
         <div><b>${label}</b><small>${hint}</small></div>
-        <div class="rem-ctl"><input type="time" id="${id}" class="time-in" value="${esc(s[key])}" aria-label="Heure du rappel du ${slot}" ${s[on] ? '' : 'disabled'}><button class="toggle" role="switch" aria-checked="${s[on]}" aria-label="Rappel du ${slot}" data-action="rt-toggle" data-slot="${slot}"></button></div>
+        <div class="rem-ctl"><input type="time" id="${id}" class="time-in" value="${esc(s[key])}" aria-label="Heure du rappel du ${slot}" ${s[on] ? busy : ' disabled'}><button class="toggle" role="switch" aria-checked="${s[on]}" aria-label="Rappel du ${slot}" data-action="rt-toggle" data-slot="${slot}"${busy}></button></div>
       </div>`).join('')}
     </section>
-    ${changed ? '<div class="notice warn"><b>Tes heures ont changé.</b><span>Programme de nouveau tes rappels pour que ton téléphone suive.</span></div>'
-      : s.remindersSet ? `<div class="notice good"><b>${esc(remindersSummary())}</b><span>Ton téléphone te prévient chaque jour à ces heures.</span></div>` : ''}
     <section class="card set-card" aria-label="Programmer les rappels">
-      <h2 class="section-title">Programmer sur ton téléphone</h2>
-      <p class="muted">Ton téléphone te prévient chaque jour à ces heures, même appli fermée : le rappel est confié à son agenda. Le titre reste discret : « Chamboule : ta routine du matin ».</p>
-      ${any ? '' : '<p class="muted">Active au moins un rappel.</p>'}
-      ${kind === 'android' ? gcal + ics : ics + gcal}
-      <p class="muted">${kind === 'android' ? 'Google Agenda s’ouvre avec le rappel prêt : touche Enregistrer, une fois pour le matin, une fois pour le soir. Choisis une notification « au moment de l’événement ».' : kind === 'ios' ? 'Calendrier s’ouvre : touche « Ajouter tout ». Les rappels sonnent à l’heure pile. Si tu utilises Google Agenda, prends plutôt les liens Google.' : 'Ouvre le fichier avec ton agenda, ou utilise les liens Google Agenda.'}</p>
-      <p class="muted">Autre solution, toute simple : deux alarmes dans l’Horloge du téléphone, aux mêmes heures.</p>
+      <h2 class="section-title">Notifications Chamboule</h2>
+      <p class="muted">Chamboule t’envoie les rappels même quand l’appli est fermée. Touche la notification pour ouvrir Dos calme.</p>
+      ${!supported ? '<p class="muted">Pour les activer sur ton Xiaomi, ouvre la version téléphone de Chamboule dans Chrome.</p>' : `
+        ${pushUI.busy ? '<p role="status">Un instant…</p>' : ''}
+        ${pushUI.error ? '<p class="notice warn" role="alert">' + esc(pushUI.error) + '</p>' : ''}
+        ${pushUI.message ? '<p class="notice good" role="status">' + esc(pushUI.message) + '</p>' : ''}
+        ${status?.active && permission === 'granted' ? `
+          <p class="muted">${esc(remindersSummary())}</p>
+          ${changed ? '<p class="muted">Enregistre pour appliquer les nouveaux horaires.</p>' : ''}
+          <div class="row-btns"><button class="btn primary" data-action="push-save"${changed ? busy : ' disabled'}>Enregistrer les horaires</button>
+          <button class="btn ghost" data-action="push-test"${busy}>Envoyer un test</button>
+          <button class="btn ghost" data-action="push-disable"${busy}>Désactiver les notifications</button></div>` : `
+          ${permission === 'denied' ? '<p class="notice warn">Les notifications sont bloquées. Autorise-les dans les réglages de Chrome pour Chamboule, puis reviens ici.</p>' : ''}
+          ${status?.paired ? '' : `<div class="set-row"><label for="chamboule-push-code"><b>Code d’activation</b><small>À saisir une seule fois sur ce téléphone.</small></label>
+          <input type="password" class="time-in" id="chamboule-push-code" maxlength="64" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(pushUI.code)}"${busy}></div>`}
+          <button class="btn primary big" data-action="push-enable"${permission === 'denied' ? ' disabled' : busy}>${ICON.bell} Activer les notifications</button>
+          ${status?.active ? `<button class="btn ghost" data-action="push-disable"${busy}>Désactiver les notifications</button>` : ''}`}`}
     </section>
-    <p class="muted center-note">Pour changer d’heure plus tard : reviens ici et reprogramme. ${kind === 'android' ? 'Dans Google Agenda, supprime ensuite l’ancien rappel.' : 'Sur iPhone, le nouveau rappel remplace l’ancien ; un rappel coupé ici est à supprimer dans Calendrier.'}</p>
   </main>`;
 }
 /* Bilan de la semaine : un écran, quatre questions, sans chiffre de douleur. */
@@ -4108,21 +4388,19 @@ const ACTIONS = {
     state.settings.reminderDays = days.includes(d) ? days.filter(x => x !== d) : days.concat(d).sort((a, c) => a - c);
     persist(); renderScreen({ still: true });
   },
-  'routine-reminders'() {
-    const s = state.settings;
-    if (!s.routineMorningOn && !s.routineEveningOn) return;
-    saveFile('chamboule-rappels-routine.ics', routineICS(s.routineMorningOn ? s.routineMorning : null, s.routineEveningOn ? s.routineEvening : null), 'text/calendar', true)
-      .then(() => { markReminders(); toast('Ajoute les rappels à ton agenda quand le téléphone te le propose.'); })
-      .catch(e => { if (!e || e.code !== 'declined') toast('Impossible de créer les rappels ici. Utilise les liens Google Agenda ou l’Horloge.'); });
+  'reminders-open'() {
+    ui.remBack = ui.screen === 'settings' ? 'settings' : 'home'; ui.screen = 'rappels'; renderScreen(); window.scrollTo(0, 0);
+    if (CHAMBOULE_PUSH.hasToken()) managePush('status');
   },
-  'reminders-open'() { ui.remBack = ui.screen === 'settings' ? 'settings' : 'home'; ui.screen = 'rappels'; renderScreen(); window.scrollTo(0, 0); },
-  'rem-back'() { ui.screen = ui.remBack === 'settings' ? 'settings' : 'home'; renderScreen(); window.scrollTo(0, 0); },
+  'rem-back'() { pushUI.code = ''; ui.screen = ui.remBack === 'settings' ? 'settings' : 'home'; renderScreen(); window.scrollTo(0, 0); },
+  'push-enable'() { managePush('enable'); },
+  'push-save'() { managePush('save'); },
+  'push-test'() { managePush('test'); },
+  'push-disable'() { managePush('disable'); },
   'rt-toggle'(b) {
     const k = b.dataset.slot === 'matin' ? 'routineMorningOn' : 'routineEveningOn';
     state.settings[k] = !state.settings[k]; persist(); renderScreen();
   },
-  /* Le lien s’ouvre dans Google Agenda ; on note juste que c’est programmé (sans redessiner pendant le clic). */
-  gcal() { setTimeout(() => { markReminders(); if (ui.screen === 'rappels') renderScreen(); }, 400); },
   reminders() {
     const s = state.settings; if (!s.reminderDays.length) return;
     saveFile('chamboule-rappels.ics', reminderICS(s.reminderDays, s.reminderTime), 'text/calendar', true)
@@ -4207,6 +4485,9 @@ app.addEventListener('click', e => {
   const fn = ACTIONS[b.dataset.action];
   if (fn) fn(b, e);
 });
+app.addEventListener('input', e => {
+  if (e.target.id === 'chamboule-push-code') pushUI.code = e.target.value;
+});
 app.addEventListener('change', e => {
   if (e.target.id === 'rt-matin' || e.target.id === 'rt-soir') {
     if (/^([01]\d|2[0-3]):[0-5]\d$/.test(e.target.value)) {
@@ -4279,6 +4560,7 @@ app.addEventListener('focusin', e => { const h = e.target.closest && e.target.cl
 app.addEventListener('focusout', e => { if (e.target.closest && e.target.closest('[data-tip]')) hideTip(); });
 
 initStore();
+if (CHAMBOULE_PUSH.hasToken()) managePush('status');
 })();
 </script>
 <script>

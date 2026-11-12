@@ -38,12 +38,24 @@ OPTION B : L'APPLI DE CE DOSSIER SUR GITHUB PAGES (gratuit, marche hors ligne)
    de stockage) : il contient ton suivi de santé. Puis, dans l'appli du téléphone :
    Réglages > Sauvegarde dans un fichier > Importer.
 
-4. LES MISES À JOUR
+4. ACTIVER LES NOTIFICATIONS SUR ANDROID
+   Ouvre Chamboule depuis Chrome ou son icône, puis touche la cloche.
+   Saisis le code d’activation privé et touche « Activer les notifications »,
+   puis « Autoriser » quand Chrome le demande. Les deux heures sont modifiables
+   depuis la cloche : touche « Enregistrer les horaires » pour les appliquer.
+   « Envoyer un test » envoie une notification Chamboule, sans utiliser l’agenda.
+   Pour vérifier l’écran verrouillé, règle temporairement une heure dans quelques
+   minutes, enregistre, ferme l’appli, puis verrouille ton téléphone.
+   Si d’anciens événements Chamboule existent dans ton agenda, supprime-les pour
+   ne recevoir que les notifications de l’appli.
+
+5. LES MISES À JOUR
    Le code est rangé dans source/ :
        styles.css      l'apparence (couleurs, polices, mise en page)
        logic.js        les règles du jeu : exercices, programmes, points, étoiles, défis, tenues
        drawings.js     les dessins : exercices, icônes, Chouquette, boîtes
        app.js          les écrans, la séance de jeu et la sauvegarde
+       push-client.js  les notifications du matin et du soir
        page-head.html / page-body.html   le début de la page
        privacy.js      les mots qui ne doivent jamais apparaître dans la page (rangés sous forme d'empreintes)
        fonts.js        les polices, hébergées avec l'appli (fichiers dans fonts/, licence libre SIL OFL)
@@ -52,7 +64,7 @@ OPTION B : L'APPLI DE CE DOSSIER SUR GITHUB PAGES (gratuit, marche hors ligne)
 
    Après une modification, depuis la racine du dépôt :
        node source/build.js
-   Le script lance d'abord tous les tests : si un seul échoue, rien n'est construit.
+   Le script vérifie d'abord la logique, puis vérifie les notifications après la construction.
    Il assemble ensuite la page (build/chamboule-coach.html, pour la version Claude)
    et l'appli du téléphone (index.html, sw.js, icônes, à la racine).
    Puis :

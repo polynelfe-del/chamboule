@@ -2,6 +2,7 @@
 // Lancé seulement sur GitHub (.github/workflows/tests.yml), où Playwright est installé pour l’occasion :
 //   npm install --no-save --no-package-lock playwright@1.48.2 && npx playwright install --with-deps chromium
 //   node tests/screens.js
+const assert = require('node:assert/strict');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -123,9 +124,105 @@ async function step(label, fn) {
     if (!(await page.locator('#rt-soir').isDisabled())) throw new Error('le rappel du soir ne se coupe pas');
     const st = await page.evaluate(() => JSON.parse(localStorage.getItem('chamboule-coach.v1')).settings);
     if (st.routineMorning !== '07:30' || st.routineEveningOn !== false) throw new Error('heures mal enregistrées : ' + JSON.stringify([st.routineMorning, st.routineEveningOn]));
-    await has('[data-action="routine-reminders"], [data-action="gcal"]', 'bouton pour programmer');
+    await has('text=Notifications Chamboule', 'notifications dans la cloche');
+    if (await page.locator('.page a[href*="calendar.google.com"]').count()) throw new Error('la cloche utilise encore Google Agenda');
     await click('[data-action="rem-back"]');
     await has('.today', 'retour à l’accueil');
+  });
+  await step('notifications : activation, horaires, essai et ouverture de Dos calme', async () => {
+    const pushPage = await browser.newPage({
+      viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true,
+      locale: 'fr-FR', timezoneId: 'Europe/Paris', serviceWorkers: 'block'
+    });
+    const code = '0123456789abcdef0123456789abcdef';
+    const keyBytes = Buffer.alloc(65, 1);
+    keyBytes[0] = 4;
+    const publicKey = keyBytes.toString('base64url');
+    const endpoint = 'https://fcm.googleapis.com/fcm/send/test-chamboule';
+    const calls = [];
+    let saved = { active: false, paired: false, morning: null, evening: null, zone: null };
+    try {
+      pushPage.on('pageerror', error => problems.push('écran notifications : ' + error.message));
+      await pushPage.addInitScript(({ endpoint }) => {
+        Object.defineProperty(window, 'Notification', { value: {
+          get permission() { return sessionStorage.getItem('mock-notification') || 'default'; },
+          async requestPermission() { sessionStorage.setItem('mock-notification', 'granted'); return 'granted'; }
+        } });
+        Object.defineProperty(window, 'PushManager', { value: function PushManager() {} });
+        const subscription = {
+          get options() { return { applicationServerKey: Uint8Array.from(JSON.parse(sessionStorage.getItem('mock-push-key'))) }; },
+          toJSON: () => ({ endpoint, keys: { p256dh: 'fake-public-key', auth: 'fake-auth-key' } }),
+          async unsubscribe() { sessionStorage.removeItem('mock-push-key'); return true; }
+        };
+        const worker = {
+          scope: new URL('./', location.href).href, active: true,
+          pushManager: {
+            async getSubscription() { return sessionStorage.getItem('mock-push-key') === null ? null : subscription; },
+            async subscribe(options) {
+              if (!options.userVisibleOnly) throw new Error('L’abonnement doit afficher ses notifications.');
+              sessionStorage.setItem('mock-push-key', JSON.stringify([...options.applicationServerKey]));
+              return subscription;
+            }
+          }
+        };
+        Object.defineProperty(navigator.serviceWorker, 'getRegistration', { value: async () => worker });
+      }, { endpoint });
+      await pushPage.route('**/functions/v1/chamboule-push', async route => {
+        const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+        const request = route.request();
+        if (request.method() === 'OPTIONS') { await route.fulfill({ status: 204, headers }); return; }
+        if (request.method() === 'GET') { await route.fulfill({ json: { publicKey }, headers }); return; }
+        const data = request.postDataJSON();
+        calls.push(data);
+        if (data.action === 'enable' || data.action === 'save') {
+          saved = { active: true, paired: true, morning: data.morning, evening: data.evening, zone: data.zone };
+        }
+        if (data.action === 'disable') saved = { ...saved, active: false };
+        await route.fulfill({ json: data.action === 'test' ? { sent: true } : saved, headers });
+      });
+
+      const act = action => pushPage.locator(`[data-action="${action}"]`).first();
+      await pushPage.goto(base);
+      await act('reminders-open').click();
+      await act('push-enable').click();
+      await pushPage.getByRole('alert').filter({ hasText: 'Saisis le code d’activation' }).waitFor();
+      assert.equal(calls.length, 0);
+      await pushPage.locator('#chamboule-push-code').fill(code);
+      await act('push-enable').click();
+      await pushPage.getByText('Notifications activées.', { exact: false }).waitFor();
+      const [enable] = calls;
+      assert.equal(enable.action, 'enable');
+      assert.equal(enable.code, code);
+      assert.match(enable.token, /^[\w-]{43}$/);
+      assert.equal(enable.subscription.endpoint, endpoint);
+      assert.deepEqual([enable.morning, enable.evening, enable.zone], ['08:00', '21:00', 'Europe/Paris']);
+      assert.deepEqual(await pushPage.evaluate(() => JSON.parse(sessionStorage.getItem('mock-push-key'))), [...keyBytes]);
+
+      await pushPage.locator('#rt-matin').fill('07:30');
+      await pushPage.locator('#rt-matin').dispatchEvent('change');
+      await pushPage.locator('[data-action="rt-toggle"][data-slot="soir"]').click();
+      await act('push-save').click();
+      await pushPage.getByText('Horaires enregistrés.', { exact: true }).waitFor();
+      assert.deepEqual(calls.at(-1), { action: 'save', token: enable.token, morning: '07:30', evening: null, zone: 'Europe/Paris' });
+
+      await pushPage.reload();
+      await act('reminders-open').click();
+      await pushPage.getByText('Rappels enregistrés : matin à 7 h 30.', { exact: true }).waitFor();
+      await act('push-test').click();
+      await pushPage.getByText('Test envoyé.', { exact: false }).waitFor();
+      assert.deepEqual(calls.at(-1), { action: 'test', token: enable.token });
+      await act('push-disable').click();
+      await pushPage.getByText('Notifications désactivées sur ce téléphone.', { exact: true }).waitFor();
+      assert.deepEqual(calls.at(-1), { action: 'disable', token: enable.token });
+      assert.equal(await pushPage.evaluate(() => sessionStorage.getItem('mock-push-key')), null);
+
+      await pushPage.goto(base + '?ouvrir=dos-calme');
+      await pushPage.getByRole('heading', { name: 'Avant de jouer' }).waitFor();
+      assert.equal(await pushPage.locator('main .eyebrow').first().innerText(), 'Dos calme');
+      assert.equal(new URL(pushPage.url()).searchParams.has('ouvrir'), false);
+    } finally {
+      await pushPage.close();
+    }
   });
   await step('Dos calme écourté : écran honnête, routine pas cochée', async () => {
     await load(BUSY);

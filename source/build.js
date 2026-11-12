@@ -21,7 +21,7 @@ console.log('    ' + counts);
 
 /* 2. Assemblage de la page en un seul fichier */
 console.log('2/3 Assemblage de la page…');
-const script = ['logic.js', 'drawings.js', 'app.js'].map(read).join('\n');
+const script = ['logic.js', 'drawings.js', 'push-client.js', 'app.js'].map(read).join('\n');
 const scriptBlock = `(() => {\n'use strict';\n\n${script}})();\n`;
 try { new vm.Script(scriptBlock, { filename: 'chamboule-coach.js' }); } catch (e) { fail('Erreur de syntaxe dans le code : ' + e.message); }
 if (/<\/script/i.test(scriptBlock)) fail('Le code contient « </script> », ce qui casserait la page.');
@@ -37,3 +37,6 @@ console.log(`    build/chamboule-coach.html : version Claude (${Math.round(kb)} 
 /* 3. Appli du téléphone (racine du dépôt, publiée par GitHub Pages) */
 console.log('3/3 Appli du téléphone…');
 require('./build-phone-app.js');
+const push = spawnSync(process.execPath, ['--test', path.join(ROOT, 'tests', 'push-client.test.js'), path.join(ROOT, 'tests', 'push-worker.test.js')], { encoding: 'utf8' });
+if (push.status !== 0) { console.error(push.stdout, push.stderr); fail('Les tests de notifications échouent.'); }
+console.log('    Notifications : ' + (push.stdout || '').split('\n').filter(l => /^ℹ (tests|pass|fail) /.test(l)).map(l => l.slice(2)).join(' · '));
