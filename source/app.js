@@ -341,7 +341,7 @@ function homeHTML() {
     <header class="top">
       <div class="brand">
         <h1>Chamboule<br>Coach<span class="spark-txt" aria-hidden="true">✦</span></h1>
-        <p>Ton dos, en douceur, un jour après l’autre.</p>
+        <p>Ton dos, en douceur.</p>
       </div>
       ${gear}
     </header>
@@ -387,8 +387,8 @@ function routineCardHTML() {
   return `<section class="card routine" aria-label="Routine du jour : Dos calme matin et soir">
     <div class="routine-head"><p class="eyebrow">Routine du jour · Dos calme</p><span class="est">≈ ${estMin(state, PROGRAMS.calme)} min</span></div>
     <div class="slots">${slot('matin', 'Matin', ICON.sun)}${slot('soir', 'Soir', ICON.moon)}</div>
-    ${r[r.now] ? '' : `<button class="btn ghost big" data-action="play" data-prog="calme">${ICON.play} Dos calme du ${r.now}</button>`}
-    <p class="muted routine-meta">Cette semaine : ${w.matins} matin${w.matins > 1 ? 's' : ''}, ${w.soirs} soir${w.soirs > 1 ? 's' : ''}.${r.now === 'matin' && !r.matin ? ' Au réveil, possible dans ton lit.' : ''} <button class="link-btn inline" data-action="info" data-info="gestes">Descendre au sol sans forcer</button></p>
+    ${r[r.now] ? '' : `<button class="btn ghost" data-action="play" data-prog="calme">${ICON.play} Dos calme du ${r.now}</button>`}
+    <p class="muted routine-meta">Cette semaine : ${w.matins} matin${w.matins > 1 ? 's' : ''}, ${w.soirs} soir${w.soirs > 1 ? 's' : ''}.${r.now === 'matin' && !r.matin ? ' Au réveil, possible dans ton lit.' : ''}</p>
   </section>`;
 }
 /* Progrès : ce que ton dos t’a laissé faire, d’après le bilan de la semaine. */
@@ -495,10 +495,10 @@ function todayCardHTML() {
   return `<section class="card today" aria-label="Séance du jour">
     <p class="eyebrow">${sug.rest ? 'Si tu en as envie' : `Séance du jour · +${SUGGEST_BONUS} XP bonus`}</p>
     ${buddyHTML(sug.why, sug.prog === 'difficile' || sug.rest ? 'calm' : 'happy', 'sm')}
-    <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span>${bikeChipHTML(p.id)}</div>
+    <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span></div>
     ${ui.stripOpen ? `<div class="ex-strip">${strip}</div>` : ''}
     <button class="btn play big" data-action="play" data-prog="${p.id}">${ICON.play} Jouer</button>
-    <div class="today-links"><button class="link-btn" data-action="strip-toggle" aria-expanded="${!!ui.stripOpen}">${ui.stripOpen ? 'Masquer les exercices' : 'Voir les exercices'}</button>${['calme', 'difficile', 'relax'].includes(p.id) || !routineToday(state)[routineToday(state).now] ? '' : '<button class="link-btn" data-action="play" data-prog="calme">Dos qui fait mal : Dos calme</button>'}</div>
+    <div class="today-links"><button class="link-btn" data-action="strip-toggle" aria-expanded="${!!ui.stripOpen}">${ui.stripOpen ? 'Masquer les exercices' : 'Voir les exercices'}</button>${bikeChipHTML(p.id)}${['calme', 'difficile', 'relax'].includes(p.id) || !routineToday(state)[routineToday(state).now] ? '' : '<button class="link-btn" data-action="play" data-prog="calme">Dos qui fait mal : Dos calme</button>'}</div>
   </section>`;
 }
 function ticketHTML(id) {

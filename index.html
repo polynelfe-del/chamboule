@@ -634,7 +634,7 @@ button{font:inherit;color:inherit}
 .known .row-btns{margin-top:-4px}
 .routine-meta{font-size:14px}
 .link-btn.inline{padding:0;min-height:0;display:inline;font-size:14px;text-align:left}
-.today-links{display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 12px;margin-top:-6px}
+.today-links{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 12px;margin-top:-6px}
 /* Cloche des rappels, à côté des réglages */
 .top-btns{display:flex;gap:8px;flex:none}
 .icon-btn.dot{position:relative}
@@ -1240,7 +1240,7 @@ function suggestToday(s, now = new Date()) {
   if (recent && cat === 'sensible') return { prog: 'calme', why: 'Ton dos était un peu sensible la dernière fois : place aux mouvements doux.' };
   const dayBefore = n => { const d = new Date(now); d.setDate(d.getDate() - n); return dayKey(d); };
   if ([1, 2, 3].every(n => done.some(h => h.prog !== ROUTINE_PROG && dayKey(h.d) === dayBefore(n)))) {
-    return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : aujourd’hui, je te conseille le repos. La balade du chien suffit ; si tu as envie de bouger, un peu de Vélo seul, et si le dos est raide, quelques minutes de Dos calme.' };
+    return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : repos aujourd’hui. La balade du chien suffit, et Dos calme si le dos est raide.' };
   }
   /* Cardio : si tu as un vélo et que tu n’as pas pédalé depuis 4 jours, Chouquette propose le Vélo seul. */
   const rode = h => (h.veloMin || 0) > 0;
@@ -1250,14 +1250,14 @@ function suggestToday(s, now = new Date()) {
   /* Reprise dos, la routine du kiné, revient au moins tous les 3 jours. */
   const lastDos = done.find(h => h.prog === 'dos');
   if (!lastDos || now.getTime() - Date.parse(lastDos.d) >= 3 * 86400000) {
-    return { prog: 'dos', why: (s.settings.bike ? 'Ta routine de base : respiration, bras-jambe opposés, pont et vélo.' : 'Ta routine de base : respiration, bras-jambe opposés et pont, sans le vélo.') + ' Elle revient au moins tous les 3 jours.' };
+    return { prog: 'dos', why: 'Ta routine du kiné : elle revient au moins tous les 3 jours.' };
   }
   /* Dos du milieu n’est proposé qu’une fois l’avis médical déclaré. */
   const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : [], s.settings.calisUnlocked ? ['calis'] : []);
   const lastDone = id => { const h = done.find(x => x.prog === id); return h ? new Date(h.d).getTime() : 0; };
   const prog = pool.slice().sort((a, b) => lastDone(a) - lastDone(b))[0];
   const why = {
-    dos: s.settings.bike ? 'Ta routine de base : respiration, bras-jambe opposés, pont et vélo.' : 'Ta routine de base : respiration, bras-jambe opposés et pont, sans le vélo.',
+    dos: 'Ta routine du kiné, tout en douceur.',
     fessiers: 'Au tour des fessiers, sans charger le dos.',
     milieu: 'Un peu de mobilité et de gainage pour le dos du milieu.',
     haut: 'Au tour du haut du corps : bras, épaules et haut du dos, debout.',
@@ -2402,7 +2402,7 @@ function homeHTML() {
     <header class="top">
       <div class="brand">
         <h1>Chamboule<br>Coach<span class="spark-txt" aria-hidden="true">✦</span></h1>
-        <p>Ton dos, en douceur, un jour après l’autre.</p>
+        <p>Ton dos, en douceur.</p>
       </div>
       ${gear}
     </header>
@@ -2448,8 +2448,8 @@ function routineCardHTML() {
   return `<section class="card routine" aria-label="Routine du jour : Dos calme matin et soir">
     <div class="routine-head"><p class="eyebrow">Routine du jour · Dos calme</p><span class="est">≈ ${estMin(state, PROGRAMS.calme)} min</span></div>
     <div class="slots">${slot('matin', 'Matin', ICON.sun)}${slot('soir', 'Soir', ICON.moon)}</div>
-    ${r[r.now] ? '' : `<button class="btn ghost big" data-action="play" data-prog="calme">${ICON.play} Dos calme du ${r.now}</button>`}
-    <p class="muted routine-meta">Cette semaine : ${w.matins} matin${w.matins > 1 ? 's' : ''}, ${w.soirs} soir${w.soirs > 1 ? 's' : ''}.${r.now === 'matin' && !r.matin ? ' Au réveil, possible dans ton lit.' : ''} <button class="link-btn inline" data-action="info" data-info="gestes">Descendre au sol sans forcer</button></p>
+    ${r[r.now] ? '' : `<button class="btn ghost" data-action="play" data-prog="calme">${ICON.play} Dos calme du ${r.now}</button>`}
+    <p class="muted routine-meta">Cette semaine : ${w.matins} matin${w.matins > 1 ? 's' : ''}, ${w.soirs} soir${w.soirs > 1 ? 's' : ''}.${r.now === 'matin' && !r.matin ? ' Au réveil, possible dans ton lit.' : ''}</p>
   </section>`;
 }
 /* Progrès : ce que ton dos t’a laissé faire, d’après le bilan de la semaine. */
@@ -2556,10 +2556,10 @@ function todayCardHTML() {
   return `<section class="card today" aria-label="Séance du jour">
     <p class="eyebrow">${sug.rest ? 'Si tu en as envie' : `Séance du jour · +${SUGGEST_BONUS} XP bonus`}</p>
     ${buddyHTML(sug.why, sug.prog === 'difficile' || sug.rest ? 'calm' : 'happy', 'sm')}
-    <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span>${bikeChipHTML(p.id)}</div>
+    <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span></div>
     ${ui.stripOpen ? `<div class="ex-strip">${strip}</div>` : ''}
     <button class="btn play big" data-action="play" data-prog="${p.id}">${ICON.play} Jouer</button>
-    <div class="today-links"><button class="link-btn" data-action="strip-toggle" aria-expanded="${!!ui.stripOpen}">${ui.stripOpen ? 'Masquer les exercices' : 'Voir les exercices'}</button>${['calme', 'difficile', 'relax'].includes(p.id) || !routineToday(state)[routineToday(state).now] ? '' : '<button class="link-btn" data-action="play" data-prog="calme">Dos qui fait mal : Dos calme</button>'}</div>
+    <div class="today-links"><button class="link-btn" data-action="strip-toggle" aria-expanded="${!!ui.stripOpen}">${ui.stripOpen ? 'Masquer les exercices' : 'Voir les exercices'}</button>${bikeChipHTML(p.id)}${['calme', 'difficile', 'relax'].includes(p.id) || !routineToday(state)[routineToday(state).now] ? '' : '<button class="link-btn" data-action="play" data-prog="calme">Dos qui fait mal : Dos calme</button>'}</div>
   </section>`;
 }
 function ticketHTML(id) {

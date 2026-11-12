@@ -585,7 +585,7 @@ function suggestToday(s, now = new Date()) {
   if (recent && cat === 'sensible') return { prog: 'calme', why: 'Ton dos était un peu sensible la dernière fois : place aux mouvements doux.' };
   const dayBefore = n => { const d = new Date(now); d.setDate(d.getDate() - n); return dayKey(d); };
   if ([1, 2, 3].every(n => done.some(h => h.prog !== ROUTINE_PROG && dayKey(h.d) === dayBefore(n)))) {
-    return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : aujourd’hui, je te conseille le repos. La balade du chien suffit ; si tu as envie de bouger, un peu de Vélo seul, et si le dos est raide, quelques minutes de Dos calme.' };
+    return { prog: 'calme', rest: true, why: 'Trois jours d’affilée : repos aujourd’hui. La balade du chien suffit, et Dos calme si le dos est raide.' };
   }
   /* Cardio : si tu as un vélo et que tu n’as pas pédalé depuis 4 jours, Chouquette propose le Vélo seul. */
   const rode = h => (h.veloMin || 0) > 0;
@@ -595,14 +595,14 @@ function suggestToday(s, now = new Date()) {
   /* Reprise dos, la routine du kiné, revient au moins tous les 3 jours. */
   const lastDos = done.find(h => h.prog === 'dos');
   if (!lastDos || now.getTime() - Date.parse(lastDos.d) >= 3 * 86400000) {
-    return { prog: 'dos', why: (s.settings.bike ? 'Ta routine de base : respiration, bras-jambe opposés, pont et vélo.' : 'Ta routine de base : respiration, bras-jambe opposés et pont, sans le vélo.') + ' Elle revient au moins tous les 3 jours.' };
+    return { prog: 'dos', why: 'Ta routine du kiné : elle revient au moins tous les 3 jours.' };
   }
   /* Dos du milieu n’est proposé qu’une fois l’avis médical déclaré. */
   const pool = SUGGEST_ROTATION.filter(id => id !== 'milieu' || s.settings.milieuOk).concat(s.settings.solideUnlocked ? ['solide'] : [], s.settings.calisUnlocked ? ['calis'] : []);
   const lastDone = id => { const h = done.find(x => x.prog === id); return h ? new Date(h.d).getTime() : 0; };
   const prog = pool.slice().sort((a, b) => lastDone(a) - lastDone(b))[0];
   const why = {
-    dos: s.settings.bike ? 'Ta routine de base : respiration, bras-jambe opposés, pont et vélo.' : 'Ta routine de base : respiration, bras-jambe opposés et pont, sans le vélo.',
+    dos: 'Ta routine du kiné, tout en douceur.',
     fessiers: 'Au tour des fessiers, sans charger le dos.',
     milieu: 'Un peu de mobilité et de gainage pour le dos du milieu.',
     haut: 'Au tour du haut du corps : bras, épaules et haut du dos, debout.',
