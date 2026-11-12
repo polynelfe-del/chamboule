@@ -16,7 +16,7 @@ let downloadsApi = null;
 let writeChain = Promise.resolve();
 let warnedSave = false;
 
-function body() { return JSON.parse(JSON.stringify({ v: 1, xp: state.xp, bestCombo: state.bestCombo, settings: state.settings, badges: state.badges, challenges: state.challenges, history: state.history, tests: state.tests, maint: state.maint })); }
+function body() { return JSON.parse(JSON.stringify({ v: 1, xp: state.xp, bestCombo: state.bestCombo, settings: state.settings, badges: state.badges, challenges: state.challenges, history: state.history, tests: state.tests, maint: state.maint, weekly: state.weekly })); }
 function persist() {
   clearTimeout(persistTimer);
   const b = body();
@@ -158,12 +158,32 @@ function confetti() {
 }
 
 /* ---------- Blocs partagés ---------- */
+/* Douleurs au ventre : une fois vérifiées par un médecin, seul ce qui est nouveau ou différent doit alerter. */
+function bellyText() { return state.settings.milieuOk ? 'de douleurs au ventre nouvelles, plus fortes ou différentes de d’habitude' : 'de douleurs au ventre'; }
 function redFlagsHTML(compact) {
   return `<section class="alert${compact ? ' compact' : ''}" aria-label="Signes d’alerte">
     <h2>Signes d’alerte</h2>
     <p><b>Appelle le 15 (ou le 112)</b> en cas de perte de sensibilité entre les cuisses ou autour de l’anus, de difficulté à uriner ou à te retenir, ou d’une jambe qui lâche ou faiblit de plus en plus.</p>
-    ${compact ? '' : '<p><b>Consulte rapidement</b> si la douleur descend dans les deux jambes, s’accompagne de fièvre, d’une perte de poids inexpliquée ou de douleurs au ventre, ou ne se calme ni au repos ni la nuit.</p>'}
+    ${compact ? '' : `<p><b>Consulte rapidement</b> si la douleur descend dans les deux jambes, s’accompagne de fièvre, d’une perte de poids inexpliquée ou ${bellyText()}, ou ne se calme ni au repos ni la nuit.</p>`}
   </section>`;
+}
+/* Les bons gestes au quotidien : conseils généraux de prévention, à adapter avec le kiné. */
+const GESTES = [
+  { t: 'Sortir du lit', s: ['Plie les genoux, pieds à plat sur le matelas.', 'Roule sur le côté d’un seul bloc, épaules et bassin ensemble.', 'Laisse descendre les jambes hors du lit et pousse sur tes bras pour t’asseoir.', 'Reste assis quelques secondes, puis lève-toi en poussant sur les jambes.'] },
+  { t: 'Descendre au sol pour Dos calme', s: ['Mets-toi à côté d’une chaise ou du canapé, une main posée dessus.', 'Pose un genou au sol, puis l’autre.', 'Mets les mains au sol : te voilà à quatre pattes.', 'Assieds-toi sur une fesse, sur le côté, puis allonge-toi sur le côté.', 'Roule sur le dos d’un seul bloc, genoux pliés.'] },
+  { t: 'Se relever du sol', s: ['Genoux pliés, roule sur le côté d’un seul bloc.', 'Pousse sur tes bras pour venir à quatre pattes.', 'Avance un pied devant toi : un genou à terre.', 'Une main sur la cuisse ou sur la chaise, pousse sur tes jambes, le dos droit.'] },
+  { t: 'Ramasser et porter', s: ['Approche-toi tout près de l’objet, ou de la gamelle du chien.', 'Plie les genoux et les hanches, le dos droit, comme dans la charnière de hanche. Ou pose un genou au sol.', 'Garde la charge contre toi, et tourne avec les pieds, pas avec le dos.', 'Lourd ou encombrant : en deux fois, ou à deux.'] },
+  { t: 'Rester assis longtemps', s: ['Les fesses au fond du siège, les pieds à plat.', 'Toutes les 30 à 45 minutes, lève-toi et bouge une ou deux minutes.'] }
+];
+function infoSheetHTML(kind) {
+  const body = kind === 'alerte'
+    ? redFlagsHTML(false)
+    : `${GESTES.map(g => `<section class="geste"><h3>${esc(g.t)}</h3><ol>${g.s.map(x => `<li>${esc(x)}</li>`).join('')}</ol></section>`).join('')}
+      <p class="tip">Des conseils généraux : ton kiné peut les adapter à ton dos.</p>`;
+  return `<div class="sheet-wrap" data-action="info-close-bg"><div class="ex-sheet" role="dialog" aria-modal="true" aria-labelledby="info-t">
+    <div class="ex-sheet-top"><div><p class="eyebrow">${kind === 'alerte' ? 'À connaître' : 'Au quotidien'}</p><h2 id="info-t">${kind === 'alerte' ? 'Quand appeler, quand consulter' : 'Les bons gestes'}</h2></div><button class="icon-btn" data-action="info-close" aria-label="Fermer">${ICON.close}</button></div>
+    ${body}
+  </div></div>`;
 }
 function scaleHTML(action, value, extra) {
   const btns = Array.from({ length: 11 }, (_, n) => `<button data-action="${action}" data-v="${n}" ${extra || ''} aria-pressed="${value === n}" aria-label="${n} sur 10">${n}</button>`).join('');
@@ -177,7 +197,7 @@ function legHTML(action, value) {
 }
 
 /* ---------- Écrans ---------- */
-const ui = { nextZones: [], setOpen: new Set(['seances']), screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set(), allProgs: false };
+const ui = { nextZones: [], setOpen: new Set(['seances']), screen: 'home', unlockOpen: null, unlockChecked: false, resetArm: false, historyAll: false, sheet: null, info: null, pre: null, nextMsg: null, summaryBack: 'home', afterPractice: null, importData: null, tab: 'play', openTickets: new Set(), allProgs: false, todoAll: false, wk: null };
 
 function renderScreen(opts = {}) {
   memoStart();
@@ -187,6 +207,7 @@ function renderScreen(opts = {}) {
     else if (ui.screen === 'precheck') { if (!opts.fromSync) app.innerHTML = precheckHTML(); }
     else if (ui.screen === 'summary') app.innerHTML = summaryHTML();
     else if (ui.screen === 'test') app.innerHTML = testHTML();
+    else if (ui.screen === 'weekly') app.innerHTML = weeklyHTML();
     else if (ui.screen === 'result' && !opts.fromSync) renderResult();
   } finally { memoEnd(); }
   const xpEl = ui.screen === 'home' ? $('#home-xp') : null;
@@ -220,25 +241,54 @@ function homeHTML() {
   } else if (state.settings.sets === 1 && run >= 6) {
     todos.push(todoRow(`${run} séances de suite sans douleur`, 'Demande à ton kiné si tu peux passer à 2 séries dans Reprise dos.', '<button class="btn ghost" data-action="settings">Réglages</button>'));
   }
+  if (weeklyDue(state)) todos.push(todoRow(`Ton bilan de la semaine · +${WEEKLY_XP} XP`, 'Trente secondes : raideur du matin, nuits, antidouleurs, et ce que ton dos t’a laissé faire.', '<button class="btn primary" data-action="weekly-open">Répondre</button>'));
   if (kineDue(state)) todos.push(todoRow('Point avec ton kiné', 'Ça fait 4 semaines : montre-lui ton résumé et demande-lui de revoir ta routine.', '<button class="btn primary" data-action="summary">Ouvrir le résumé</button><button class="btn ghost" data-action="kine-reviewed">Il l’a revue</button><button class="btn ghost" data-action="kine-later">Plus tard</button>'));
   if (testDue(state)) todos.push(todoRow(`Test de forme du mois · +${TEST_XP} XP`, 'Deux mesures debout, au rythme d’un bip. Une à deux minutes.', '<button class="btn primary" data-action="test-start">Faire le test</button>'));
-  if (backupDue(state, Date.now(), !!window.claude)) todos.push(todoRow('Sauvegarder ta progression', 'Tes séances ne sont que dans ce téléphone : exporte un fichier et range-le dans tes fichiers ou envoie-le-toi par mail.', '<button class="btn primary" data-action="export">Exporter</button><button class="btn ghost" data-action="backup-later">Plus tard</button>'));
+  if (backupDue(state, Date.now(), !!window.claude)) todos.push(todoRow('Sauvegarder ta progression', 'Tes séances ne sont que dans ce téléphone : exporte un fichier et range-le dans Fichiers ou dans ton espace de stockage. Évite le mail : c’est ton suivi de santé.', '<button class="btn primary" data-action="export">Exporter</button><button class="btn ghost" data-action="backup-later">Plus tard</button>'));
   const readyProgs = [...new Set(LADDERS.map(l => l.prog))].filter(pid => rungsReady(state, pid).length && !(pid === 'milieu' && !state.settings.milieuOk));
   if (readyProgs.length) todos.push(todoRow(`Prêt pour la suite : ${readyProgs.map(pid => PROGRAMS[pid].name).join(', ')}`, 'Tu es au dernier palier : une version plus difficile t’attend dans l’arbre, avec l’accord de ton kiné.', '<button class="btn ghost" data-action="tab" data-tab="progress">Voir l’arbre</button>'));
   if (state.history.length >= HISTORY_MAX - 100) todos.push(todoRow(`Carnet presque plein : ${state.history.length} / ${HISTORY_MAX} séances`, 'Exporte une sauvegarde : au-delà, les plus anciennes séances seront retirées du téléphone.', '<button class="btn primary" data-action="export">Exporter</button>'));
   const za = zoneAlert(state);
   if (za) notices += za.zone === 'milieu'
-    ? `<div class="notice warn"><b>Milieu du dos à ${za.pain}/10.</b><span>Si cette douleur s’accompagne de douleurs au ventre ou de fièvre, ou si elle ne se calme ni au repos ni la nuit, consulte un médecin. Sinon, place aux séances douces, et parles-en à ton kiné.</span></div>`
+    ? `<div class="notice warn"><b>Milieu du dos à ${za.pain}/10.</b><span>Si cette douleur s’accompagne ${bellyText()} ou de fièvre, ou si elle ne se calme ni au repos ni la nuit, consulte un médecin. Sinon, place aux séances douces, et parles-en à ton kiné.</span></div>`
     : '<div class="notice warn"><b>La fesse revient deux séances de suite.</b><span>Surveille : si ça descend dans la jambe ou si ça fourmille, arrête et vois ton kiné. Parles-en-lui à la prochaine séance.</span></div>';
-  const todoHTML = todos.length ? `<section class="card todo" aria-label="À faire aujourd’hui"><h2 class="section-title">À faire aujourd’hui</h2>${todos.join('')}</section>` : '';
+  /* Deux choses à faire au plus en vue ; le reste se déplie. */
+  const shown = ui.todoAll ? todos : todos.slice(0, 2);
+  const todoHTML = todos.length ? `<section class="card todo" aria-label="À faire aujourd’hui"><h2 class="section-title">À faire aujourd’hui</h2>${shown.join('')}${todos.length > 2 ? `<button class="link-btn" data-action="todo-all">${ui.todoAll ? 'Voir moins' : todos.length === 3 ? 'Voir la dernière' : `Voir les ${todos.length - 2} autres`}</button>` : ''}</section>` : '';
   const earned = BADGES.filter(b => state.badges[b.id]).length;
   const gear = `<button class="icon-btn" data-action="settings" aria-label="Réglages">${ICON.gear}</button>`;
   const wkDone = (state.challenges || {})[weekKey(new Date())] || {};
   const chalWon = weekChallenges(new Date(), !state.settings.bike).filter(c => wkDone[c.id]).length;
+  const disclaimer = '<p class="foot">Chamboule Coach t’aide à suivre les exercices de ton kiné. Elle ne remplace pas un avis médical.</p>';
   let main;
   if (ui.tab === 'progress') {
     main = `
-    <header class="top"><div class="brand"><h1>Progrès</h1><p>Défis, badges et régularité.</p></div>${gear}</header>
+    <header class="top"><div class="brand"><h1>Progrès</h1><p>Ta semaine, ce que ton dos te laisse faire, tes défis.</p></div>${gear}</header>
+    <section class="card player" aria-label="Ta progression">
+      <div class="player-top">
+        ${lvlToken(lv.n)}
+        <div class="player-main">
+          <p class="eyebrow">Niveau ${lv.n}</p>
+          <p class="lvl-name">${esc(lv.name)}</p>
+          <div class="xpbar" role="progressbar" aria-label="Points d’expérience" aria-valuemin="0" aria-valuemax="${lv.span}" aria-valuenow="${lv.into}"><i id="home-xp" data-w="${lv.pct}"></i></div>
+          <p class="xp-meta"><b>${state.xp}</b> XP · encore ${lv.next - state.xp} pour le niveau ${lv.n + 1}</p>
+        </div>
+      </div>
+      <div class="stats3">
+        <div class="stat"><b>${doneCount(state)}</b><span>séances faites</span></div>
+        <div class="stat"><b>${streak}</b><span>semaines d’affilée</span></div>
+        <div class="stat"><b>${state.bestCombo}</b><span>meilleur combo</span></div>
+      </div>
+    </section>
+    <section class="card week" aria-label="Cette semaine">
+      <div class="week-head"><h2 class="section-title">Cette semaine</h2><p><b>${wk}</b> / ${goal} jours</p></div>
+      <div class="bulbs" aria-hidden="true">${bulbs}</div>
+      ${state.settings.bike ? `<p class="week-bike">Vélo cette semaine : <b>${fmtMin(weekBikeMin(state, new Date()))}</b> / ${state.settings.veloMin * state.settings.weeklyGoal} min</p>` : ''}
+      <p class="week-meta">${wk >= goal ? 'Objectif atteint. Profite aussi des jours de repos, ils font partie du programme.' : `Chaque jour où une séance est vraiment faite remplit un cœur, un seul par jour. Encore ${goal - wk} pour l’objectif.`}</p>
+      ${state.settings.solideUnlocked && !state.settings.calisUnlocked ? `<button class="link-row" data-action="show-calis"><span>Calisthénie : <b>${Math.min(calisStreak(state), CALIS_NEEDED)} / ${CALIS_NEEDED}</b> séances à ${CALIS_PAIN}/10 au plus</span>${ICON.chev}</button>` : ''}
+      ${state.settings.solideUnlocked ? '' : `<button class="link-row" data-action="show-solide"><span>Dos solide : <b>${Math.min(solidStreak(state), SOLIDE_NEEDED)} / ${SOLIDE_NEEDED}</b> séances calmes sur les ${SOLIDE_WINDOW} dernières</span>${ICON.chev}</button>`}
+    </section>
+    ${lifeHTML()}
     ${challengesHTML()}
     ${treeHTML()}
     ${maintHTML()}
@@ -264,10 +314,10 @@ function homeHTML() {
       <ul>
         <li>Le cercle se remplit pendant ta répétition. Tape quand il est jaune, un bip te prévient : la balle part et <b>fait tomber une boîte</b>. Trop tôt, elle rate.</li>
         <li>Toute la pyramide par terre : bonus <b>Chamboulé</b>. Plus lent, c’est toujours parfait.</li>
-        <li>Allongé ou à quatre pattes, active <b>Mains libres</b> : l’appli rythme et compte pour toi, à voix haute.</li>
+        <li>Allongé ou à quatre pattes, active <b>Mains libres</b> : l’appli rythme et compte pour toi, à voix haute. Dos calme est guidé à la voix d’office.</li>
+        <li>Une séance compte (cœur, routine, défis) quand <b>au moins les deux tiers</b> des exercices sont faits. Plus courte, elle reste dans ton carnet.</li>
         <li>Douleur qui descend dans la jambe ou fourmillements : <b>on arrête tout de suite</b> avec le bouton Douleur. Tu gardes tes points.</li>
         <li>Un exercice passé pour douleur ne coûte aucune étoile.</li>
-        <li>Ces programmes sont à faire valider par ton kiné.</li>
       </ul>
     </section>
     <section class="rules" aria-label="À éviter avec ton dos">
@@ -275,68 +325,47 @@ function homeHTML() {
       <ul>
         <li>Crunchs, sit-ups et relevés de buste complets.</li>
         <li>Torsions rapides ou forcées, grandes extensions du bas du dos.</li>
-        <li>Porter des charges depuis le sol.</li>
+        <li>Soulever une charge depuis le sol en pliant le dos : plie plutôt les genoux et les hanches.</li>
         <li>Tout exercice qui donne une douleur vive, qui dure après, ou qui descend dans une jambe.</li>
         <li>Rester complètement immobile plusieurs jours : bouger doucement aide plus que le repos total.</li>
       </ul>
+      <button class="link-row" data-action="info" data-info="gestes"><span>Les bons gestes : lit, sol, porter, assis</span>${ICON.chev}</button>
     </section>
-    <p class="foot">${mode === 'cloud' ? 'Progression sauvegardée sur ton compte, sur tous tes appareils.' : window.claude ? 'Progression sauvegardée dans ce navigateur.' : 'Progression gardée dans ce téléphone. Pense à l’exporter de temps en temps (Réglages).'}</p>`;
+    ${redFlagsHTML(false)}
+    <p class="foot">${mode === 'cloud' ? 'Progression sauvegardée sur ton compte, sur tous tes appareils.' : window.claude ? 'Progression sauvegardée dans ce navigateur.' : 'Progression gardée dans ce téléphone. Pense à l’exporter de temps en temps (Réglages).'}</p>
+    ${disclaimer}`;
   } else {
     main = `
     <header class="top">
       <div class="brand">
         <h1>Chamboule<br>Coach<span class="spark-txt" aria-hidden="true">✦</span></h1>
-        <p>Dos, fessiers, cardio. Un tap par répétition.</p>
+        <p>Ton dos, en douceur, un jour après l’autre.</p>
       </div>
       ${gear}
     </header>
 
-    ${todayCardHTML()}
     ${routineCardHTML()}
+    ${todayCardHTML()}
 
     ${notices}
     ${todoHTML}
 
-    <section class="card player" aria-label="Ta progression">
-      <div class="player-top">
-        ${lvlToken(lv.n)}
-        <div class="player-main">
-          <p class="eyebrow">Niveau ${lv.n}</p>
-          <p class="lvl-name">${esc(lv.name)}</p>
-          <div class="xpbar" role="progressbar" aria-label="Points d’expérience" aria-valuemin="0" aria-valuemax="${lv.span}" aria-valuenow="${lv.into}"><i id="home-xp" data-w="${lv.pct}"></i></div>
-          <p class="xp-meta"><b>${state.xp}</b> XP · encore ${lv.next - state.xp} pour le niveau ${lv.n + 1}</p>
-        </div>
-      </div>
-      <div class="stats3">
-        <div class="stat"><b>${state.history.length}</b><span>séances</span></div>
-        <div class="stat"><b>${streak}</b><span>semaines d’affilée</span></div>
-        <div class="stat"><b>${state.bestCombo}</b><span>meilleur combo</span></div>
-      </div>
-    </section>
-
-    <section class="card week" aria-label="Cette semaine">
-      <div class="week-head"><h2 class="section-title">Cette semaine</h2><p><b>${wk}</b> / ${goal} jours</p></div>
-      <div class="bulbs" aria-hidden="true">${bulbs}</div>
-      ${state.settings.bike ? `<p class="week-bike">Vélo cette semaine : <b>${fmtMin(weekBikeMin(state, new Date()))}</b> / ${state.settings.veloMin * state.settings.weeklyGoal} min</p>` : ''}
-      <p class="week-meta">${wk >= goal ? 'Objectif atteint. Profite aussi des jours de repos, ils font partie du programme.' : `Chaque jour d’entraînement remplit un cœur, un seul par jour. Encore ${goal - wk} pour l’objectif.`}</p>
-      <button class="link-row" data-action="tab" data-tab="progress"><span>Défis de la semaine : <b>${chalWon} / 3</b> gagnés</span>${ICON.chev}</button>
-      ${state.settings.solideUnlocked && !state.settings.calisUnlocked ? `<button class="link-row" data-action="show-calis"><span>Calisthénie : <b>${Math.min(calisStreak(state), CALIS_NEEDED)} / ${CALIS_NEEDED}</b> séances à ${CALIS_PAIN}/10 au plus</span>${ICON.chev}</button>` : ''}
-      ${state.settings.solideUnlocked ? '' : `<button class="link-row" data-action="show-solide"><span>Dos solide : <b>${Math.min(solidStreak(state), SOLIDE_NEEDED)} / ${SOLIDE_NEEDED}</b> séances de renfo calmes</span>${ICON.chev}</button>`}
-    </section>
-
-    <section class="programs" aria-label="Tous les programmes">
+    <section class="links" aria-label="Raccourcis">
+      <button class="link-row" data-action="tab" data-tab="progress"><span>Cette semaine : <b>${wk} / ${goal}</b> jours · défis <b>${chalWon} / 3</b></span>${ICON.chev}</button>
+      <button class="link-row" data-action="info" data-info="gestes"><span>Les bons gestes : lit, sol, porter, assis</span>${ICON.chev}</button>
+      <button class="link-row alert-row" data-action="info" data-info="alerte"><span>Signes d’alerte : quand appeler le 15</span>${ICON.chev}</button>
       <button class="link-row big" data-action="all-progs" aria-expanded="${ui.allProgs}"><span>${ui.allProgs ? 'Masquer les programmes' : `Tous les programmes (${PROG_ORDER.length})`}</span>${ICON.chev}</button>
-      ${ui.allProgs ? PROG_GROUPS.map(g => `<h3 class="prog-group">${esc(g.name)}</h3>${g.ids.map(ticketHTML).join('')}`).join('') : ''}
     </section>
-
-    ${redFlagsHTML(false)}`;
+    ${ui.allProgs ? `<section class="programs" aria-label="Tous les programmes">${PROG_GROUPS.map(g => `<h3 class="prog-group">${esc(g.name)}</h3>${g.ids.map(ticketHTML).join('')}`).join('')}</section>` : ''}
+    ${disclaimer}`;
   }
   return `
   <div class="awning" aria-hidden="true"></div>
   <main class="page with-tabs">${main}
   </main>
   ${tabbarHTML()}
-  ${ui.sheet ? exSheetHTML(ui.sheet) : ''}`;
+  ${ui.sheet ? exSheetHTML(ui.sheet) : ''}
+  ${ui.info ? infoSheetHTML(ui.info) : ''}`;
 }
 
 function tabbarHTML() {
@@ -356,9 +385,49 @@ function routineCardHTML() {
   return `<section class="card routine" aria-label="Routine du jour : Dos calme matin et soir">
     <div class="routine-head"><p class="eyebrow">Routine du jour · Dos calme</p><span class="est">≈ ${estMin(state, PROGRAMS.calme)} min</span></div>
     <div class="slots">${slot('matin', 'Matin', ICON.sun)}${slot('soir', 'Soir', ICON.moon)}</div>
-    <p class="muted">Cette semaine : ${w.matins} matin${w.matins > 1 ? 's' : ''} et ${w.soirs} soir${w.soirs > 1 ? 's' : ''}${w.complets ? `, dont ${w.complets} jour${w.complets > 1 ? 's' : ''} complet${w.complets > 1 ? 's' : ''}` : ''}.</p>
     ${r[r.now] ? '' : `<button class="btn ghost big" data-action="play" data-prog="calme">${ICON.play} Dos calme du ${r.now}</button>`}
+    <p class="muted routine-meta">Cette semaine : ${w.matins} matin${w.matins > 1 ? 's' : ''}, ${w.soirs} soir${w.soirs > 1 ? 's' : ''}.${r.now === 'matin' && !r.matin ? ' Au réveil, possible dans ton lit.' : ''} <button class="link-btn inline" data-action="info" data-info="gestes">Descendre au sol sans forcer</button></p>
   </section>`;
+}
+/* Progrès : ce que ton dos t’a laissé faire, d’après le bilan de la semaine. */
+function lifeHTML() {
+  const w = (state.weekly || [])[0], due = weeklyDue(state);
+  if (!w) return `<section class="card life" aria-label="Ta vie avec ton dos">
+      <h2 class="section-title">Ta vie avec ton dos</h2>
+      <p class="muted">Chaque semaine, quatre questions rapides : ce que ton dos t’a laissé faire, la raideur du matin, les nuits et les antidouleurs. ${due ? '' : 'Ça commence après tes 3 premières séances.'}</p>
+      ${due ? '<div class="row-btns"><button class="btn primary" data-action="weekly-open">Faire mon bilan</button></div>' : ''}
+    </section>`;
+  const prev = (state.weekly || [])[1];
+  const gained = prev ? w.can.filter(id => !prev.can.includes(id)) : [];
+  return `<section class="card life" aria-label="Ta vie avec ton dos">
+    <div class="badges-head"><h2 class="section-title">Ta vie avec ton dos</h2><p>bilan du ${esc(new Date(w.d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }))}</p></div>
+    ${w.can.length ? `<p><b>Tu as pu :</b></p><ul class="can-list">${w.can.map(id => `<li${gained.includes(id) ? ' class="new"' : ''}>${esc(CAN.find(c => c.id === id).label)}${gained.includes(id) ? ' <span class="chip ok">nouveau</span>' : ''}</li>`).join('')}</ul>` : '<p class="muted">Rien de la liste cette semaine-là. Ça viendra : on regarde la tendance, pas une semaine.</p>'}
+    <p class="muted">Raideur du matin : ${esc(WEEKLY.stiff.a[w.stiff].toLowerCase())} · réveils la nuit : ${esc(WEEKLY.night.a[w.night].toLowerCase())} · antidouleurs : ${esc(WEEKLY.meds.a[w.meds].toLowerCase())}</p>
+    ${due ? '<div class="row-btns"><button class="btn primary" data-action="weekly-open">Faire le bilan de cette semaine</button></div>' : ''}
+  </section>`;
+}
+/* Bilan de la semaine : un écran, quatre questions, sans chiffre de douleur. */
+function weeklyHTML() {
+  const a = ui.wk || {};
+  const q = k => `<section class="card set-card" aria-label="${esc(WEEKLY[k].q)}">
+      <h2 class="section-title">${esc(WEEKLY[k].q)}</h2>
+      <div class="opt-col" role="group">${WEEKLY[k].a.map((t, i) => `<button data-action="wk-ans" data-q="${k}" data-v="${i}" aria-pressed="${a[k] === i}">${esc(t)}</button>`).join('')}</div>
+    </section>`;
+  const ready = Object.keys(WEEKLY).every(k => a[k] != null);
+  return `<main class="page plain">
+    <header class="sub-top">
+      <button class="icon-btn" data-action="home" aria-label="Retour à l’accueil">${ICON.back}</button>
+      <div><p class="eyebrow">Ces 7 derniers jours</p><h1>Ton bilan de la semaine</h1></div>
+    </header>
+    <section class="card set-card" aria-label="Ce que tu as pu faire">
+      <h2 class="section-title">Cette semaine, tu as pu…</h2>
+      <p class="muted">Coche tout ce qui s’est bien passé.</p>
+      <div class="zone-chips can-chips" role="group" aria-label="Ce que tu as pu faire">${CAN.map(c => `<button data-action="wk-can" data-id="${c.id}" aria-pressed="${(a.can || []).includes(c.id)}">${esc(c.label)}</button>`).join('')}</div>
+    </section>
+    ${Object.keys(WEEKLY).map(q).join('')}
+    <button class="btn primary big" data-action="weekly-save" ${ready ? '' : 'disabled'}>Enregistrer · +${WEEKLY_XP} XP</button>
+    <p class="muted center-note">Ces réponses vont dans le résumé pour ton kiné : elles l’aident à comprendre ton dos.</p>
+  </main>`;
 }
 function todayCardHTML() {
   const sug = suggestToday(state);
@@ -368,9 +437,9 @@ function todayCardHTML() {
     <p class="eyebrow">${sug.rest ? 'Si tu en as envie' : `Séance du jour · +${SUGGEST_BONUS} XP bonus`}</p>
     ${buddyHTML(sug.why, sug.prog === 'difficile' || sug.rest ? 'calm' : 'happy', 'sm')}
     <div class="today-prog"><h2 class="section-title">${esc(p.name)}</h2><span class="est">≈ ${estMin(state, p)} min · ${p.exercises.length} exercice${p.exercises.length > 1 ? 's' : ''}${p.level ? ` · palier ${p.level}/${STEP_MAX}` : ''}</span>${bikeChipHTML(p.id)}</div>
-    <div class="ex-strip">${strip}</div>
+    ${ui.stripOpen ? `<div class="ex-strip">${strip}</div>` : ''}
     <button class="btn play big" data-action="play" data-prog="${p.id}">${ICON.play} Jouer</button>
-    ${['calme', 'difficile', 'relax'].includes(p.id) ? '' : '<button class="link-btn" data-action="play" data-prog="calme">J’ai mal au dos aujourd’hui : Dos calme</button>'}
+    <div class="today-links"><button class="link-btn" data-action="strip-toggle" aria-expanded="${!!ui.stripOpen}">${ui.stripOpen ? 'Masquer les exercices' : 'Voir les exercices'}</button>${['calme', 'difficile', 'relax'].includes(p.id) || !routineToday(state)[routineToday(state).now] ? '' : '<button class="link-btn" data-action="play" data-prog="calme">Dos qui fait mal : Dos calme</button>'}</div>
   </section>`;
 }
 function ticketHTML(id) {
@@ -391,7 +460,7 @@ function ticketHTML(id) {
   }
   else if (id === 'solide' && solidStreak(state) < SOLIDE_NEEDED) {
     const k = solidStreak(state);
-    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement sans douleur d’affilée" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances de renforcement d’affilée à ${state.settings.painMax}/10 au plus, lendemain compris (Reprise dos, Dos du milieu, Fessiers doux)</span></div>`;
+    foot = `<div class="unlock-progress"><div class="chal-bar" role="progressbar" aria-label="Séances de renforcement calmes sur les 10 dernières" aria-valuemin="0" aria-valuemax="${SOLIDE_NEEDED}" aria-valuenow="${k}"><i style="width:${Math.round((k / SOLIDE_NEEDED) * 100)}%"></i></div><span class="est">${k} / ${SOLIDE_NEEDED} séances calmes sur tes ${SOLIDE_WINDOW} dernières séances de renforcement (${state.settings.painMax}/10 au plus, lendemain compris), dont la plus récente. Un symptôme dans la jambe remet à zéro.</span></div>`;
   }
   else if (ui.unlockOpen !== id) foot = `<div class="t-row"><span class="est">${id === 'solide' ? 'Ton dos va bien : prêt à débloquer' : id === 'calis' ? 'Ton dos ne fait plus mal : prêt à débloquer' : 'À débloquer avec ton kiné'}</span><button class="btn ${id === 'solide' || id === 'calis' ? 'primary' : 'ghost'}" data-action="unlock-open" data-prog="${id}">${ICON.lock} Débloquer</button></div>`;
   else foot = unlockPanelHTML(id);
@@ -571,7 +640,7 @@ function unlockPanelHTML(id) {
   </div>`;
   const solide = id === 'solide';
   return `<div class="unlock">
-    <p>${solide ? `Ton dos va bien depuis ${solidStreak(state)} séances de renforcement d’affilée. Avant de passer au niveau supérieur, demande l’accord de ton kiné.` : 'Ce programme date de novembre 2025, avant les adaptations pour ton dos. Pour ta reprise, la priorité reste la routine Reprise dos.'}</p>
+    <p>${solide ? `Ton dos est resté calme sur ${solidStreak(state)} de tes ${SOLIDE_WINDOW} dernières séances de renforcement, dont la dernière. Avant de passer au niveau supérieur, demande l’accord de ton kiné.` : 'Ce programme date de novembre 2025, avant les adaptations pour ton dos. Pour ta reprise, la priorité reste la routine Reprise dos.'}</p>
     <label class="check"><input type="checkbox" id="unlock-check" ${ui.unlockChecked ? 'checked' : ''}> ${solide ? 'Mon kiné est d’accord pour que je progresse' : 'Mon kiné a validé ce programme pour ma situation actuelle'}</label>
     <div class="t-row">
       <button class="btn primary" id="unlock-confirm" data-action="unlock-confirm" data-prog="${id}" ${ui.unlockChecked ? '' : 'disabled'}>Débloquer</button>
@@ -672,7 +741,9 @@ function historyHTML() {
     const bits = [];
     if (backCat(h) !== 'stop') bits.push(miniStars(Number(h.stars) || 0));
     bits.push(`+${esc(h.xp ?? h.score ?? 0)} XP`);
-    if (h.painBefore != null || h.pain != null) bits.push(`· douleur ${esc(h.painBefore ?? '?')}→${esc(h.pain ?? '?')}${h.next != null ? ' · lendemain ' + esc(h.next) : ''}`);
+    if (!isDone(h)) bits.push('· écourtée');
+    if (h.relief != null) bits.push(`· ${['plus douloureux', 'pareil', 'plus détendu'][h.relief + 1]} après${h.next != null ? ' · lendemain ' + esc(h.next) : ''}`);
+    else if (h.painBefore != null || h.pain != null) bits.push(`· douleur ${esc(h.painBefore ?? '?')}→${esc(h.pain ?? '?')}${h.next != null ? ' · lendemain ' + esc(h.next) : ''}`);
     const zs = [...new Set([...(h.zoneBefore || []), ...(h.zone || []), ...(h.zoneNext || [])])];
     if (zs.length) bits.push('· ' + esc(zs.map(zoneName).join(', ')));
     if (h.veloMin) bits.push(`· vélo ${fmtMin(h.veloMin)} min`);
@@ -742,7 +813,11 @@ function settingsHTML() {
       ${canSave() ? '<div class="set-row"><div><b>Ajouter matin et soir à mon agenda</b><small>Deux rappels chaque jour pour Dos calme. Ils remplacent les anciens si tu changes les heures.</small></div><button class="btn ghost" data-action="routine-reminders">Ajouter</button></div>' : ''}`;
   const jeu = `
       <div class="set-row">
-        <div><b>Mains libres</b><small>L’appli rythme chaque répétition et compte à voix haute. Tu n’as pas à toucher l’écran.</small></div>
+        <div><b>Dos calme guidé à la voix</b><small>Allongé, tu n’as ni à regarder ni à toucher l’écran : l’appli lit chaque étirement, le lance et compte pour toi.</small></div>
+        <button class="toggle" role="switch" aria-checked="${s.lyingHF}" aria-label="Dos calme guidé à la voix" data-action="lyinghf-toggle"></button>
+      </div>
+      <div class="set-row">
+        <div><b>Mains libres pour les autres séances</b><small>L’appli rythme chaque répétition et compte à voix haute. Tu n’as pas à toucher l’écran.</small></div>
         <button class="toggle" role="switch" aria-checked="${s.handsFree}" aria-label="Mains libres" data-action="hf-toggle"></button>
       </div>
       <div class="set-row">
@@ -809,21 +884,25 @@ function precheckHTML() {
       <div><p class="eyebrow">${esc(p.name)}</p><h1>Avant de jouer</h1></div>
     </header>
     ${ui.nextMsg ? `<div class="notice warn"><b>${esc(ui.nextMsg.title)}</b><span>${esc(ui.nextMsg.text)}</span></div>` : ''}
-    ${pend ? `<section class="card set-card next-card" aria-label="Suivi du lendemain">
-      <p class="eyebrow">D’abord, le suivi · +20 XP</p>
-      <h2 class="section-title">Ton dos aujourd’hui, après ta séance de ${esc(fmtDate(pend.d))} ?</h2>
+    ${pend ? `<section class="card set-card next-card" aria-label="Ton dos aujourd’hui">
+      <p class="eyebrow">Ton dos aujourd’hui · +20 XP</p>
+      <h2 class="section-title">Ton dos, là, maintenant ?</h2>
+      <p class="muted">Une seule réponse : elle sert aussi de suivi pour ta séance de ${esc(fmtDate(pend.d))}.</p>
       ${zoneChipsHTML('next-zone', ui.nextZones)}
       ${scaleHTML('next', null, `data-id="${esc(pend.id)}"`)}
-    </section>` : ''}
-    <section class="card set-card" aria-label="Douleur avant la séance">
+    </section>` : pre.known ? `<section class="card set-card known" aria-label="Douleur déjà notée aujourd’hui">
+      <h2 class="section-title">Ton dos aujourd’hui : ${pre.pain}/10${pre.zones.length ? ' · ' + esc(pre.zones.map(zoneName).join(', ')) : ''}</h2>
+      <p class="muted">Noté à ${esc(new Date(pre.known.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }))}, rien dans la jambe. Pas besoin de répondre de nouveau.</p>
+      <div class="row-btns"><button class="btn ghost" data-action="pre-change">Ça a changé</button></div>
+    </section>` : `<section class="card set-card" aria-label="Douleur avant la séance">
       <h2 class="section-title">Ton dos, là, maintenant ?</h2>
       ${scaleHTML('pre-pain', pre.pain)}
       ${pre.pain ? zoneChipsHTML('pre-zone', pre.zones) : ''}
-    </section>
-    <section class="card set-card" aria-label="Symptômes dans la jambe">
+    </section>`}
+    ${pre.known || pend ? '' : `<section class="card set-card" aria-label="Symptômes dans la jambe">
       <h2 class="section-title">Douleur ou fourmillements dans la jambe ?</h2>
       ${legHTML('pre-leg', pre.leg)}
-    </section>
+    </section>`}
     ${pre.pain >= 4 && pre.pain < 7 && !['calme', 'difficile', 'relax', 'etirements', 'cardio'].includes(pre.prog) && !outcome ? `<div class="notice warn"><b>Ton dos est à ${pre.pain}/10 aujourd’hui.</b><span>Dos calme, les étirements qui décontractent le dos et le bassin, peut te faire du bien à la place.</span><div class="row-btns"><button class="btn ghost" data-action="pre-calme">Faire Dos calme</button></div></div>` : ''}
     ${door && !outcome ? `<section class="card set-card" aria-label="Rowing à la porte">
       <h2 class="section-title">Avant ton premier rowing à la porte</h2>
@@ -861,7 +940,7 @@ function summaryHTML() {
       <button class="icon-btn" data-action="summary-back" aria-label="Retour">${ICON.back}</button>
       <h1>Résumé pour mon kiné</h1>
     </header>
-    <p class="muted">Les 30 derniers jours, avec uniquement ce que tu as noté dans l’appli. À montrer en séance ou à envoyer.</p>
+    <p class="muted">Une page sur tes 30 derniers jours, avec uniquement ce que tu as noté. Le plus simple et le plus sûr : montre-la sur l’écran pendant ta séance. Si tu l’envoies, évite le mail : ce sont des données de santé.</p>
     <pre class="summary" id="sum-text" tabindex="0">${esc(kineSummary(state))}</pre>
     <div class="btn-col">
       <button class="btn primary big" data-action="sum-copy">Copier le texte</button>
@@ -882,7 +961,7 @@ function startGame(progId, pre) {
   const prog = progFor(state, progId);
   const steps = buildSteps(state, prog);
   G = {
-    prog, steps, i: 0, phase: 'intro', line: pick(LINES.intro), hf: prog.practice ? false : !!state.settings.handsFree,
+    prog, steps, i: 0, phase: 'intro', line: pick(LINES.intro), hf: prog.practice ? false : prog.lying ? state.settings.lyingHF : !!state.settings.handsFree, introEnd: 0,
     setPerfect: 0, nCans: 0, pyramids: 0, canGeo: null, litL: -1,
     painBefore: pre ? pre.pain : null, legBefore: pre ? !!pre.leg : false,
     sugg: prog.practice ? null : suggestToday(state),
@@ -896,6 +975,8 @@ function startGame(progId, pre) {
   };
   ui.screen = 'game';
   wakeLock(true);
+  // Lancé par un toucher : sur iPhone, c’est ce qui autorise la voix pour toute la séance.
+  introAuto();
   renderGame();
   stopLoop();
   const loop = now => { if (ui.screen !== 'game' || !G) return; frame(now); rafId = requestAnimationFrame(loop); };
@@ -904,6 +985,16 @@ function startGame(progId, pre) {
   tickIv = setInterval(() => { if (ui.screen === 'game' && G) frame(performance.now()); else clearInterval(tickIv); }, 250);
 }
 
+/* Mains libres : la présentation de l’exercice est lue à voix haute, puis l’exercice démarre tout seul.
+   Le temps laissé dépend de la longueur de la consigne, pour avoir le temps de l’écouter et de se mettre en place. */
+function introSec(ex) { return clamp(Math.round(String(ex.cue || '').split(/\s+/).length / 2.6) + 6, 10, 25); }
+function introAuto() {
+  if (!G || G.phase !== 'intro' || !G.hf || G.prog.practice) { if (G) G.introEnd = 0; return; }
+  const ex = G.steps[G.i].ex;
+  if (ex.kind === 'timer') { G.introEnd = 0; return; }
+  G.introEnd = performance.now() + introSec(ex) * 1000;
+  say(`${ex.name}. ${ex.cue}`);
+}
 function renderGame() {
   const st = G.steps[G.i], p = G.prog;
   const pips = p.exercises.map((e, k) => {
@@ -934,7 +1025,7 @@ function renderGame() {
     ring: $('#ring'), zone: $('.zone'), target: $('.target'), hint: $('#hint'), breath: $('#breath'), count: $('#count'),
     score: $('#g-score'), combo: $('#combo'), undo: $('#undo'), setdone: $('#setdone'), fx: $('#fx'), live: $('#live'),
     tclock: $('#tclock'), tstate: $('#tstate'), tpts: $('#tpts'), bike: $('.bike'), rclock: $('#rclock'), swclock: $('#swclock'),
-    lanterns: $('.lanterns')
+    lanterns: $('.lanterns'), introclock: $('#introclock')
   };
   G.ready = null; G.hintText = null; G.litL = -1;
   if (G.el.zone) G.el.zone.classList.toggle('paused', G.paused);
@@ -950,7 +1041,7 @@ function introHTML(st) {
     : ex.kind === 'hold'
       ? `<div class="tempo-note"><span class="dial" aria-hidden="true"></span><span>${G.hf ? `L’appli lance chaque maintien de ${ex.hold} s, compte pour toi et laisse 4 s de pause entre deux.` : `Mets-toi en place et tape pour commencer à tenir : le cercle se remplit pendant ${ex.hold} s et la répétition compte toute seule à la fin. Relâcher avant ne rapporte presque rien.`}</span></div>`
     : G.hf
-      ? `<div class="tempo-note"><span class="dial" aria-hidden="true"></span><span>Pose le téléphone et écoute : l’appli rythme chaque répétition (${ex.tempo} s) et compte à voix haute. Touche l’écran pour faire pause.</span></div>`
+      ? `<div class="tempo-note"><span class="dial" aria-hidden="true"></span><span>Pose le téléphone et écoute, sans relever la tête : l’appli rythme chaque répétition (${ex.tempo} s) et compte à voix haute. Touche l’écran pour faire pause.</span></div>`
       : `<div class="tempo-note"><span class="dial" aria-hidden="true"></span><span>Le cercle met ${ex.tempo} s à se remplir. Fais ta répétition, puis tape quand il est jaune : un bip te prévient. Plus lent, c’est toujours parfait.</span></div>`;
   const hfCard = (ex.kind === 'timer' || G.prog.practice) ? '' : `<div class="hf-card"><div><b>Mains libres</b><small>${G.hf ? 'Activé : l’appli compte pour toi.' : 'Pratique allongé ou à quatre pattes : plus besoin de toucher l’écran.'}</small></div><button class="toggle" role="switch" aria-checked="${G.hf}" aria-label="Mains libres" data-action="hf-game"></button></div>`;
   return `<div class="g-body">
@@ -962,9 +1053,10 @@ function introHTML(st) {
     <div class="cue">${illusFull(ex.id)}<p>${esc(ex.cue)}</p>${ex.tip ? `<p class="tip">${esc(ex.tip)}</p>` : ''}</div>
     ${hfCard}
     ${tempoNote}
-    ${buddyHTML(G.line, 'happy', 'sm')}
+    ${G.introEnd ? `<p class="auto-go" role="status">Installe-toi : ça démarre tout seul dans <b id="introclock">${Math.max(0, Math.ceil((G.introEnd - performance.now()) / 1000))}</b> s.</p>` : buddyHTML(G.line, 'happy', 'sm')}
     <div class="g-actions">
       <button class="btn primary big" data-action="go" data-autofocus>C’est parti</button>
+      ${G.introEnd ? '<button class="btn ghost" data-action="intro-add">Encore 15 s pour m’installer</button>' : ''}
       <button class="btn ghost" data-action="skip">Passer cet exercice</button>
     </div>
   </div>`;
@@ -1080,6 +1172,10 @@ function frame(now) {
   if (G.overlay) return;
   if (G.flashUntil) { if (now >= G.flashUntil) { G.flashUntil = 0; advance(); } return; }
   if (G.phase === 'play') { if (!G.paused) updateRing(now); }
+  else if (G.phase === 'intro' && G.introEnd) {
+    setText(G.el.introclock, Math.max(0, Math.ceil((G.introEnd - now) / 1000)));
+    if (now >= G.introEnd) { G.introEnd = 0; ACTIONS.go(); }
+  }
   else if (G.phase === 'timer') updateTimer(now);
   else if (G.phase === 'rest') {
     const rem = Math.max(0, Math.ceil((G.restEnd - now) / 1000));
@@ -1334,7 +1430,7 @@ function advance() {
   if (G.i >= G.steps.length) { finish('done'); return; }
   const cur = G.steps[G.i];
   G.count = 0; G.taps = []; G.paused = false;
-  if (cur.ex !== prev.ex) { G.phase = 'intro'; G.line = pick(LINES.intro); if (G.hf) say('Exercice suivant : ' + cur.ex.name); }
+  if (cur.ex !== prev.ex) { G.phase = 'intro'; G.line = pick(LINES.intro); introAuto(); }
   else if (cur.set !== prev.set) { G.phase = 'rest'; G.restEnd = performance.now() + G.prog.rest * 1000; G.lastRem = -1; G.line = pick(LINES.rest); if (G.hf) say('Récupération'); }
   else { G.phase = 'switch'; G.switchEnd = performance.now() + 3000; if (G.hf) say('Change de côté'); }
   renderGame();
@@ -1409,6 +1505,7 @@ function openOverlay(kind) {
 function closeOverlay() {
   const d = performance.now() - G.pausedAt;
   G.restEnd += d; G.switchEnd += d;
+  if (G.introEnd) G.introEnd += d;
   if (G.paused) G.pauseStart += d; else { G.lastTap += d; if (G.holdStart != null) G.holdStart += d; }
   if (G.flashUntil) G.flashUntil += d;
   if (G.resumeTimer) { G.timer.since = performance.now(); G.timer.running = true; G.resumeTimer = false; }
@@ -1435,8 +1532,9 @@ function finish(reason) {
     toast('Séance vide : rien n’a été enregistré.');
     return;
   }
-  const stars = computeStars(reason, G);
-  const sameDay = G.prog.id !== ROUTINE_PROG && state.history.some(h => dayKey(h.d) === dayKey(new Date()) && h.prog !== ROUTINE_PROG);
+  const nEx = G.prog.exercises.length;
+  const stars = computeStars(reason, G, nEx);
+  const sameDay = G.prog.id !== ROUTINE_PROG && state.history.some(h => dayKey(h.d) === dayKey(new Date()) && h.prog !== ROUTINE_PROG && isDone(h));
   const minutes = Math.min(estMin(state, G.prog), Math.max(1, Math.round((Date.now() - G.t0) / 60000)));
   const bonus = suggestBonus(G.sugg, G.prog.id, reason);
   const xp = computeXP(G.prog, G, minutes, sameDay) + bonus;
@@ -1446,7 +1544,7 @@ function finish(reason) {
     veloMin: Math.round(G.veloSec / 6) / 10, walkMin: Math.round(G.walkSec / 6) / 10, skipped: [...G.skipped], painEx: [...G.painEx],
     stop: reason === 'pain', back: reason === 'pain' ? 'stop' : null, hf: G.hf, pyramids: G.pyramids,
     painBefore: G.painBefore, legBefore: G.legBefore, pain: null, leg: null, next: null,
-    zoneBefore: G.zoneBefore || [], zone: [], zoneNext: [],
+    zoneBefore: G.zoneBefore || [], zone: [], zoneNext: [], relief: null, nEx,
     durS: Math.round((Date.now() - G.t0) / 1000)
   };
   const before = levelInfo(state.xp);
@@ -1460,7 +1558,7 @@ function finish(reason) {
   persist();
   const newOutfits = OUTFITS.filter(o => o.test(state) && !outfitsBefore.includes(o.id));
   const relocked = reason === 'pain' && relockSolide();
-  R = { bonus, relocked, entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null, zones: null }, sameDay };
+  R = { bonus, relocked, entry, before, after: levelInfo(state.xp), badges: fresh, challenges: chal, outfits: newOutfits, reason, animate: true, ci: { pain: null, leg: null, zones: null, relief: null }, sameDay };
   if (relocked) persist();
   G = null;
   ui.screen = 'result';
@@ -1479,29 +1577,28 @@ function ciMessage(e) {
   if (d >= 1 && e.pain > 2) return `<div class="notice warn"><b>Un peu plus sensible qu’avant (${b} → ${e.pain}).</b><span>Surveille demain matin : l’appli te posera la question.</span></div>`;
   return `<div class="notice good"><b>Ton dos est stable ou mieux qu’avant (${b} → ${e.pain}).</b><span>C’est exactement ce qu’on cherche.</span></div>`;
 }
-function renderResult() {
-  const e = R.entry, pain = R.reason === 'pain';
-  const titles = { 3: 'Séance parfaite', 2: 'Belle séance', 1: 'Séance faite', 0: 'Bien fait de t’arrêter' };
-  const lines = {
-    3: 'Lent, propre, contrôlé. C’est exactement ce que ton dos aime.',
-    2: 'Bon travail. Encore un peu plus de lenteur et c’est trois étoiles.',
-    1: 'Chaque séance compte. La prochaine fois, laisse le cercle se remplir avant de taper.'
-  };
-  const starsHTML = pain ? '' : `<div class="stars" role="img" aria-label="${e.stars} étoile${e.stars > 1 ? 's' : ''} sur 3">${[0, 1, 2].map(i => ICON.star(i < e.stars ? 'on' : '', R.animate ? `animation-delay:${0.15 + i * 0.22}s` : 'animation:none')).join('')}</div>`;
-  const lvUp = R.after.n > R.before.n ? `<div class="levelup">Niveau ${R.after.n} débloqué<b>${esc(R.after.name)}</b></div>` : '';
-  const startPct = R.after.n > R.before.n ? 0 : R.before.pct;
-  const badges = R.badges.length ? `<section class="card" aria-label="Nouveaux badges"><p class="eyebrow" style="text-align:center;margin-bottom:12px">Nouveau${R.badges.length > 1 ? 'x' : ''} badge${R.badges.length > 1 ? 's' : ''}</p><div class="new-badges">${R.badges.map(badgeHTML).join('')}</div></section>` : '';
-  const painExNames = e.painEx.map(exName);
+/* Après Dos calme : pas de chiffre, juste l’effet des étirements. */
+function reliefMsg(e) {
+  if (e.relief == null || (e.relief === -1 && e.leg == null)) return '';
+  if (e.leg) return `<div class="notice danger"><b>Symptômes dans la jambe après les étirements.</b><span>Note-le et parles-en à ton kiné avant de recommencer.</span></div>${redFlagsHTML(true)}`;
+  if (e.relief === 1) return '<div class="notice good"><b>Noté : ces étirements te détendent.</b><span>C’est gardé pour ton kiné, avec ce qui marche pour toi.</span></div>';
+  if (e.relief === 0) return '<div class="notice good"><b>Noté : pareil qu’avant.</b><span>Ton dos n’a pas protesté, c’est déjà une bonne nouvelle.</span></div>';
+  return '<div class="notice warn"><b>Noté pour ton kiné.</b><span>Si ça se répète, repère l’étirement qui gêne : pendant la séance, le bouton Douleur permet de le passer sans rien perdre.</span></div>';
+}
+function checkinHTML(e) {
+  if (e.prog === ROUTINE_PROG) {
+    const v = R.ci.relief ?? e.relief, leg = R.ci.leg ?? e.leg, done = e.relief != null && (e.relief >= 0 || e.leg != null);
+    const opt = (n, label) => `<button data-action="ci-relief" data-v="${n}" aria-pressed="${v === n}">${label}</button>`;
+    return `<section class="card set-card" aria-label="Ressenti après Dos calme">
+      <p class="eyebrow">Ressenti${done ? ' · noté' : ''}</p>
+      <h2 class="section-title">Après ces étirements, ton dos est…</h2>
+      <div class="seg3" role="group" aria-label="Effet des étirements">${opt(1, 'Plus détendu')}${opt(0, 'Pareil')}${opt(-1, 'Plus douloureux')}</div>
+      ${v === -1 ? `<h2 class="section-title">Douleur ou fourmillements dans la jambe ?</h2>${legHTML('ci-leg', leg)}` : ''}
+      ${done ? reliefMsg(e) : `<p class="ci-msg muted">Une seule question, sans chiffre. C’est gardé pour ton kiné.</p>`}
+    </section>`;
+  }
   const done = e.pain != null && e.leg != null;
-  app.innerHTML = `<main class="page plain result">
-    <div class="res-head">
-      <p class="eyebrow">${pain ? 'Séance arrêtée' : (R.reason === 'early' ? 'Séance écourtée' : 'Séance terminée')} · ${esc((PROGRAMS[e.prog] || {}).name || '')}</p>
-      <h1 class="res-title">${titles[pain ? 0 : e.stars]}</h1>
-      ${starsHTML}
-      ${pain ? buddyHTML('Tu as bien fait de t’arrêter. Je garde tes points au chaud.', 'calm') : buddyHTML(lines[e.stars], e.stars === 3 ? 'wow' : 'happy')}
-    </div>
-    ${pain ? `<section class="notice danger"><b>Tu as eu raison de t’arrêter. Tu gardes tes points.</b><span>Une douleur qui descend dans la jambe ou des fourmillements, c’est le signal pour stopper. Parles-en à ton kiné avant la prochaine séance. Si ça ne passe pas ou si ça s’aggrave, consulte.</span></section>${redFlagsHTML(true)}` : ''}
-    <section class="card set-card" aria-label="Ressenti après la séance">
+  return `<section class="card set-card" aria-label="Ressenti après la séance">
       <p class="eyebrow">Ressenti · ${done ? 'noté' : '+20 XP'}</p>
       <h2 class="section-title">Ton dos, là, maintenant ?</h2>
       ${scaleHTML('ci-pain', R.ci.pain ?? e.pain)}
@@ -1509,13 +1606,43 @@ function renderResult() {
       <h2 class="section-title">Douleur ou fourmillements dans la jambe ?</h2>
       ${legHTML('ci-leg', R.ci.leg ?? e.leg)}
       ${done ? ciMessage(e) : `<p class="ci-msg muted">${e.painBefore != null ? `Avant la séance, tu étais à ${e.painBefore}/10.` : 'Réponds aux deux questions, c’est gardé pour ton kiné.'}</p>`}
-    </section>
-    <div class="score-big"><span class="eyebrow">Score</span><b>${e.score}</b></div>
+    </section>`;
+}
+function renderResult() {
+  const e = R.entry, pain = R.reason === 'pain', full = isDone(e), lying = !!(PROGRAMS[e.prog] || {}).lying;
+  const titles = { 3: 'Séance parfaite', 2: 'Belle séance', 1: 'Séance faite', 0: 'Bien fait de t’arrêter' };
+  const lines = {
+    3: 'Lent, propre, contrôlé. C’est exactement ce que ton dos aime.',
+    2: 'Bon travail. Encore un peu plus de lenteur et c’est trois étoiles.',
+    1: 'Chaque séance compte. La prochaine fois, laisse le cercle se remplir avant de taper.'
+  };
+  const n = e.nEx || (PROGRAMS[e.prog] || { exercises: [] }).exercises.length;
+  const doneEx = Math.max(0, n - e.skipped.length);
+  const title = pain ? titles[0] : !full ? 'Séance écourtée' : lying ? 'Routine faite' : titles[e.stars];
+  const line = pain ? 'Tu as bien fait de t’arrêter. Je garde tes points au chaud.'
+    : !full ? `${doneEx ? `Tu as terminé ${doneEx} exercice${doneEx > 1 ? 's' : ''} sur ${n}.` : 'Tu as commencé, sans aller au bout d’un exercice.'} C’est noté dans ton carnet, mais pour remplir un cœur${e.prog === ROUTINE_PROG ? ' ou cocher ta routine' : ''}, il en faut au moins les deux tiers.`
+    : lying ? 'Ton dos et ton bassin ont eu leur moment de douceur. À tout à l’heure, ou à demain.'
+    : lines[e.stars];
+  const starsHTML = pain || lying || !full ? '' : `<div class="stars" role="img" aria-label="${e.stars} étoile${e.stars > 1 ? 's' : ''} sur 3">${[0, 1, 2].map(i => ICON.star(i < e.stars ? 'on' : '', R.animate ? `animation-delay:${0.15 + i * 0.22}s` : 'animation:none')).join('')}</div>`;
+  const lvUp = R.after.n > R.before.n ? `<div class="levelup">Niveau ${R.after.n} débloqué<b>${esc(R.after.name)}</b></div>` : '';
+  const startPct = R.after.n > R.before.n ? 0 : R.before.pct;
+  const badges = R.badges.length ? `<section class="card" aria-label="Nouveaux badges"><p class="eyebrow" style="text-align:center;margin-bottom:12px">Nouveau${R.badges.length > 1 ? 'x' : ''} badge${R.badges.length > 1 ? 's' : ''}</p><div class="new-badges">${R.badges.map(badgeHTML).join('')}</div></section>` : '';
+  const painExNames = e.painEx.map(exName);
+  app.innerHTML = `<main class="page plain result">
+    <div class="res-head">
+      <p class="eyebrow">${pain ? 'Séance arrêtée' : (R.reason === 'early' || !full ? 'Séance écourtée' : 'Séance terminée')} · ${esc((PROGRAMS[e.prog] || {}).name || '')}</p>
+      <h1 class="res-title">${title}</h1>
+      ${starsHTML}
+      ${buddyHTML(line, pain || !full || lying ? 'calm' : e.stars === 3 ? 'wow' : 'happy')}
+    </div>
+    ${pain ? `<section class="notice danger"><b>Tu as eu raison de t’arrêter. Tu gardes tes points.</b><span>Une douleur qui descend dans la jambe ou des fourmillements, c’est le signal pour stopper. Parles-en à ton kiné avant la prochaine séance. Si ça ne passe pas ou si ça s’aggrave, consulte.</span></section>${redFlagsHTML(true)}` : ''}
+    ${checkinHTML(e)}
+    ${lying ? '' : `<div class="score-big"><span class="eyebrow">Score</span><b>${e.score}</b></div>
     <div class="stats3">
       <div class="stat"><b>${e.perfect}/${e.reps}</b><span>reps parfaites</span></div>
       <div class="stat"><b>${e.pyramids || 0}</b><span>pyramide${(e.pyramids || 0) > 1 ? 's' : ''} chamboulée${(e.pyramids || 0) > 1 ? 's' : ''}</span></div>
       <div class="stat"><b>${e.combo}</b><span>meilleur combo</span></div>
-    </div>
+    </div>`}
     <p class="res-meta">Durée ${fmtClock(e.durS)}${e.veloMin ? ' · vélo ' + fmtMin(e.veloMin) + ' min' : ''}</p>
     <section class="card player" aria-label="Expérience">
       <div class="player-top">
@@ -1562,6 +1689,21 @@ function applyCheckin() {
   renderResult();
 }
 
+/* Ressenti après Dos calme : plus détendu (1), pareil (0) ou plus douloureux (-1, et alors la question de la jambe). */
+function applyRelief() {
+  const objs = new Set([R.entry, state.history.find(x => x.id === R.entry.id)].filter(Boolean));
+  objs.forEach(o => {
+    o.relief = R.ci.relief; o.leg = R.ci.relief === -1 ? !!R.ci.leg : null;
+    const rl = o.leg && relockSolide(); if (rl) R.relocked = rl;
+    o.back = backCat(o);
+  });
+  const ch = evalChallenges(state);
+  if (ch.length) R.challenges = (R.challenges || []).concat(ch);
+  R.after = levelInfo(state.xp);
+  persist();
+  renderResult();
+}
+
 /* ---------- Actions ---------- */
 /* Douleur dans la jambe : les programmes avancés se reverrouillent. Renvoie leurs noms, ou false. */
 function relockSolide() {
@@ -1572,7 +1714,12 @@ function relockSolide() {
   return both ? 'Dos solide et Calisthénie' : 'Dos solide';
 }
 function goHome() { ui.screen = 'home'; ui.resetArm = false; ui.pre = null; R = null; renderScreen(); window.scrollTo(0, 0); }
-function openPrecheck(prog) { ui.pre = { prog, pain: null, leg: null, zones: [], step: 'ask' }; ui.screen = 'precheck'; renderScreen(); window.scrollTo(0, 0); }
+/* Déjà noté aujourd’hui : on reprend la réponse au lieu de reposer la question (on peut toujours la changer). */
+function openPrecheck(prog) {
+  const t = todayBack(state);
+  ui.pre = { prog, pain: t ? t.pain : null, leg: t ? t.leg : null, zones: t ? t.zones : [], step: 'ask', known: t && t.from === 'seance' && t.leg === false ? t : null };
+  ui.screen = 'precheck'; renderScreen(); window.scrollTo(0, 0);
+}
 function endPractice() {
   const perfect = G ? G.perfect : 0;
   G = null;
@@ -1641,7 +1788,7 @@ const ACTIONS = {
     const t = $('.ticket.calis'); if (t) t.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
   },
   'show-solide'() {
-    ui.allProgs = true; renderScreen({ still: true });
+    ui.tab = 'play'; ui.allProgs = true; renderScreen({ still: true });
     const t = $('.ticket.solide'); if (t) t.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
   },
   'ticket-toggle'(b) {
@@ -1661,6 +1808,7 @@ const ACTIONS = {
   },
   'pre-pain'(b) { ui.pre.pain = Number(b.dataset.v); ui.pre.step = 'ask'; renderScreen(); },
   'pre-calme'() { ui.pre.prog = 'calme'; ui.pre.step = 'ask'; renderScreen(); window.scrollTo(0, 0); },
+  'pre-change'() { ui.pre.known = null; ui.pre.leg = null; renderScreen(); },
   'pre-leg'(b) { ui.pre.leg = b.dataset.v === '1'; ui.pre.step = 'ask'; renderScreen(); },
   'pre-go'() {
     const pre = ui.pre; if (pre.pain == null || pre.leg == null || pendingNextDay(state) || needsDoorCheck(pre.prog) || needsTableCheck(pre.prog)) return;
@@ -1673,11 +1821,31 @@ const ACTIONS = {
   'ex-open'(b) { ui.sheet = b.dataset.prog + ':' + b.dataset.ex; renderScreen({ still: true }); const c = $('.ex-sheet [data-action="ex-close"]'); if (c) c.focus(); },
   'ex-close'() { ui.sheet = null; renderScreen({ still: true }); },
   'ex-close-bg'(b, e) { if (e.target === b) ACTIONS['ex-close'](); },
+  info(b) { ui.info = b.dataset.info; renderScreen({ still: true }); const c = $('.ex-sheet [data-action="info-close"]'); if (c) c.focus(); },
+  'info-close'() { ui.info = null; renderScreen({ still: true }); },
+  'info-close-bg'(b, e) { if (e.target === b) ACTIONS['info-close'](); },
+  'todo-all'() { ui.todoAll = !ui.todoAll; renderScreen({ still: true }); },
+  'strip-toggle'() { ui.stripOpen = !ui.stripOpen; renderScreen({ still: true }); },
+  'weekly-open'() { ui.wk = { can: [] }; ui.screen = 'weekly'; renderScreen(); window.scrollTo(0, 0); },
+  'wk-ans'(b) { ui.wk[b.dataset.q] = Number(b.dataset.v); renderScreen(); },
+  'wk-can'(b) { const id = b.dataset.id, a = ui.wk.can; ui.wk.can = a.includes(id) ? a.filter(x => x !== id) : a.concat(id); renderScreen(); },
+  'weekly-save'() {
+    const w = cleanWeekly(Object.assign({ d: new Date().toISOString() }, ui.wk)); if (!w) return;
+    state.weekly = [w].concat(state.weekly || []).slice(0, 60);
+    state.xp += WEEKLY_XP;
+    evalBadges(state);
+    persist();
+    ui.wk = null; ui.tab = 'progress'; goHome();
+    toast(`Bilan noté · +${WEEKLY_XP} XP. ${w.can.length ? 'Regarde ce que ton dos t’a laissé faire dans Progrès.' : 'Il ira dans le résumé pour ton kiné.'}`);
+  },
+  'lyinghf-toggle'() { state.settings.lyingHF = !state.settings.lyingHF; persist(); renderScreen(); },
   next(b) {
     const levels = STEP_PROGS.map(id => stepLevel(state, id));
     const outfitsBefore = unlockedOutfits(state);
     const v = Number(b.dataset.v);
     const h = applyNext(state, b.dataset.id, v, new Date(), ui.nextZones); if (!h) return;
+    /* Avant une séance, cette réponse sert aussi de douleur de départ : une seule question. */
+    if (ui.screen === 'precheck' && ui.pre && ui.pre.pain == null) { ui.pre.pain = v; ui.pre.zones = v ? ui.nextZones.slice() : []; }
     ui.nextZones = [];
     const base = h.painBefore ?? h.pain ?? 0;
     ui.nextMsg = (v >= 7 || v >= base + 3) ? { title: `Plus douloureux qu’avant la séance (${base} → ${v}).`, text: 'Prends un jour de repos ou fais Jour difficile, et parles-en à ton kiné.' } : null;
@@ -1849,17 +2017,37 @@ const ACTIONS = {
   'reset-cancel'() { ui.resetArm = false; renderScreen(); },
   'reset-confirm'() { state = defaultState(); ui.resetArm = false; persist(); renderScreen(); toast('Progression effacée.'); },
   'ci-pain'(b) { R.ci.pain = Number(b.dataset.v); if (R.ci.leg == null && R.entry.leg != null) R.ci.leg = R.entry.leg; if (R.ci.leg != null) applyCheckin(); else renderResult(); },
-  'ci-leg'(b) { R.ci.leg = b.dataset.v === '1'; if (R.ci.pain == null && R.entry.pain != null) R.ci.pain = R.entry.pain; if (R.ci.pain != null) applyCheckin(); else renderResult(); },
+  'ci-leg'(b) {
+    R.ci.leg = b.dataset.v === '1';
+    if (R.entry.prog === ROUTINE_PROG) { if (R.ci.relief === -1) applyRelief(); else renderResult(); return; }
+    if (R.ci.pain == null && R.entry.pain != null) R.ci.pain = R.entry.pain;
+    if (R.ci.pain != null) applyCheckin(); else renderResult();
+  },
+  'ci-relief'(b) {
+    R.ci.relief = Number(b.dataset.v);
+    if (R.ci.relief >= 0) { R.ci.leg = null; applyRelief(); }
+    else if (R.ci.leg != null) applyRelief(); else renderResult();
+  },
 
   go() {
     if (!G) return;
+    G.introEnd = 0;
     const ex = G.steps[G.i].ex;
     if (G.phase === 'intro' && ex.kind === 'timer') { G.phase = 'timer'; G.lastMin = null; G.timer = { running: false, acc: 0, since: 0, dur: timerMin(state, ex) * 60000, credited: false }; renderGame(); return; }
     beginPlay();
     // iOS ne laisse parler l’appli que si la première phrase part d’un toucher : on parle ici, tout de suite.
     if (G.hf) { if (ex.kind === 'breath') { say('Inspire'); G.cue = 1; } else say('C’est parti'); }
   },
-  'hf-game'() { if (!G) return; G.hf = !G.hf; state.settings.handsFree = G.hf; persistSoon(); if (G.hf) say('Mains libres activé'); renderGame(); },
+  'hf-game'() {
+    if (!G) return;
+    G.hf = !G.hf;
+    if (G.prog.lying) state.settings.lyingHF = G.hf; else state.settings.handsFree = G.hf;
+    persistSoon();
+    if (G.phase === 'intro') { if (G.hf) introAuto(); else G.introEnd = 0; }
+    else if (G.hf) say('Mains libres activé');
+    renderGame();
+  },
+  'intro-add'() { if (G && G.introEnd) { G.introEnd += 15000; setText(G.el.introclock, Math.ceil((G.introEnd - performance.now()) / 1000)); } },
   mute() { if (!G) return; state.settings.sound = !state.settings.sound; persistSoon(); if (!state.settings.sound) hush(); renderGame(); },
   skip() { if (G) skipExercise(false); },
   undo() { if (G) undo(); },
@@ -1933,6 +2121,7 @@ app.addEventListener('pointerdown', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && ui.sheet && ui.screen === 'home') { ACTIONS['ex-close'](); return; }
+  if (e.key === 'Escape' && ui.info && ui.screen === 'home') { ACTIONS['info-close'](); return; }
   if (ui.screen !== 'game' || !G) return;
   if (e.key === 'Escape' && G.overlay) { closeOverlay(); return; }
   if (G.overlay || (e.key !== ' ' && e.key !== 'Enter')) return;

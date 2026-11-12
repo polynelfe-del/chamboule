@@ -103,6 +103,48 @@ async function step(label, fn) {
     await has('[data-action="test-go"]', 'bouton C’est parti');
     await click('[data-action="home"]');
   });
+  await step('accueil : signes d’alerte et bons gestes en fiches', async () => {
+    await click('[data-action="tab"][data-tab="play"]');
+    await click('.links [data-info="alerte"]');
+    await has('.ex-sheet .alert', 'fiche des signes d’alerte');
+    await click('[data-action="info-close"]');
+    await click('.links [data-info="gestes"]');
+    await has('.ex-sheet .geste', 'fiche des bons gestes');
+    await click('[data-action="info-close"]');
+    if (!(await page.locator('text=ne remplace pas un avis médical').count())) throw new Error('avertissement médical absent');
+  });
+  await step('Dos calme écourté : écran honnête, routine pas cochée', async () => {
+    await load(BUSY);
+    await click('.routine [data-action="play"]');
+    await click('[data-action="next"][data-v="2"]');
+    await click('[data-action="pre-leg"][data-v="0"]');
+    await click('[data-action="pre-go"]');
+    await has('.auto-go', 'départ automatique, guidé à la voix');
+    await click('[data-action="go"]');
+    await page.waitForTimeout(9000);
+    await click('[data-action="quit"]');
+    await click('[data-action="end-now"]');
+    const title = await page.locator('.res-title').innerText();
+    if (title !== 'Séance écourtée') throw new Error('titre : ' + title);
+    await click('[data-action="ci-relief"][data-v="1"]');
+    const h = await page.evaluate(() => JSON.parse(localStorage.getItem('chamboule-coach.v1')).history[0]);
+    if (h.relief !== 1 || h.stars !== 1) throw new Error('ressenti mal enregistré : ' + JSON.stringify([h.relief, h.stars]));
+    await click('[data-action="home"]');
+    if (await page.locator('.routine .slot.done').count()) throw new Error('la routine est cochée par une séance écourtée');
+  });
+  await step('bilan de la semaine, puis Progrès', async () => {
+    await click('[data-action="weekly-open"]');
+    await click('[data-action="wk-can"][data-id="chien"]');
+    for (const q of ['stiff', 'night', 'meds']) await click(`[data-action="wk-ans"][data-q="${q}"][data-v="0"]`);
+    await click('[data-action="weekly-save"]');
+    await has('.life .can-list li', 'ce que ton dos t’a laissé faire');
+  });
+  await step('résumé pour le kiné : une page clinique', async () => {
+    await click('[data-action="tab"][data-tab="log"]');
+    await click('.hist-actions [data-action="summary"]');
+    const txt = await page.locator('#sum-text').innerText();
+    for (const part of ['À DISCUTER', 'BILAN DE LA SEMAINE', 'ne remplace pas l’examen']) if (!txt.includes(part)) throw new Error('manque : ' + part);
+  });
 
   await browser.close();
   server.close();

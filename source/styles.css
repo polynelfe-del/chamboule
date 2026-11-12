@@ -147,8 +147,8 @@ button{font:inherit;color:inherit}
 .routine{display:flex;flex-direction:column;gap:10px}
 .routine-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .slots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.slot{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--ink-2)}
-.slot b{color:var(--ink);font-size:17px}
+.slot{display:flex;flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 6px;padding:8px 6px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--ink-2)}
+.slot b{color:var(--ink);font-size:16px}
 .slot span{font-weight:800;font-size:14px}
 .slot.now{border-color:var(--accent);color:var(--accent)}
 .slot.done{border-color:var(--ok);color:var(--ok)}
@@ -577,3 +577,30 @@ button{font:inherit;color:inherit}
   .marq,.can.wobble,.mascot,.bulb.lit,.brand h1 .spark-txt,.stand-buddy.hop,.stand-buddy.shake{animation:none}
   .can.down{animation:none;opacity:0}
 }
+/* Accueil court : raccourcis, signes d’alerte et bons gestes en fiches */
+.links{display:flex;flex-direction:column;gap:8px}
+.link-row.alert-row{color:var(--danger);border:2px solid var(--danger);background:var(--surface)}
+.geste{display:flex;flex-direction:column;gap:6px}
+.geste h3{font-size:17px}
+.geste ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:4px;font-size:15px;font-weight:600}
+.geste li::marker{color:var(--prize);font-weight:900}
+/* Ressenti après Dos calme : trois choix, sans chiffre */
+.seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.seg3 button{min-height:54px;border-radius:14px;border:2px solid var(--line);background:transparent;font:inherit;font-weight:900;color:var(--ink);cursor:pointer;padding:4px 6px;line-height:1.15}
+.seg3 button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.seg3 button[data-v="-1"][aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:var(--surface)}
+/* Mains libres : départ automatique */
+.auto-go{font-size:16px;font-weight:800;text-align:center;color:var(--ink);background:var(--surface-2);border-radius:14px;padding:12px}
+.auto-go b{font-family:var(--f-display);font-size:22px;color:var(--prize)}
+/* Bilan de la semaine */
+.opt-col{display:flex;flex-direction:column;gap:8px}
+.opt-col button{min-height:48px;border-radius:14px;border:2px solid var(--line);background:transparent;font:inherit;font-weight:800;color:var(--ink);text-align:left;padding:8px 14px;cursor:pointer}
+.opt-col button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.can-chips button{min-height:44px}
+.life{display:flex;flex-direction:column;gap:10px}
+.can-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-weight:700}
+.can-list li::marker{color:var(--ok)}
+.known .row-btns{margin-top:-4px}
+.routine-meta{font-size:14px}
+.link-btn.inline{padding:0;min-height:0;display:inline;font-size:14px;text-align:left}
+.today-links{display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 12px;margin-top:-6px}

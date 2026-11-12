@@ -26,6 +26,7 @@ const html = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Ton coach sportif en mode jeu : dos, fessiers, cardio.">
+<meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#FFF1F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#2A0F28" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">

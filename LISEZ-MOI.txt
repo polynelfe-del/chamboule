@@ -34,7 +34,8 @@ OPTION B : L'APPLI DE CE DOSSIER SUR GITHUB PAGES (gratuit, marche hors ligne)
 
 3. RÉCUPÉRER TA PROGRESSION DEPUIS LA VERSION CLAUDE
    Dans la version Claude : Réglages > Sauvegarde dans un fichier > Exporter.
-   Envoie-toi le fichier (mail, messagerie...), puis dans l'appli du téléphone :
+   Passe le fichier sur le téléphone sans le mail si possible (câble, Fichiers, ton espace
+   de stockage) : il contient ton suivi de santé. Puis, dans l'appli du téléphone :
    Réglages > Sauvegarde dans un fichier > Importer.
 
 4. LES MISES À JOUR
